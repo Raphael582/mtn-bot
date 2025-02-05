@@ -1,59 +1,80 @@
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
-const { token } = require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
+const { Client, GatewayIntentBits, REST, Routes } = require('discord.js');
+const { execute, handleButton, handleModal, handleButtonApproval } = require('./commands/whitelist');
+require('dotenv').config();
 
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers,
-    ],
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
-// Carrega os comandos
-client.commands = new Collection();
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+const clientId = process.env.CLIENT_ID;
+const token = process.env.TOKEN;
 
-for (const file of commandFiles) {
-    const command = require(path.join(commandsPath, file));
-    client.commands.set(command.data.name, command);
-}
+// Registrando comandos
+async function registerCommands() {
+    const commands = [
+        {
+            name: 'whitelist',
+            description: 'Inicia o processo de whitelist para o usuário.',
+        }
+    ];
 
-// Carrega os eventos
-const eventsPath = path.join(__dirname, 'events');
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+    const rest = new REST({ version: '10' }).setToken(token);
 
-for (const file of eventFiles) {
-    const event = require(path.join(eventsPath, file));
-    if (event.once) {
-        client.once(event.name, (...args) => event.execute(...args, client));
-    } else {
-        client.on(event.name, (...args) => event.execute(...args, client));
+    try {
+        console.log('📤 Registrando comandos...');
+        await rest.put(Routes.applicationCommands(clientId), { body: commands });
+        console.log('✅ Comandos registrados!');
+    } catch (error) {
+        console.error(`❌ Erro ao registrar comandos: ${error}`);
     }
 }
 
-// Interações (botões, modais, etc.)
-client.on('interactionCreate', async interaction => {
-    if (interaction.isButton()) {
-        const command = client.commands.get('whitelist');
-        if (command) command.handleButton(interaction, client);
-    } else if (interaction.isModalSubmit()) {
-        const command = client.commands.get('whitelist');
-        if (command) command.handleModal(interaction, client);
-    } else if (interaction.isCommand()) {
-        const command = client.commands.get(interaction.commandName);
-        if (!command) return;
+// Evento quando o bot estiver pronto
+client.once('ready', () => {
+    console.log(`✅ Bot está online como ${client.user.tag}`);
+    registerCommands();
+});
 
+// Evento de interação (quando um comando ou botão é invocado)
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isCommand() && !interaction.isButton() && !interaction.isModalSubmit()) return;
+
+    // Verificando comando /whitelist
+    if (interaction.isCommand() && interaction.commandName === 'whitelist') {
         try {
-            await command.execute(interaction, client);
+            console.log('🔹 Comando /whitelist foi chamado');
+            await execute(interaction, client);
         } catch (error) {
-            console.error(error);
-            await interaction.reply({ content: 'Ocorreu um erro ao executar o comando.', ephemeral: true });
+            console.error('❌ Erro ao processar o comando /whitelist:', error);
+        }
+    }
+
+    // Verificando interação com o botão 'start_whitelist'
+    if (interaction.isButton() && interaction.customId === 'start_whitelist') {
+        try {
+            await handleButton(interaction, client);
+        } catch (error) {
+            console.error('❌ Erro ao processar interação do botão "start_whitelist":', error);
+        }
+    }
+
+    // Verificando se a interação é do modal
+    if (interaction.isModalSubmit() && interaction.customId === 'whitelist_modal') {
+        try {
+            await handleModal(interaction, client);
+        } catch (error) {
+            console.error('❌ Erro ao processar o modal:', error);
+        }
+    }
+
+    // Lógica para lidar com aprovação ou rejeição de whitelist
+    if (interaction.isButton() && (interaction.customId === 'approve_whitelist' || interaction.customId === 'reject_whitelist')) {
+        try {
+            await handleButtonApproval(interaction, client);
+        } catch (error) {
+            console.error('❌ Erro ao processar aprovação/rejeição de whitelist:', error);
         }
     }
 });
 
-client.login(process.env.TOKEN);
+client.login(token);
