@@ -1,0 +1,7 @@
+{
+    "logChannelWhitelistName": "logs-wl",
+    "logChannelChatName": "logs",
+    "accessRoleName": "Acess",
+    "expirationDays": 5,
+    "welcomeMessage": "Sua whitelist foi aprovada! Bem-vindo(a) ao servidor!"
+  }

@@ -1,2 +1,18 @@
+# Arquivos de ambiente
 .env
-database/usuarios.json
+
+# Banco de dados
+database/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependências
+node_modules/
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+/node_modules
