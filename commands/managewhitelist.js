@@ -1,4 +1,3 @@
-// commands/managewhitelist.js - Com perguntas sincronizadas com o whitelist.js original
 const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -220,7 +219,7 @@ async function handleButtonApproval(interaction, client) {
     // Config
     const config = {
         logChannelWhitelistName: 'logs-wl',
-        accessRoleName: 'Whitelisted',
+        accessRoleName: 'Acess',
         welcomeMessage: 'Seja bem-vindo ao servidor!'
     };
 
@@ -333,7 +332,10 @@ async function approveWhitelistEntry(registroAlvo, interaction, client, config, 
         console.error(`❌ Erro ao enviar DM de aprovação: ${error}`);
     }
 
+    // Atualizar registro no array
+    registrosWhitelist[registroAlvoIndex] = registroAlvo;
     writeWhitelistData(filePath, registrosWhitelist);
+    
     await interaction.editReply({ content: `Whitelist ✅ APROVADA ✅ para <@${registroAlvo.id_usuario}>.`, components: [] });
 }
 
@@ -361,7 +363,9 @@ async function rejectWhitelistEntry(registroAlvo, interaction, client, config, r
     const updatedEmbed = EmbedBuilder.from(embed)
         .setColor('#ff0000')
         .setTitle(`Whitelist ❌ Rejeitado`)
-        .setFooter({ text: `${embed.footer.text} | Rejeitado por: ${interaction.user.tag}` });
+        .setFooter({ 
+            text: `${embed.footer.text} | Rejeitado por: ${interaction.user.tag}` 
+        });
 
     await originalMessage.edit({ embeds: [updatedEmbed], components: [] });
 
@@ -386,8 +390,100 @@ async function rejectWhitelistEntry(registroAlvo, interaction, client, config, r
         console.error(`❌ Erro ao enviar DM de rejeição: ${error}`);
     }
     
+    // Atualizar registro no array
+    registrosWhitelist[registroAlvoIndex] = registroAlvo;
     writeWhitelistData(filePath, registrosWhitelist);
+    
     await interaction.editReply({ content: `Whitelist ❌ REJEITADA ❌ para <@${registroAlvo.id_usuario}>.`, components: [] });
+}
+
+/**
+ * Lida com a rejeição da whitelist com modal de feedback.
+ * @param {import('discord.js').ModalSubmitInteraction} interaction A interação do modal.
+ * @param {import('discord.js').Client} client O cliente Discord.
+ */
+async function handleModalRejection(interaction, client) {
+    const customIdParts = interaction.customId.split('_');
+    const userIdToReject = customIdParts[customIdParts.length - 1];
+    const feedbackMotivo = interaction.fields.getTextInputValue('rejection_reason');
+
+    // Config
+    const config = {
+        logChannelWhitelistName: 'logs-wl',
+        accessRoleName: 'Whitelisted',
+        welcomeMessage: 'Seja bem-vindo ao servidor!'
+    };
+
+    // Caminho para o arquivo de dados
+    const filePath = path.join(__dirname, '..', 'database', 'usuarios.json');
+
+    const registrosWhitelist = readWhitelistData(filePath);
+    const registroAlvoIndex = registrosWhitelist.findIndex(registro => 
+        registro.id_usuario === userIdToReject && registro.status === 'Pendente'
+    );
+
+    if (registroAlvoIndex === -1) {
+        return await interaction.reply({ 
+            content: '⚠️ Registro de whitelist não encontrado ou já processado.', 
+            ephemeral: true 
+        });
+    }
+
+    const registroAlvo = registrosWhitelist[registroAlvoIndex];
+    const guild = interaction.guild;
+    const logChannel = guild.channels.cache.find(channel => 
+        channel.name === config.logChannelWhitelistName
+    );
+
+    // Atualizar status
+    registroAlvo.status = 'Rejeitado';
+    registroAlvo.aprovador = interaction.user.tag;
+    registroAlvo.motivo_rejeicao = feedbackMotivo;
+    registroAlvo.data = new Date().toISOString();
+
+    // Salvar alterações
+    registrosWhitelist[registroAlvoIndex] = registroAlvo;
+    writeWhitelistData(filePath, registrosWhitelist);
+
+    // Notificar usuário via DM
+    try {
+        const userDM = await client.users.fetch(registroAlvo.id_usuario);
+        if (userDM) {
+            const rejectEmbed = new EmbedBuilder()
+                .setColor('#FF0000')
+                .setTitle('❌ Whitelist Rejeitada')
+                .setDescription('Sua solicitação de whitelist foi rejeitada.')
+                .addFields(
+                    { name: 'Motivo', value: feedbackMotivo || 'Motivo não especificado' }
+                )
+                .setTimestamp();
+
+            await userDM.send({ embeds: [rejectEmbed] });
+        }
+    } catch (error) {
+        console.error(`❌ Erro ao enviar DM de rejeição: ${error}`);
+    }
+
+    // Log no canal de whitelist
+    if (logChannel) {
+        const logEmbed = new EmbedBuilder()
+            .setColor('#FF0000')
+            .setTitle('❌ Whitelist Rejeitada')
+            .setDescription(`Whitelist de <@${registroAlvo.id_usuario}> foi rejeitada`)
+            .addFields(
+                { name: 'Rejeitado por', value: interaction.user.tag },
+                { name: 'Motivo', value: feedbackMotivo || 'Motivo não especificado' }
+            )
+            .setTimestamp();
+
+        await logChannel.send({ embeds: [logEmbed] });
+    }
+
+    // Responder à interação
+    await interaction.reply({ 
+        content: `Whitelist para <@${registroAlvo.id_usuario}> foi rejeitada com feedback.`, 
+        ephemeral: true 
+    });
 }
 
 module.exports = {
@@ -395,5 +491,6 @@ module.exports = {
     execute,
     handleButton,
     handleModal,
-    handleButtonApproval
+    handleButtonApproval,
+    handleModalRejection
 };
