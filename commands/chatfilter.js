@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 const punishmentSystem = require('../modules/punishment');
+const logger = require('../modules/logger');
 
 dotenv.config();
 
@@ -204,37 +205,12 @@ MENSAGEM A ANALISAR:
 
 // Função para criar o canal de logs se não existir
 async function ensureLogChannel(guild) {
-    const config = loadFilterConfig();
-    
-    // Verificar se o canal já existe
-    let logChannel = guild.channels.cache.find(channel => channel.name === config.logChannelName);
-    
-    // Se o canal não existir, criar
-    if (!logChannel) {
-        try {
-            logChannel = await guild.channels.create({
-                name: config.logChannelName,
-                type: 0, // 0 = GUILD_TEXT
-                permissionOverwrites: [
-                    {
-                        id: guild.id, // @everyone
-                        deny: ['ViewChannel'] // Esconder o canal de todos
-                    },
-                    {
-                        id: guild.roles.cache.find(role => role.name === 'Admin')?.id || guild.ownerId,
-                        allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory']
-                    }
-                ],
-                topic: 'Logs de mensagens filtradas pelo sistema anti-esquerda'
-            });
-            console.log(`✅ Canal de logs ${config.logChannelName} criado com sucesso!`);
-        } catch (error) {
-            console.error(`❌ Erro ao criar canal de logs: ${error}`);
-            return null;
-        }
+    try {
+        return await logger.findOrCreateLogChannel(guild, 'logs-filtro');
+    } catch (error) {
+        console.error(`❌ Erro ao criar canal de logs: ${error}`);
+        return null;
     }
-    
-    return logChannel;
 }
 
 // Função para lidar com eventos de mensagem
@@ -283,17 +259,13 @@ async function handleMessage(message, client) {
         const infractionLevel = determineInfractionLevel(analysis.explanation);
         
         if (logChannel) {
-            // Enviar mensagem para o canal de logs
-            await logChannel.send({
-                embeds: [{
-                    color: 0xFF0000,
-                    title: '🚫 Mensagem Filtrada',
-                    description: `**Usuário:** ${message.author.tag} (${message.author.id})\n**Canal:** ${message.channel.name}\n**Conteúdo:** ${message.content}\n\n**Motivo:** ${analysis.explanation}\n\n**Nível da Infração:** ${infractionLevel.toUpperCase()}`,
-                    timestamp: new Date(),
-                    footer: {
-                        text: `ID da Mensagem: ${message.id}`
-                    }
-                }]
+            // Usar o novo sistema de logs
+            await logger.logFilter(message.guild, {
+                author: message.author,
+                content: message.content,
+                explanation: analysis.explanation,
+                level: infractionLevel,
+                channelId: message.channel.id
             });
         }
         
@@ -333,7 +305,7 @@ async function handleMessage(message, client) {
                 const dmEmbed = new EmbedBuilder()
                     .setColor(0xFF0000)
                     .setTitle('🚫 Sua Mensagem Foi Removida')
-                    .setDescription(`Sua mensagem no canal **#${message.channel.name}** foi removida:`)
+                    .setDescription(`Sua mensagem no canal **#${message.channel.name}** foi removida. Observe as regras do servidor.`)
                     .addFields(
                         { name: 'Conteúdo da Mensagem', value: `"${message.content}"` },
                         { name: 'Motivo da Remoção', value: analysis.explanation },

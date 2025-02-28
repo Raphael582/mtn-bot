@@ -124,6 +124,44 @@ function createLogEmbed(level, title, description, fields = [], options = {}) {
 }
 
 /**
+ * Encontra ou cria canal de logs
+ * @param {Guild} guild Servidor Discord
+ * @param {string} channelName Nome do canal de logs
+ * @returns {Promise<TextChannel|null>} Canal de logs ou null se não possível
+ */
+async function findOrCreateLogChannel(guild, channelName) {
+    try {
+        // Verificar se o canal já existe
+        let logChannel = guild.channels.cache.find(channel => channel.name === channelName);
+        
+        // Se o canal não existir, criar
+        if (!logChannel) {
+            logChannel = await guild.channels.create({
+                name: channelName,
+                type: 0, // 0 = GUILD_TEXT
+                permissionOverwrites: [
+                    {
+                        id: guild.id, // @everyone
+                        deny: ['ViewChannel'] // Esconder o canal de todos
+                    },
+                    {
+                        id: guild.roles.cache.find(role => role.name === 'Admin')?.id || guild.ownerId,
+                        allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory']
+                    }
+                ],
+                topic: `Canal de logs para ${channelName}`
+            });
+            console.log(`✅ Canal de logs ${channelName} criado com sucesso!`);
+        }
+        
+        return logChannel;
+    } catch (error) {
+        console.error(`❌ Erro ao encontrar ou criar canal de logs: ${error}`);
+        return null;
+    }
+}
+
+/**
  * Envia log para canal específico com formato padronizado
  * @param {TextChannel} channel Canal para enviar o log
  * @param {string} level Nível do log (INFO, SUCCESS, etc.)
@@ -165,28 +203,31 @@ async function sendLog(channel, level, title, description, fields = [], options 
 
 /**
  * Envia log de filtragem
- * @param {TextChannel} channel Canal de logs
+ * @param {Guild} guild Servidor Discord
  * @param {object} data Dados do filtro
  * @returns {Promise<Message>} Mensagem enviada
  */
-async function logFilter(channel, data) {
-    const { author, content, explanation, level } = data;
+async function logFilter(guild, data) {
+    const { author, content, explanation, level, channelId } = data;
+    
+    const logChannel = await findOrCreateLogChannel(guild, 'logs-filtro');
+    if (!logChannel) return null;
     
     const fields = [
         { name: 'Usuário', value: `${author.tag} (${author.id})`, inline: true },
         { name: 'Nível da Infração', value: level.toUpperCase(), inline: true },
-        { name: 'Canal', value: `<#${data.channelId}>`, inline: true },
+        { name: 'Canal', value: `<#${channelId}>`, inline: true },
         { name: 'Conteúdo', value: content || 'N/A' },
         { name: 'Motivo', value: explanation || 'N/A' }
     ];
     
     const options = {
-        footer: `ID: ${generateLogId()} • Canal: #${channel.name}`,
+        footer: `ID: ${generateLogId()} • Canal: #${logChannel.name}`,
         thumbnail: author.displayAvatarURL({ dynamic: true })
     };
     
     return await sendLog(
-        channel, 
+        logChannel, 
         'FILTER', 
         'Mensagem Filtrada', 
         `Uma mensagem de ${author.username} foi filtrada.`, 
@@ -197,12 +238,15 @@ async function logFilter(channel, data) {
 
 /**
  * Envia log de punição
- * @param {TextChannel} channel Canal de logs
+ * @param {Guild} guild Servidor Discord
  * @param {object} data Dados da punição
  * @returns {Promise<Message>} Mensagem enviada
  */
-async function logPunishment(channel, data) {
+async function logPunishment(guild, data) {
     const { userId, username, type, reason, details, executor } = data;
+    
+    const logChannel = await findOrCreateLogChannel(guild, 'logs-punicoes');
+    if (!logChannel) return null;
     
     const fields = [
         { name: 'Usuário', value: `<@${userId}> (${username})`, inline: true },
@@ -213,11 +257,11 @@ async function logPunishment(channel, data) {
     ];
     
     const options = {
-        footer: `ID: ${generateLogId()} • Canal: #${channel.name}`
+        footer: `ID: ${generateLogId()} • Canal: #${logChannel.name}`
     };
     
     return await sendLog(
-        channel, 
+        logChannel, 
         'PUNISH', 
         'Punição Aplicada', 
         `Uma punição foi aplicada ao usuário ${username}.`, 
@@ -228,23 +272,26 @@ async function logPunishment(channel, data) {
 
 /**
  * Envia log de whitelist
- * @param {TextChannel} channel Canal de logs
+ * @param {Guild} guild Servidor Discord
  * @param {object} data Dados da whitelist
  * @returns {Promise<Message>} Mensagem enviada
  */
-async function logWhitelist(channel, data) {
+async function logWhitelist(guild, data) {
     const { userId, username, status, approver } = data;
     
+    const logChannel = await findOrCreateLogChannel(guild, 'logs-wl');
+    if (!logChannel) return null;
+    
     let level, title, description;
-    if (status === 'pendente') {
+    if (status === 'pendente' || status === 'Pendente') {
         level = 'INFO';
         title = 'Nova Solicitação de Whitelist';
         description = `${username} solicitou whitelist.`;
-    } else if (status === 'aprovado') {
+    } else if (status === 'aprovado' || status === 'Aprovado') {
         level = 'SUCCESS';
         title = 'Whitelist Aprovada';
         description = `A whitelist de ${username} foi aprovada.`;
-    } else if (status === 'rejeitado') {
+    } else if (status === 'rejeitado' || status === 'Rejeitado') {
         level = 'WARNING';
         title = 'Whitelist Rejeitada';
         description = `A whitelist de ${username} foi rejeitada.`;
@@ -262,15 +309,74 @@ async function logWhitelist(channel, data) {
     // Adicionar outros campos específicos da whitelist
     for (const [key, value] of Object.entries(data)) {
         if (!['userId', 'username', 'status', 'approver'].includes(key) && value) {
-            fields.push({ name: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '), value: value.toString() });
+            fields.push({ 
+                name: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '), 
+                value: value.toString() 
+            });
         }
     }
     
     const options = {
-        footer: `ID: ${generateLogId()} • Canal: #${channel.name}`
+        footer: `ID: ${generateLogId()} • Canal: #${logChannel.name}`
     };
     
-    return await sendLog(channel, 'WHITELIST', title, description, fields, options);
+    return await sendLog(logChannel, 'WHITELIST', title, description, fields, options);
+}
+
+/**
+ * Registra um erro no sistema
+ * @param {Guild} guild Servidor Discord (opcional)
+ * @param {string} context Contexto do erro (módulo, comando, etc.)
+ * @param {Error} error Objeto de erro
+ * @param {object} additionalData Dados adicionais sobre o erro
+ */
+async function logError(guild, context, error, additionalData = {}) {
+    // Salvar no arquivo independentemente do canal
+    const errorData = {
+        context,
+        message: error.message,
+        stack: error.stack,
+        ...additionalData,
+    };
+    
+    saveLogToFile('error', errorData);
+    
+    // Se tiver guild, tentar enviar para o canal de logs
+    if (guild) {
+        const logChannel = await findOrCreateLogChannel(guild, 'logs-erros');
+        if (!logChannel) return;
+        
+        const fields = [
+            { name: 'Contexto', value: context, inline: true },
+            { name: 'Mensagem', value: error.message },
+        ];
+        
+        // Adicionar stack trace formatado
+        if (error.stack) {
+            // Limitar tamanho do stack trace para não exceder limites do Discord
+            const stackTrace = error.stack.substring(0, 1000) + (error.stack.length > 1000 ? '...' : '');
+            fields.push({ name: 'Stack Trace', value: `\`\`\`\n${stackTrace}\n\`\`\`` });
+        }
+        
+        // Adicionar dados adicionais
+        for (const [key, value] of Object.entries(additionalData)) {
+            if (value) {
+                fields.push({ 
+                    name: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '), 
+                    value: typeof value === 'object' ? JSON.stringify(value, null, 2) : value.toString() 
+                });
+            }
+        }
+        
+        await sendLog(
+            logChannel,
+            'ERROR',
+            'Erro no Sistema',
+            `Um erro ocorreu no sistema: ${context}`,
+            fields,
+            { footer: `ID: ${generateLogId()}` }
+        );
+    }
 }
 
 /**
@@ -376,8 +482,10 @@ module.exports = {
     logFilter,
     logPunishment,
     logWhitelist,
-    sendLog,s
+    logError,
+    sendLog,
     getLogs,
     exportLogsToCSV,
-    createLogEmbed
+    createLogEmbed,
+    findOrCreateLogChannel
 };

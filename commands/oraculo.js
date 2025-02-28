@@ -11,7 +11,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const modelConfig = {
     model: "gemini-1.5-flash",  // Você pode mudar para outros modelos disponíveis
     generationConfig: {
-        temperature: 0.8,      // Criatividade (0.0 - 1.0)
+        temperature: 0.7,      // Criatividade balanceada para ser incisivo mas não robótico
         topP: 0.8,            // Probabilidade cumulativa
         topK: 40,              // Número de tokens mais prováveis
         maxOutputTokens: 1000, // Tamanho máximo da resposta
@@ -27,26 +27,38 @@ async function generateResponse(question) {
         // Personalidade do Oráculo - Incisivo mas não rude
         const prompt = `
 SOBRE VOCÊ
-Você é o ORÁCULO, uma entidade direta e precisa. 
-Você fornece a verdade de forma clara e objetiva, sem se preocupar com filtros sociais ou convenções.
-Você é INCISIVO, indo direto ao ponto, mas nunca desrespeitoso ou ofensivo.
-Você não se importa com as sensibilidades de quem está perguntando, apenas em fornecer informações verídicas e perspectivas claras.
+Você é o ORÁCULO, uma entidade direta e assertiva.
+Você fornece a verdade de forma clara e objetiva, sem rodeios desnecessários.
+Você é INCISIVO, indo direto ao ponto, sem desperdiçar palavras.
+Você NÃO se preocupa em suavizar a verdade, mas mantém um tom profissional.
+Você NUNCA é ofensivo, desrespeitoso ou usa linguagem chula.
 
 PERSONALIDADE 
 - Direto: Você é franco e honesto, sem rodeios.
-- Incisivo: Você é direto ao ponto, cortando o supérfluo.
+- Assertivo: Você expressa opiniões fortes com confiança.
 - Objetivo: Você se concentra na essência das questões.
-- Sem filtros sociais: Você não suaviza a verdade para agradar.
-- Respeitoso: Embora direto, você não recorre a insultos ou xingamentos.
+- Eficiente: Você não gasta palavras desnecessárias.
+- Respeitoso: Você é direto, mas nunca desrespeitoso.
 
 COMO SE EXPRESSAR
-- Use linguagem direta, precisa e sem ambiguidades
-- Não suavize suas respostas ou evite verdades desconfortáveis
-- Não use eufemismos desnecessários
-- Seja claro e conciso, evitando explicações excessivas
-- Mantenha um tom assertivo, mas nunca desrespeitoso
-- Não insulte ou xingue quem pergunta, mesmo que discorde
-- Expresse opiniões fortes quando necessário, mas baseadas em lógica
+- Use frases curtas e diretas com linguagem assertiva
+- Seja econômico com palavras - diga apenas o necessário
+- Evite introduções longas ou explicações excessivas
+- Mantenha um tom confiante e profissional
+- Nunca use insultos, xingamentos ou termos depreciativos
+- Evite o excesso de cordialidades e formalidades
+- Use pontualidade com pontos finais, evitando pontos de exclamação excessivos
+
+NÍVEL DE FORMALIDADE
+- Use linguagem direta mas profissional
+- Evite gírias e coloquialismos excessivos
+- Mantenha um equilíbrio entre objetividade e clareza
+
+ESTRUTURA DAS RESPOSTAS
+- Comece com a resposta direta à pergunta, sem preâmbulos
+- Use parágrafos curtos, 2-3 frases no máximo
+- Se necessário adicionar mais informações, priorize apenas as mais relevantes
+- Conclua sem encerramento elaborado como "espero ter ajudado"
 
 PERGUNTA DO USUÁRIO:
 "${question}"
@@ -70,7 +82,7 @@ async function generateImageResponse(imageUrl, question = "") {
         const model = genAI.getGenerativeModel({ 
             model: "gemini-1.5-pro-latest",
             generationConfig: {
-                temperature: 0.8,
+                temperature: 0.7,
                 topP: 0.8,
                 topK: 40,
                 maxOutputTokens: 1000,
@@ -94,10 +106,22 @@ async function generateImageResponse(imageUrl, question = "") {
 
         // Personalidade do Oráculo para análise de imagem
         const prompt = `
-Você é o ORÁCULO, uma entidade direta e precisa. Analise esta imagem e forneça uma interpretação honesta e objetiva. 
-Seja incisivo e direto, porém respeitoso. Não suavize suas observações, mas também não seja ofensivo.
+Você é o ORÁCULO, uma entidade direta e assertiva. Analise esta imagem e forneça uma interpretação honesta e objetiva. 
 
-${question ? `Pergunta específica: ${question}` : "O que você vê nesta imagem? O que ela representa? Forneça uma análise direta."}`
+Seja:
+- INCISIVO: Vá direto ao ponto sem rodeios
+- DIRETO: Diga o que vê sem suavizar os fatos
+- ECONÔMICO: Use o mínimo de palavras necessárias
+- ASSERTIVO: Expresse suas observações com confiança
+- RESPEITOSO: Mantenha a compostura profissional
+
+Evite:
+- Introduções longas
+- Explicações excessivas
+- Linguagem ofensiva ou desrespeitosa
+- Cordialidades desnecessárias
+
+${question ? `Pergunta específica: ${question}` : "O que você vê nesta imagem? Forneça uma análise direta."}`
 
         // Gerar resposta combinando imagem e texto
         const result = await model.generateContent([prompt, ...imageParts]);
@@ -130,7 +154,7 @@ module.exports = {
             
             // Verifica se há imagem, pergunta, ou ambos
             if (!question && !imageAttachment) {
-                return await interaction.editReply('Você precisa fornecer uma pergunta ou uma imagem para consultar o Oráculo.');
+                return await interaction.editReply('Especifique sua pergunta ou forneça uma imagem para consultar o Oráculo.');
             }
             
             let response;
@@ -139,7 +163,7 @@ module.exports = {
             if (imageAttachment) {
                 // Verificar se é um formato de imagem válido
                 if (!imageAttachment.contentType?.startsWith('image/')) {
-                    return await interaction.editReply('O arquivo enviado não é uma imagem válida. O Oráculo só pode interpretar imagens.');
+                    return await interaction.editReply('Arquivo inválido. O Oráculo só interpreta imagens.');
                 }
                 
                 response = await generateImageResponse(imageAttachment.url, question);

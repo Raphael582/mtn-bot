@@ -1,300 +1,260 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, EmbedBuilder } = require('discord.js');
-const fs = require('fs');
+// commands/whitelist.js
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const path = require('path');
+const fs = require('fs');
 
-// Definir caminho correto para o arquivo de dados
-const directoryPath = path.join(__dirname, '..', 'database');
-const filePath = path.join(directoryPath, 'usuarios.json');
-
-// Função para ler dados do JSON
-function lerRegistrosWhitelist() {
-    // Criar diretório se não existir
-    if (!fs.existsSync(directoryPath)) {
-        fs.mkdirSync(directoryPath, { recursive: true });
-    }
-
-    // Ler o arquivo se existir ou retornar array vazio
-    if (fs.existsSync(filePath)) {
-        try {
-            return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-        } catch (err) {
-            console.error('❌ Erro ao ler o arquivo JSON:', err);
-            return [];
-        }
-    }
-    return [];
-}
-
-// Função para salvar no JSON
-function salvarWhitelist(data) {
-    const registros = lerRegistrosWhitelist();
-    
-    // Verificar se já existe um registro pendente para este usuário
-    const usuarioIndex = registros.findIndex(
-        registro => registro.id_usuario === data.id_usuario && registro.status === 'Pendente'
-    );
-    
-    // Se estiver atualizando um registro existente (aprovação/rejeição)
-    if (data.status === 'Aprovado' || data.status === 'Rejeitado') {
-        // Encontrar o registro pendente correspondente
-        const pendingIndex = registros.findIndex(
-            registro => registro.id_usuario === data.id_usuario && registro.status === 'Pendente'
-        );
-        
-        if (pendingIndex !== -1) {
-            // Atualizar o registro existente em vez de adicionar um novo
-            registros[pendingIndex] = {
-                ...registros[pendingIndex],
-                status: data.status,
-                aprovador: data.aprovador,
-                data_aprovacao: data.data
-            };
-        } else {
-            // Se não encontrar um pendente, adiciona um novo (caso incomum)
-            registros.push(data);
-        }
-    } else if (usuarioIndex !== -1) {
-        // Se já existe um registro pendente, substitui pelo novo
-        registros[usuarioIndex] = data;
-    } else {
-        // Caso contrário, adiciona um novo registro
-        registros.push(data);
-    }
-    
-    try {
-        fs.writeFileSync(filePath, JSON.stringify(registros, null, 4));
-        console.log('✅ Registro de whitelist salvo com sucesso!');
-    } catch (err) {
-        console.error('❌ Erro ao salvar no arquivo JSON:', err);
-    }
-}
+// Referência para o servidor de whitelist
+let whitelistServer = null;
 
 module.exports = {
     // Função para executar o comando de whitelist
     async execute(interaction, client) {
-        const button = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('start_whitelist')
-                .setLabel('Iniciar Whitelist')
-                .setStyle(ButtonStyle.Primary),
-        );
+        // Verificar se o servidor web está rodando
+        if (global.whitelistServer) {
+            whitelistServer = global.whitelistServer;
+        } else {
+            const WhitelistServer = require('../modules/whitelist-server');
+            
+            try {
+                whitelistServer = new WhitelistServer(client);
+                await whitelistServer.start();
+                global.whitelistServer = whitelistServer;
+            } catch (error) {
+                console.error('❌ Erro ao iniciar servidor de whitelist:', error);
+                return await interaction.reply({
+                    content: 'Erro ao iniciar o sistema de whitelist. Por favor, tente novamente mais tarde ou contate um administrador.',
+                    ephemeral: true
+                });
+            }
+        }
 
+        try {
+            // Verificar se o usuário já submeteu um formulário que está pendente
+            const dbPath = path.join(__dirname, '..', 'database');
+            const filePath = path.join(dbPath, 'usuarios.json');
+            
+            let registros = [];
+            if (fs.existsSync(filePath)) {
+                try {
+                    registros = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+                } catch (err) {
+                    console.error('❌ Erro ao ler o arquivo JSON:', err);
+                }
+            }
+            
+            // Verificar se o usuário já tem uma solicitação pendente
+            const temPendente = registros.some(registro => 
+                registro.id_usuario === interaction.user.id && 
+                registro.status === 'Pendente'
+            );
+            
+            if (temPendente) {
+                return await interaction.reply({
+                    content: 'Você já possui uma solicitação de whitelist pendente. Por favor, aguarde a análise da equipe.',
+                    ephemeral: true
+                });
+            }
+            
+            // Verificar se o usuário já foi aprovado
+            const temAprovado = registros.some(registro => 
+                registro.id_usuario === interaction.user.id && 
+                registro.status === 'Aprovado'
+            );
+            
+            if (temAprovado) {
+                return await interaction.reply({
+                    content: 'Você já possui whitelist aprovada neste servidor!',
+                    ephemeral: true
+                });
+            }
+
+            // Criar link único para este usuário
+            const whitelistLink = whitelistServer.createWhitelistLink(
+                interaction.user.id,
+                interaction.guild.id
+            );
+
+            if (!whitelistLink) {
+                return await interaction.reply({
+                    content: 'Não foi possível gerar seu link de whitelist. Pode ser que você já tenha uma solicitação pendente ou aprovada.',
+                    ephemeral: true
+                });
+            }
+
+            // Criar embed com o link
+            const embed = new EmbedBuilder()
+                .setColor('#3498db')
+                .setTitle('📝 Sistema de Whitelist')
+                .setDescription(`Olá ${interaction.user.username}! Clique no botão abaixo para acessar o formulário de whitelist.`)
+                .addFields(
+                    { name: '⏱️ Atenção', value: 'Este link é válido por **30 minutos**. Após esse período, você precisará gerar um novo.' },
+                    { name: '📋 Instruções', value: '1. Clique no botão para abrir o formulário\n2. Preencha todas as informações corretamente\n3. Envie o formulário e aguarde a aprovação' }
+                )
+                .setFooter({ text: 'Acesse o site para preencher seu formulário completo' })
+                .setTimestamp();
+
+            // Botão para o link
+            const button = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setLabel('Abrir Formulário de Whitelist')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(whitelistLink)
+                    .setEmoji('📝'),
+            );
+
+            // Responder com o link
+            await interaction.reply({
+                embeds: [embed],
+                components: [button],
+                ephemeral: true
+            });
+
+        } catch (error) {
+            console.error('❌ Erro ao gerar link de whitelist:', error);
+            await interaction.reply({
+                content: 'Ocorreu um erro ao gerar seu link de whitelist. Por favor, tente novamente mais tarde.',
+                ephemeral: true
+            });
+        }
+    },
+
+    // Estas funções são mantidas para compatibilidade com o sistema antigo
+    async handleButton(interaction, client) {
+        // Redirecionar para o novo sistema baseado em web
+        await this.execute(interaction, client);
+    },
+
+    async handleModal(interaction, client) {
+        // Esta função não é mais necessária no novo sistema
         await interaction.reply({
-            content: 'Clique no botão abaixo para iniciar o processo de whitelist.',
-            components: [button],
+            content: 'O sistema de whitelist foi atualizado. Por favor, use o comando /whitelist para acessar o novo sistema.',
+            ephemeral: true
         });
     },
 
-    // Função para tratar o botão de whitelist
-    async handleButton(interaction, client) {
-        try {
-            if (interaction.customId === 'start_whitelist') {
-                const modal = new ModalBuilder()
-                    .setCustomId('whitelist_modal')
-                    .setTitle('Formulário de Whitelist');
-
-                const questions = [
-                    new TextInputBuilder()
-                        .setCustomId('nome')
-                        .setLabel('Qual é o seu nome?')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true),
-                    new TextInputBuilder()
-                        .setCustomId('idade')
-                        .setLabel('Qual é a sua idade?')
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(true),
-                    new TextInputBuilder()
-                        .setCustomId('motivo')
-                        .setLabel('Por que você quer entrar?')
-                        .setStyle(TextInputStyle.Paragraph)
-                        .setRequired(true),
-                ];
-
-                const actionRows = questions.map(question =>
-                    new ActionRowBuilder().addComponents(question)
-                );
-
-                modal.addComponents(...actionRows);
-
-                await interaction.showModal(modal);
-            }
-        } catch (error) {
-            console.error('❌ Erro no botão:', error);
-            await interaction.reply({ content: 'Erro ao processar a ação.', ephemeral: true });
-        }
-    },
-
-    // Função para tratar a submissão do modal
-    async handleModal(interaction, client) {
-        if (interaction.customId === 'whitelist_modal') {
-            const nome = interaction.fields.getTextInputValue('nome');
-            const idade = interaction.fields.getTextInputValue('idade');
-            const motivo = interaction.fields.getTextInputValue('motivo');
-
-            const logChannel = interaction.guild.channels.cache.find(channel => channel.name === 'logs-wl');
-
-            // Verificando se o canal de logs existe
-            if (!logChannel) {
-                console.error('❌ Canal "logs-wl" não encontrado!');
-                return await interaction.reply({ 
-                    content: '❌ Canal de logs não encontrado. Por favor, crie um canal chamado "logs-wl".', 
-                    ephemeral: true 
-                });
-            }
-
-            const embed = new EmbedBuilder()
-                .setTitle('Nova Solicitação de Whitelist')
-                .addFields(
-                    { name: 'Nome', value: nome },
-                    { name: 'Idade', value: idade },
-                    { name: 'Motivo', value: motivo }
-                )
-                .setFooter({ text: `Solicitante: ${interaction.user.tag} (${interaction.user.id})` })
-                .setColor(0x3498db)
-                .setTimestamp();
-
-            const buttons = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('approve_whitelist').setLabel('Aprovar').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('reject_whitelist').setLabel('Rejeitar').setStyle(ButtonStyle.Danger),
-            );
-
-            try {
-                await logChannel.send({ embeds: [embed], components: [buttons] });
-                console.log('✅ Solicitação de whitelist enviada para o canal de logs!');
-            } catch (error) {
-                console.error('❌ Erro ao enviar a solicitação de whitelist para o canal de logs:', error);
-                return await interaction.reply({ 
-                    content: '❌ Erro ao enviar para o canal de logs.', 
-                    ephemeral: true 
-                });
-            }
-
-            // Enviar confirmação para o usuário
-            await interaction.reply({ 
-                content: '✅ Seu formulário foi enviado para análise! Aguarde o contato da equipe.', 
-                ephemeral: true 
-            });
-
-            // Salvar no arquivo JSON
-            salvarWhitelist({
-                id_usuario: interaction.user.id,
-                nome_usuario: nome,
-                idade: idade,
-                motivo: motivo,
-                status: 'Pendente',
-                data: new Date().toISOString(),
-            });
-        }
-    },
-
-    // Função para lidar com aprovação ou rejeição
     async handleButtonApproval(interaction, client) {
-        if (interaction.customId === 'approve_whitelist' || interaction.customId === 'reject_whitelist') {
+        // Verificar se é um botão do sistema antigo
+        const isOldSystem = !interaction.customId.startsWith('wl_');
+        
+        if (isOldSystem) {
             try {
+                const customIdParts = interaction.customId.split('_');
+                const action = customIdParts[0];
+                const userId = interaction.message.embeds[0].footer.text.match(/\((\d+)\)/)?.[1];
+                
+                if (!userId) {
+                    return await interaction.reply({
+                        content: 'Não foi possível identificar o usuário desta solicitação.',
+                        ephemeral: true
+                    });
+                }
+                
                 await interaction.deferReply({ ephemeral: true });
                 
+                // Obter dados do arquivo JSON
+                const filePath = path.join(__dirname, '..', 'database', 'usuarios.json');
+                let registros = [];
+                
+                if (fs.existsSync(filePath)) {
+                    try {
+                        registros = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+                    } catch (err) {
+                        console.error('❌ Erro ao ler o arquivo JSON:', err);
+                        return await interaction.editReply({
+                            content: 'Erro ao processar a solicitação. Por favor, tente novamente.',
+                            ephemeral: true
+                        });
+                    }
+                }
+                
+                // Encontrar o registro do usuário
+                const registroIndex = registros.findIndex(r => 
+                    r.id_usuario === userId && r.status === 'Pendente'
+                );
+                
+                if (registroIndex === -1) {
+                    return await interaction.editReply({
+                        content: 'Esta solicitação já foi processada ou não existe mais.',
+                        ephemeral: true
+                    });
+                }
+                
+                // Atualizar status
+                const aprovado = action === 'approve';
+                registros[registroIndex].status = aprovado ? 'Aprovado' : 'Rejeitado';
+                registros[registroIndex].aprovador = interaction.user.tag;
+                registros[registroIndex].data_aprovacao = new Date().toISOString();
+                
+                // Salvar alterações
+                fs.writeFileSync(filePath, JSON.stringify(registros, null, 4), 'utf-8');
+                
+                // Atualizar mensagem
                 const originalMessage = await interaction.message.fetch();
                 const embed = originalMessage.embeds[0];
-
-                if (!embed) {
-                    return await interaction.editReply({ content: 'Erro: Embed não encontrada.' });
-                }
-
-                const aprovado = interaction.customId === 'approve_whitelist';
-                const status = aprovado ? '✅ Aprovado' : '❌ Rejeitado';
-                const cor = aprovado ? 0x00ff00 : 0xff0000;
-
+                
                 const updatedEmbed = EmbedBuilder.from(embed)
-                    .setColor(cor)
-                    .setTitle(`Whitelist ${status}`)
+                    .setColor(aprovado ? '#00ff00' : '#ff0000')
+                    .setTitle(`Whitelist ${aprovado ? '✅ Aprovada' : '❌ Rejeitada'}`)
                     .setFooter({ 
                         text: `${embed.footer.text} | Ação por: ${interaction.user.tag}` 
                     });
-
+                
                 await originalMessage.edit({ embeds: [updatedEmbed], components: [] });
-
-                await interaction.editReply({ content: `Whitelist ${status.toLowerCase()} com sucesso!`, ephemeral: true });
-
-                // Extrair o ID do usuário do footer da embed
-                const match = embed.footer?.text?.match(/\((\d+)\)/);
-                const userId = match ? match[1] : null;
-
-                if (userId) {
-                    let member;
+                
+                // Adicionar cargo se aprovado
+                if (aprovado) {
                     try {
-                        member = await interaction.guild.members.fetch(userId);
-                    } catch (err) {
-                        console.error('❌ Erro ao buscar membro:', err);
-                        member = null;
-                    }
-
-                    if (member) {
-                        // Enviar mensagem no canal mencionando o usuário
-                        try {
-                            await interaction.channel.send(`${member} sua whitelist foi ${status.toLowerCase()}! ${aprovado ? '🎉' : '😢'}`);
-                        } catch (error) {
-                            console.error('❌ Erro ao enviar mensagem no canal:', error);
+                        const member = await interaction.guild.members.fetch(userId);
+                        const role = interaction.guild.roles.cache.find(r => r.name === 'Whitelisted');
+                        
+                        if (member && role) {
+                            await member.roles.add(role);
+                            console.log(`🏷️ Cargo Whitelisted adicionado para ${member.user.tag}`);
                         }
-
-                        // Tentar enviar mensagem direta
-                        try {
-                            await member.send(`Sua solicitação de whitelist foi ${status.toLowerCase()}! ${aprovado ? 'Parabéns! 🎉' : 'Tente novamente em breve!'}`);
-                        } catch (error) {
-                            console.error('❌ Não foi possível enviar mensagem direta para o usuário:', error);
-                            // Notificar no canal que não foi possível enviar DM
-                            try {
-                                await interaction.channel.send(
-                                    `Não foi possível enviar uma mensagem direta para ${member}. Certifique-se que o usuário tenha DMs abertas.`
-                                );
-                            } catch(err) {
-                                console.error('❌ Erro ao enviar mensagem de fallback no canal:', err);
-                            }
-                        }
-                    } else {
-                        console.error('❌ Membro não encontrado no servidor.');
-                    }
-
-                    // Obter dados do embed
-                    try {
-                        const nomeValue = embed.fields?.find(f => f.name === 'Nome')?.value || 'Não disponível';
-                        const idadeValue = embed.fields?.find(f => f.name === 'Idade')?.value || 'Não disponível';
-                        const motivoValue = embed.fields?.find(f => f.name === 'Motivo')?.value || 'Não disponível';
-
-                        // Salvar dados atualizados no JSON
-                        salvarWhitelist({
-                            id_usuario: userId,
-                            nome_usuario: nomeValue,
-                            idade: idadeValue,
-                            motivo: motivoValue,
-                            status: aprovado ? 'Aprovado' : 'Rejeitado',
-                            aprovador: interaction.user.tag,
-                            data: new Date().toISOString(),
-                        });
                     } catch (error) {
-                        console.error('❌ Erro ao extrair ou salvar dados:', error);
+                        console.error(`❌ Erro ao adicionar cargo:`, error);
                     }
-                } else {
-                    console.error('❌ Não foi possível extrair o ID do usuário do embed.');
                 }
+                
+                // Notificar o usuário
+                try {
+                    const user = await client.users.fetch(userId);
+                    await user.send(`Sua solicitação de whitelist foi ${aprovado ? 'aprovada' : 'rejeitada'}! ${aprovado ? '🎉' : '😢'}`);
+                } catch (error) {
+                    console.error(`❌ Não foi possível enviar DM ao usuário:`, error);
+                }
+                
+                // Confirmar para o moderador
+                await interaction.editReply({
+                    content: `Whitelist ${aprovado ? 'aprovada' : 'rejeitada'} com sucesso!`,
+                    ephemeral: true
+                });
+                
             } catch (error) {
                 console.error('❌ Erro ao processar aprovação/rejeição:', error);
-                try {
-                    if (interaction.deferred) {
-                        await interaction.editReply({ 
-                            content: '❌ Ocorreu um erro ao processar esta ação.', 
-                            ephemeral: true 
-                        });
-                    } else {
-                        await interaction.reply({ 
-                            content: '❌ Ocorreu um erro ao processar esta ação.', 
-                            ephemeral: true 
-                        });
-                    }
-                } catch (err) {
-                    console.error('❌ Erro ao responder após falha:', err);
+                if (interaction.deferred) {
+                    await interaction.editReply({
+                        content: 'Ocorreu um erro ao processar esta ação.',
+                        ephemeral: true
+                    });
+                } else {
+                    await interaction.reply({
+                        content: 'Ocorreu um erro ao processar esta ação.',
+                        ephemeral: true
+                    });
                 }
             }
+        } else {
+            // Novo sistema - Tratado no evento interactionCreate do bot.js
+            await interaction.deferUpdate();
         }
+    },
+
+    async handleModalRejection(interaction, client) {
+        // Esta função é mantida apenas para compatibilidade com o sistema antigo
+        await interaction.reply({
+            content: 'O sistema de whitelist foi atualizado.',
+            ephemeral: true
+        });
     }
 };

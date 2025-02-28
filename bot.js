@@ -3,6 +3,10 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
+// Importar o servidor de whitelist
+const WhitelistServer = require('./modules/whitelist-server');
+let whitelistServer = null;
+
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -20,6 +24,28 @@ client.commands = new Collection();
 
 // Módulo de filtro de chat
 let chatFilter;
+
+// Carregar logger
+const logger = require('./modules/logger');
+
+// Função para inicializar o servidor de whitelist
+async function initWhitelistServer() {
+    try {
+        if (!whitelistServer) {
+            console.log('🌐 Iniciando servidor de whitelist...');
+            whitelistServer = new WhitelistServer(client);
+            await whitelistServer.start();
+            console.log(`✅ Servidor de whitelist iniciado na porta ${whitelistServer.options.port}`);
+            
+            // Disponibilizar globalmente
+            global.whitelistServer = whitelistServer;
+            return whitelistServer;
+        }
+    } catch (error) {
+        console.error('❌ Erro ao iniciar servidor de whitelist:', error);
+        return null;
+    }
+}
 
 // Carregando comandos
 const commandsPath = path.join(__dirname, 'commands');
@@ -115,9 +141,11 @@ async function registerCommands() {
 }
 
 // Evento quando o bot estiver pronto
-client.once('ready', () => {
+client.once('ready', async () => {
     console.log(`✅ Bot está online como ${client.user.tag}`);
-    registerCommands();
+    
+    // Registrar comandos
+    await registerCommands();
     
     // Verificar diretório de banco de dados
     const dbPath = path.join(__dirname, 'database');
@@ -125,6 +153,9 @@ client.once('ready', () => {
         fs.mkdirSync(dbPath, { recursive: true });
         console.log('📁 Diretório de banco de dados criado');
     }
+    
+    // Iniciar servidor de whitelist
+    await initWhitelistServer();
 });
 
 // Evento de mensagem (para o filtro de chat)
@@ -135,6 +166,17 @@ client.on('messageCreate', async (message) => {
             await chatFilter.handleMessage(message, client);
         } catch (error) {
             console.error('❌ Erro ao processar filtro de chat:', error);
+            // Registrar o erro no sistema de logs
+            try {
+                await logger.logError(message.guild, 'filtro-chat', error, {
+                    userId: message.author.id,
+                    messageId: message.id,
+                    channelId: message.channel.id,
+                    content: message.content
+                });
+            } catch (logError) {
+                console.error('❌ Erro ao registrar erro de filtro:', logError);
+            }
         }
     }
 });
@@ -167,6 +209,17 @@ client.on('interactionCreate', async (interaction) => {
                 await command.execute(interaction, client);
             } catch (error) {
                 console.error(`❌ Erro executando o comando ${interaction.commandName}:`, error);
+                
+                // Registrar o erro no sistema de logs
+                try {
+                    await logger.logError(interaction.guild, `comando-${interaction.commandName}`, error, {
+                        userId: interaction.user.id,
+                        channelId: interaction.channelId
+                    });
+                } catch (logError) {
+                    console.error('❌ Erro ao registrar erro de comando:', logError);
+                }
+                
                 if (!interaction.replied && !interaction.deferred) {
                     await interaction.reply({ 
                         content: 'Ocorreu um erro ao executar este comando.', 
@@ -227,6 +280,65 @@ client.on('interactionCreate', async (interaction) => {
                     await interaction.reply({ content: 'Erro ao processar esta ação.', ephemeral: true });
                 }
             }
+            // Botões específicos para whitelist web server
+            else if (customId.startsWith('wl_approve_') || customId.startsWith('wl_reject_')) {
+                try {
+                    // Obter o ID do formulário da whitelist
+                    const formId = customId.split('_')[2];
+                    
+                    // Verificar se o servidor de whitelist está ativo
+                    if (!whitelistServer && !global.whitelistServer) {
+                        await interaction.reply({ 
+                            content: 'O servidor de whitelist não está ativo.', 
+                            ephemeral: true 
+                        });
+                        return;
+                    }
+                    
+                    // Garantir referência ao servidor web
+                    if (!whitelistServer) {
+                        whitelistServer = global.whitelistServer;
+                    }
+                    
+                    // Atualizar status no servidor de whitelist
+                    const status = customId.startsWith('wl_approve_') ? 'aprovado' : 'rejeitado';
+                    
+                    // Gerar e mostrar um modal para feedback se for rejeição
+                    if (status === 'rejeitado') {
+                        // Lógica para mostrar modal de feedback seria aqui
+                        await interaction.deferUpdate();
+                        // O restante seria tratado no evento de submissão do modal
+                    } else {
+                        await interaction.deferUpdate();
+                        
+                        // Obter formulário e atualizar
+                        const forms = whitelistServer.db.forms;
+                        if (forms[formId]) {
+                            forms[formId].status = status;
+                            forms[formId].reviewedBy = interaction.user.username;
+                            forms[formId].reviewedAt = new Date().toISOString();
+                            forms[formId].updatedAt = new Date().toISOString();
+                            
+                            // Salvar alterações
+                            whitelistServer.saveForms();
+                            
+                            // Notificar usuário
+                            await whitelistServer.notifyUser(forms[formId], status, '');
+                            
+                            // Atualizar a mensagem original
+                            await interaction.message.edit({
+                                components: []
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Erro ao processar botão de whitelist web:', error);
+                    await interaction.reply({ 
+                        content: 'Erro ao processar esta ação.', 
+                        ephemeral: true 
+                    });
+                }
+            }
         }
         
         // Modais
@@ -274,9 +386,82 @@ client.on('interactionCreate', async (interaction) => {
                     await interaction.reply({ content: 'Erro ao processar esta ação.', ephemeral: true });
                 }
             }
+            // Modal para feedback de rejeição da whitelist web
+            else if (customId.startsWith('wl_reject_reason_')) {
+                try {
+                    const formId = customId.split('_')[3];
+                    const feedback = interaction.fields.getTextInputValue('rejection_reason');
+                    
+                    // Verificar se o servidor de whitelist está ativo
+                    if (!whitelistServer && !global.whitelistServer) {
+                        await interaction.reply({ 
+                            content: 'O servidor de whitelist não está ativo.', 
+                            ephemeral: true 
+                        });
+                        return;
+                    }
+                    
+                    // Garantir referência ao servidor web
+                    if (!whitelistServer) {
+                        whitelistServer = global.whitelistServer;
+                    }
+                    
+                    // Obter formulário e atualizar
+                    const forms = whitelistServer.db.forms;
+                    if (forms[formId]) {
+                        forms[formId].status = 'rejeitado';
+                        forms[formId].feedback = feedback;
+                        forms[formId].reviewedBy = interaction.user.username;
+                        forms[formId].reviewedAt = new Date().toISOString();
+                        forms[formId].updatedAt = new Date().toISOString();
+                        
+                        // Salvar alterações
+                        whitelistServer.saveForms();
+                        
+                        // Notificar usuário
+                        await whitelistServer.notifyUser(forms[formId], 'rejeitado', feedback);
+                        
+                        // Confirmar para o moderador
+                        await interaction.reply({ 
+                            content: `Whitelist rejeitada para <@${forms[formId].userId}> com feedback.`, 
+                            ephemeral: true 
+                        });
+                        
+                        // Atualizar a mensagem original
+                        await interaction.message.edit({
+                            components: []
+                        });
+                    } else {
+                        await interaction.reply({ 
+                            content: 'Formulário não encontrado.', 
+                            ephemeral: true 
+                        });
+                    }
+                } catch (error) {
+                    console.error('❌ Erro ao processar modal de rejeição:', error);
+                    await interaction.reply({ 
+                        content: 'Erro ao processar o feedback de rejeição.', 
+                        ephemeral: true 
+                    });
+                }
+            }
         }
     } catch (error) {
         console.error('❌ Erro geral na interação:', error);
+        
+        // Registrar o erro no sistema de logs
+        try {
+            if (interaction.guild) {
+                await logger.logError(interaction.guild, 'interacao', error, {
+                    userId: interaction.user?.id,
+                    type: interaction.type,
+                    commandName: interaction.commandName
+                });
+            }
+        } catch (logError) {
+            console.error('❌ Erro ao registrar erro de interação:', logError);
+        }
+        
         try {
             if (!interaction.replied && !interaction.deferred) {
                 await interaction.reply({ content: 'Ocorreu um erro ao processar esta interação.', ephemeral: true });
@@ -292,6 +477,19 @@ client.on('interactionCreate', async (interaction) => {
 // Tratamento de erros não capturados
 process.on('unhandledRejection', error => {
     console.error('Unhandled promise rejection:', error);
+});
+
+// Adicionar tratamento para encerrar o servidor web ao desconectar
+process.on('SIGINT', async () => {
+    console.log('🛑 Encerrando aplicação...');
+    
+    if (whitelistServer) {
+        console.log('🌐 Parando servidor de whitelist...');
+        await whitelistServer.stop();
+    }
+    
+    console.log('👋 Bot desconectado.');
+    process.exit(0);
 });
 
 client.login(token);
