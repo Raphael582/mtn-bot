@@ -12,7 +12,7 @@ const logger = require('./logger');
 
 // Configuração
 const CONFIG = {
-    port: process.env.WHITELIST_PORT || 3000,
+    port: process.env.WHITELIST_PORT || 5000,
     jwtSecret: process.env.JWT_SECRET || uuidv4(), // Gerar segredo único ao iniciar
     adminPassword: process.env.ADMIN_PASSWORD || 'admin123', // Senha para painel admin
     sessionDuration: '24h', // Duração do token de sessão
