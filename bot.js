@@ -31,18 +31,46 @@ const logger = require('./modules/logger');
 // Função para inicializar o servidor de whitelist
 async function initWhitelistServer() {
     try {
+        console.log('🔍 Verificando se o servidor whitelist já existe...');
         if (!whitelistServer) {
             console.log('🌐 Iniciando servidor de whitelist...');
-            whitelistServer = new WhitelistServer(client);
-            await whitelistServer.start();
-            console.log(`✅ Servidor de whitelist iniciado na porta ${whitelistServer.options.port}`);
             
-            // Disponibilizar globalmente
-            global.whitelistServer = whitelistServer;
+            console.log('📂 Verificando módulo WhitelistServer...');
+            const WhitelistServerPath = path.join(__dirname, 'modules', 'whitelist-server.js');
+            console.log(`📄 Caminho do módulo: ${WhitelistServerPath}`);
+            console.log(`📄 Módulo existe: ${fs.existsSync(WhitelistServerPath)}`);
+            
+            try {
+                console.log('🔄 Importando módulo WhitelistServer...');
+                const WhitelistServerModule = require('./modules/whitelist-server');
+                console.log('✅ Módulo importado com sucesso');
+                
+                console.log('🏗️ Criando instância do servidor...');
+                whitelistServer = new WhitelistServerModule(client);
+                console.log('✅ Instância criada com sucesso');
+                
+                console.log('🔧 Verificando opções do servidor...');
+                console.log(JSON.stringify(whitelistServer.options, null, 2));
+                
+                console.log('🚀 Iniciando servidor...');
+                await whitelistServer.start();
+                console.log(`✅ Servidor de whitelist iniciado na porta ${whitelistServer.options.port}`);
+                
+                // Disponibilizar globalmente
+                global.whitelistServer = whitelistServer;
+                return whitelistServer;
+            } catch (initError) {
+                console.error('❌ Erro durante inicialização:', initError);
+                console.error(initError.stack);
+                return null;
+            }
+        } else {
+            console.log('⚠️ Servidor whitelist já está iniciado');
             return whitelistServer;
         }
     } catch (error) {
-        console.error('❌ Erro ao iniciar servidor de whitelist:', error);
+        console.error('❌ Erro ao iniciar servidor whitelist:', error);
+        console.error(error.stack);
         return null;
     }
 }
@@ -319,11 +347,37 @@ process.on('SIGINT', async () => {
 });
 
 // Inicie o servidor whitelist alternativo
-try {
-    require('./new-whitelist-server');
-    console.log('✅ Servidor whitelist alternativo iniciado');
-} catch (error) {
-    console.error('❌ Erro ao iniciar servidor whitelist alternativo:', error);
+// Verifique se o arquivo new-whitelist-server.js existe antes de tentar carregar
+const newWhitelistServerPath = path.join(__dirname, 'new-whitelist-server.js');
+if (fs.existsSync(newWhitelistServerPath)) {
+    try {
+        console.log('🔄 Carregando servidor whitelist alternativo...');
+        require('./new-whitelist-server');
+        console.log('✅ Servidor whitelist alternativo iniciado');
+    } catch (error) {
+        console.error('❌ Erro ao iniciar servidor whitelist alternativo:', error);
+        console.error(error.stack);
+    }
+} else {
+    console.log('⚠️ Arquivo new-whitelist-server.js não encontrado');
+    
+    // Criar um servidor express simples como fallback
+    try {
+        console.log('🔄 Criando servidor Express simples como fallback...');
+        const express = require('express');
+        const app = express();
+        const PORT = 3000;
+        
+        app.get('/', (req, res) => {
+            res.send('<h1>Servidor Whitelist Metânia</h1><p>Versão simplificada em manutenção.</p>');
+        });
+        
+        app.listen(PORT, () => {
+            console.log(`✅ Servidor fallback iniciado na porta ${PORT}`);
+        });
+    } catch (fallbackError) {
+        console.error('❌ Erro ao criar servidor fallback:', fallbackError);
+    }
 }
 
 client.login(token);
