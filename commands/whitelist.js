@@ -57,7 +57,7 @@ module.exports = {
                 });
             }
 
-            // URL direta para o sistema web
+            // URL direta para o sistema web - usando a URL base sem o caminho de autenticação
             const whitelistUrl = `http://56.124.64.115/`;
 
             // Criar embed com o link
@@ -66,8 +66,8 @@ module.exports = {
                 .setTitle('📝 Sistema de Whitelist Metânia')
                 .setDescription(`Olá ${interaction.user.username}! Clique no botão abaixo para acessar o formulário de whitelist.`)
                 .addFields(
-                    { name: '📋 Instruções', value: '1. Clique no botão para acessar o sistema\n2. Crie uma conta no sistema\n3. Preencha todas as informações corretamente\n4. Envie o formulário e aguarde a aprovação' },
-                    { name: '💡 Dica', value: 'Você pode informar seu ID do Discord para receber notificações quando sua whitelist for aprovada. Seu ID é: **' + interaction.user.id + '**' }
+                    { name: '📋 Instruções', value: '1. Clique no botão para acessar o sistema\n2. Crie uma conta no site\n3. Preencha todas as informações corretamente\n4. Envie o formulário e aguarde a aprovação' },
+                    { name: '💡 Dica', value: 'Você pode informar seu ID do Discord ao se cadastrar para receber notificações quando sua whitelist for aprovada. Seu ID é: **' + interaction.user.id + '**' }
                 )
                 .setImage('https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67c93051&is=67c7ded1&hm=a337ccc36d99cb5360371bfa81955bc8b14ddb78ed722cec120421d3460a8d34&=&format=webp&width=651&height=663')
                 .setFooter({ text: 'Desenvolvido para Metânia por Mr.Dark' })
