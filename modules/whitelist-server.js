@@ -21,7 +21,7 @@ const CONFIG = {
     discord: {
         clientId: process.env.DISCORD_CLIENT_ID,
         clientSecret: process.env.DISCORD_CLIENT_SECRET,
-        redirectUri: process.env.DISCORD_REDIRECT_URI || `http://localhost:3000/auth/discord/callback`,
+        redirectUri: process.env.DISCORD_REDIRECT_URI || `http://56.124.64.115:3000/auth/discord/callback`,
         scope: ['identify', 'email']
     },
     formFields: [
@@ -778,7 +778,7 @@ class WhitelistServer {
                 type: 2, // BUTTON
                 style: 5, // LINK
                 label: 'Abrir no Painel',
-                url: `http://localhost:${this.options.port}/admin/forms/${form.id}`
+                url: `http://56.124.64.115:${this.options.port}/admin/forms/${form.id}`
             };
             
             const actionRow = {
@@ -905,7 +905,7 @@ class WhitelistServer {
             const expiry = new Date(link.expiresAt);
             
             if (now < expiry) {
-                return `http://localhost:${this.options.port}/whitelist/${token}`;
+                return `http://56.124.64.115:${this.options.port}/whitelist/${token}`;
             }
             
             // Se expirado, remove
@@ -938,7 +938,7 @@ class WhitelistServer {
             expiresAt: expiresAt.toISOString()
         };
         
-        return `http://localhost:${this.options.port}/whitelist/${token}`;
+        return `http://56.124.64.115:${this.options.port}/whitelist/${token}`;
     }
     
     // Inicia o servidor HTTP

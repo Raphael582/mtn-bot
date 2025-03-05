@@ -58,7 +58,7 @@ module.exports = {
             }
 
             // Gerar URL direta para o sistema web
-            const whitelistUrl = `http://localhost:${whitelistServer.options.port}/auth/discord?returnUrl=/`;
+            const whitelistUrl = `http://56.124.64.115:${whitelistServer.options.port}/auth/discord?returnUrl=/`;
 
             // Criar embed com o link
             const embed = new EmbedBuilder()
