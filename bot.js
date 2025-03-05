@@ -219,19 +219,23 @@ client.on('interactionCreate', async (interaction) => {
         else if (interaction.isButton()) {
             const customId = interaction.customId;
             
-            if (customId === 'start_whitelist') {
+            if (customId === 'start_whitelist' || customId === 'open_whitelist_modal') {
                 const whitelistCommand = client.commands.get('whitelist');
-                if (whitelistCommand) {
+                if (whitelistCommand && whitelistCommand.handleButton) {
                     await whitelistCommand.handleButton(interaction, client);
                 }
             } 
-            else if (customId.startsWith('approve_whitelist') || customId.startsWith('reject_whitelist')) {
-                // Tentativa com managewhitelist primeiro
-                const manageWhitelist = client.commands.get('wlnew');
-                if (manageWhitelist && manageWhitelist.handleButtonApproval) {
-                    await manageWhitelist.handleButtonApproval(interaction, client);
+            else if (customId.startsWith('approve_whitelist_') || 
+                    customId.startsWith('reject_whitelist_')) {
+                // Usar o manipulador de aprovação/rejeição do whitelist
+                const whitelistCommand = client.commands.get('whitelist');
+                if (whitelistCommand && whitelistCommand.handleApprovalButtons) {
+                    await whitelistCommand.handleApprovalButtons(interaction, client);
+                } else if (client.commands.get('wlnew') && client.commands.get('wlnew').handleButtonApproval) {
+                    // Fallback para o comando wlnew se whitelist não tiver o manipulador
+                    await client.commands.get('wlnew').handleButtonApproval(interaction, client);
                 } else {
-                    console.error('❌ Método handleButtonApproval não encontrado');
+                    console.error('❌ Manipuladores de aprovação não encontrados');
                     await interaction.reply({ 
                         content: 'Função de aprovação/rejeição não configurada.', 
                         ephemeral: true 
@@ -244,7 +248,12 @@ client.on('interactionCreate', async (interaction) => {
         else if (interaction.isModalSubmit()) {
             const customId = interaction.customId;
             
-            if (customId === 'whitelist_modal_new') {
+            if (customId === 'whitelist_modal') {
+                const whitelistCommand = client.commands.get('whitelist');
+                if (whitelistCommand && whitelistCommand.handleModal) {
+                    await whitelistCommand.handleModal(interaction, client);
+                }
+            } else if (customId === 'whitelist_modal_new') {
                 const wlnewCommand = client.commands.get('wlnew');
                 if (wlnewCommand && wlnewCommand.handleModal) {
                     await wlnewCommand.handleModal(interaction, client);
@@ -308,38 +317,13 @@ process.on('SIGINT', async () => {
     console.log('👋 Bot desconectado.');
     process.exit(0);
 });
-// Inicializar servidor whitelist
-async function initializeServices() {
-    console.log('🔍 Verificando diretório do módulo whitelist-server...');
-    const whitelistServerPath = path.join(__dirname, 'modules', 'whitelist-server.js');
-    
-    try {
-        if (fs.existsSync(whitelistServerPath)) {
-            console.log('✅ Módulo whitelist-server encontrado!');
-            console.log('🚀 Iniciando servidor whitelist...');
-            
-            const WhitelistServer = require('./modules/whitelist-server');
-            const whitelistServer = new WhitelistServer(client);
-            
-            await whitelistServer.start();
-            console.log(`✅ Servidor whitelist iniciado na porta ${whitelistServer.options.port || 3000}`);
-            global.whitelistServer = whitelistServer;
-        } else {
-            console.error('❌ Módulo whitelist-server não encontrado em:', whitelistServerPath);
-        }
-    } catch (error) {
-        console.error('❌ Erro ao inicializar servidor whitelist:', error);
-    }
+
+// Inicie o servidor whitelist alternativo
+try {
+    require('./new-whitelist-server');
+    console.log('✅ Servidor whitelist alternativo iniciado');
+} catch (error) {
+    console.error('❌ Erro ao iniciar servidor whitelist alternativo:', error);
 }
 
-// Adicionar ao evento ready
-client.once('ready', async () => {
-    console.log(`✅ Bot está online como ${client.user.tag}`);
-    
-    // Registrar comandos
-    await registerCommands();
-    
-    // Inicializar serviços (incluindo whitelist-server)
-    await initializeServices();
-});
 client.login(token);
