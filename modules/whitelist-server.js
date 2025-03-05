@@ -534,14 +534,25 @@ class WhitelistServer {
     setupDiscordAuth() {
         // Rota para iniciar autenticação com Discord
         this.app.get('/auth/discord', (req, res) => {
+            console.log("[AUTH] Iniciando autenticação Discord");
             const state = uuidv4();
             const discordAuthUrl = new URL('https://discord.com/api/oauth2/authorize');
+            
+            // Log das configurações de Discord antes de montar a URL
+            console.log("[AUTH] Config do Discord:", JSON.stringify({
+                clientId: this.options.discord.clientId,
+                redirectUri: this.options.discord.redirectUri,
+                scope: this.options.discord.scope
+            }));
             
             discordAuthUrl.searchParams.append('client_id', this.options.discord.clientId);
             discordAuthUrl.searchParams.append('redirect_uri', this.options.discord.redirectUri);
             discordAuthUrl.searchParams.append('response_type', 'code');
             discordAuthUrl.searchParams.append('scope', this.options.discord.scope.join(' '));
             discordAuthUrl.searchParams.append('state', state);
+            
+            // Log da URL final
+            console.log("[AUTH] URL de redirecionamento Discord completa:", discordAuthUrl.toString());
             
             // Armazenar o estado para verificar depois
             this.db.authStates = this.db.authStates || {};
@@ -555,21 +566,49 @@ class WhitelistServer {
         
         // Callback da autenticação com Discord
         this.app.get('/auth/discord/callback', async (req, res) => {
-            const { code, state } = req.query;
+            console.log("[AUTH] Recebido callback do Discord", {
+                code: req.query.code ? "Presente" : "Ausente", 
+                state: req.query.state,
+                error: req.query.error
+            });
+            
+            const { code, state, error } = req.query;
             
             // Verificar o estado para prevenir CSRF
             if (!state || !this.db.authStates[state]) {
+                console.log("[AUTH] Erro: Estado inválido ou ausente");
                 return res.redirect('/?error=invalid_state');
             }
             
             const returnUrl = this.db.authStates[state].returnUrl;
             delete this.db.authStates[state];
             
+            if (error) {
+                console.log("[AUTH] Erro retornado pelo Discord:", error);
+                return res.redirect(`/?error=${error}`);
+            }
+            
             if (!code) {
+                console.log("[AUTH] Erro: Nenhum código recebido");
                 return res.redirect('/?error=no_code');
             }
             
             try {
+                console.log("[AUTH] Trocando código por token de acesso");
+                
+                // Log dos parâmetros da requisição token
+                const tokenParams = {
+                    client_id: this.options.discord.clientId,
+                    client_secret: "******", // oculto por segurança
+                    grant_type: 'authorization_code',
+                    code: code,
+                    redirect_uri: this.options.discord.redirectUri
+                };
+                console.log("[AUTH] Parâmetros da requisição token:", JSON.stringify({
+                    ...tokenParams,
+                    client_secret: "[OCULTO]"
+                }));
+                
                 // Trocar o código por um token de acesso
                 const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
                     method: 'POST',
@@ -587,13 +626,15 @@ class WhitelistServer {
                 
                 if (!tokenResponse.ok) {
                     const errorText = await tokenResponse.text();
-                    console.error('Erro na resposta do token Discord:', errorText);
+                    console.error('[AUTH] Erro na resposta do token Discord:', errorText);
                     return res.redirect('/?error=token_exchange');
                 }
                 
                 const tokenData = await tokenResponse.json();
+                console.log("[AUTH] Token obtido com sucesso");
                 
                 // Obter informações do usuário
+                console.log("[AUTH] Obtendo informações do usuário");
                 const userResponse = await fetch('https://discord.com/api/users/@me', {
                     headers: {
                         Authorization: `Bearer ${tokenData.access_token}`
@@ -601,17 +642,20 @@ class WhitelistServer {
                 });
                 
                 if (!userResponse.ok) {
+                    console.log("[AUTH] Erro ao obter informações do usuário:", await userResponse.text());
                     return res.redirect('/?error=user_info');
                 }
                 
                 const userData = await userResponse.json();
+                console.log("[AUTH] Informações do usuário obtidas:", 
+                    JSON.stringify({id: userData.id, username: userData.username}));
                 
                 // Gerar JWT para o usuário
                 const token = jwt.sign(
                     { 
                         id: userData.id,
                         username: userData.username,
-                        discordTag: `${userData.username}#${userData.discriminator}`,
+                        discordTag: `${userData.username}#${userData.discriminator || '0'}`,
                         avatar: userData.avatar,
                         email: userData.email,
                         guildId: this.client.guilds.cache.first()?.id
@@ -621,10 +665,11 @@ class WhitelistServer {
                 );
                 
                 // Redirecionar para a página de origem com o token
+                console.log("[AUTH] Redirecionando para:", `${returnUrl}?token=${token.substring(0, 10)}...`);
                 return res.redirect(`${returnUrl}?token=${token}`);
                 
             } catch (error) {
-                console.error('Erro na autenticação Discord:', error);
+                console.error('[AUTH] Erro na autenticação Discord:', error);
                 return res.redirect('/?error=auth_error');
             }
         });
@@ -778,7 +823,7 @@ class WhitelistServer {
                 type: 2, // BUTTON
                 style: 5, // LINK
                 label: 'Abrir no Painel',
-                url: `http://56.124.64.115:${this.options.port}/admin/forms/${form.id}`
+                url: `http://56.124.64.115/admin/forms/${form.id}`
             };
             
             const actionRow = {
@@ -905,7 +950,7 @@ class WhitelistServer {
             const expiry = new Date(link.expiresAt);
             
             if (now < expiry) {
-                return `http://56.124.64.115:${this.options.port}/whitelist/${token}`;
+                return `http://56.124.64.115/whitelist/${token}`;
             }
             
             // Se expirado, remove
@@ -938,7 +983,7 @@ class WhitelistServer {
             expiresAt: expiresAt.toISOString()
         };
         
-        return `http://56.124.64.115:${this.options.port}/whitelist/${token}`;
+        return `http://56.124.64.115/whitelist/${token}`;
     }
     
     // Inicia o servidor HTTP
