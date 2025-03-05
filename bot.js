@@ -308,5 +308,38 @@ process.on('SIGINT', async () => {
     console.log('👋 Bot desconectado.');
     process.exit(0);
 });
+// Inicializar servidor whitelist
+async function initializeServices() {
+    console.log('🔍 Verificando diretório do módulo whitelist-server...');
+    const whitelistServerPath = path.join(__dirname, 'modules', 'whitelist-server.js');
+    
+    try {
+        if (fs.existsSync(whitelistServerPath)) {
+            console.log('✅ Módulo whitelist-server encontrado!');
+            console.log('🚀 Iniciando servidor whitelist...');
+            
+            const WhitelistServer = require('./modules/whitelist-server');
+            const whitelistServer = new WhitelistServer(client);
+            
+            await whitelistServer.start();
+            console.log(`✅ Servidor whitelist iniciado na porta ${whitelistServer.options.port || 3000}`);
+            global.whitelistServer = whitelistServer;
+        } else {
+            console.error('❌ Módulo whitelist-server não encontrado em:', whitelistServerPath);
+        }
+    } catch (error) {
+        console.error('❌ Erro ao inicializar servidor whitelist:', error);
+    }
+}
 
+// Adicionar ao evento ready
+client.once('ready', async () => {
+    console.log(`✅ Bot está online como ${client.user.tag}`);
+    
+    // Registrar comandos
+    await registerCommands();
+    
+    // Inicializar serviços (incluindo whitelist-server)
+    await initializeServices();
+});
 client.login(token);

@@ -1,4 +1,3 @@
-// Versão corrigida do commands/nuke.js
 const { SlashCommandBuilder, PermissionsBitField, EmbedBuilder, ChannelType } = require('discord.js');
 
 module.exports = {
@@ -16,30 +15,41 @@ module.exports = {
         const channel = interaction.channel;
 
         try {
-            await interaction.deferReply({ ephemeral: true });
+            // Informar que o processo começou
+            await interaction.reply({ content: 'Iniciando processo de limpeza do canal...', ephemeral: true });
 
+            // Clonar o canal e reposicioná-lo
             const position = channel.position;
             const newChannel = await channel.clone();
             await channel.delete();
+            await newChannel.setPosition(position);
 
-            newChannel.setPosition(position);
-            await newChannel.send('🔥 Canal limpo com sucesso! 🔥');
-
+            // Enviar mensagem no novo canal
             const embedLogNuke = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle('🔥 Canal NUKADO! 🔥')
-                .setDescription(`O canal <#${newChannel.id}> foi limpo por ${interaction.user.tag} (ID: ${interaction.user.id}).`)
+                .setDescription(`O canal foi limpo por ${interaction.user.tag} (ID: ${interaction.user.id}).`)
                 .addFields(
-                    { name: '👮‍♂️ Mod Responsável', value: `${interaction.user.tag} (ID: ${interaction.user.id})`, inline: true },
-                    { name: '💥 Canal Nukado', value: `<#${newChannel.id}>`, inline: true }
+                    { name: '👮‍♂️ Mod Responsável', value: `${interaction.user.tag} (ID: ${interaction.user.id})`, inline: true }
                 )
                 .setTimestamp();
 
-            await newChannel.send({ embeds: [embedLogNuke] });
-            await interaction.editReply({ content: 'Canal limpo com sucesso! 🔥', ephemeral: true });
+            await newChannel.send({ content: '🔥 Canal limpo com sucesso! 🔥', embeds: [embedLogNuke] });
+            
+            // Não precisamos atualizar a resposta inicial, pois o canal foi excluído
         } catch (error) {
             console.error("❌ Erro ao nukar o canal:", error);
-            await interaction.editReply({ content: '❌ Falha ao limpar o canal.', ephemeral: true });
+            
+            // Em caso de erro, tente responder de uma forma que não dependa da interação original
+            try {
+                if (interaction.replied || interaction.deferred) {
+                    await interaction.followUp({ content: '❌ Falha ao limpar o canal.', ephemeral: true }).catch(e => {});
+                } else {
+                    await interaction.reply({ content: '❌ Falha ao limpar o canal.', ephemeral: true }).catch(e => {});
+                }
+            } catch (e) {
+                console.error("Não foi possível responder à interação:", e);
+            }
         }
     }
 };
