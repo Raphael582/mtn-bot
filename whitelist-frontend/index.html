@@ -3,21 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Whitelist</title>
+    <title>Sistema de Whitelist - Metânia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
+                        metania: {
+                            500: '#0f1122',
+                            600: '#0a0c17',
+                            700: '#06080e'
+                        },
                         discord: {
                             500: '#5865F2',
                             600: '#4752C4',
                             700: '#3C45A5'
                         },
                         dark: {
-                            800: '#2C2F33',
-                            900: '#23272A'
+                            800: '#1e2039',
+                            900: '#0f1122'
                         }
                     }
                 }
@@ -29,7 +34,8 @@
         
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #f3f4f6;
+            background-color: #0f1122;
+            color: #e2e8f0;
         }
         
         .loader {
@@ -43,52 +49,52 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-dark-900 min-h-screen text-gray-100">
     <!-- Container principal -->
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <!-- Cabeçalho -->
         <header class="mb-8 text-center">
             <div class="flex justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 127.14 96.36" class="fill-discord-500">
-                    <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
-                </svg>
+                <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67c93051&is=67c7ded1&hm=a337ccc36d99cb5360371bfa81955bc8b14ddb78ed722cec120421d3460a8d34&=&format=webp&width=651&height=663" 
+                     alt="Logo Metânia" 
+                     class="w-24 h-24 rounded-full mb-2">
             </div>
-            <h1 class="text-4xl font-bold text-gray-800 flex items-center justify-center gap-2">
-                Sistema de Whitelist
-                <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full uppercase font-semibold tracking-wider">Oficial</span>
+            <h1 class="text-4xl font-bold text-white flex items-center justify-center gap-2">
+                Metânia Whitelist
+                <span class="bg-discord-500 text-white text-xs px-2 py-1 rounded-full uppercase font-semibold tracking-wider">Oficial</span>
             </h1>
-            <p class="text-gray-600 mt-2">Preencha o formulário abaixo para solicitar acesso ao servidor</p>
+            <p class="text-gray-400 mt-2">Preencha o formulário abaixo para solicitar acesso ao servidor</p>
         </header>
 
         <!-- Área principal (alternar entre telas) -->
         <main>
             <!-- Tela de validação de link (inicial) -->
-            <div id="loading-screen" class="bg-white rounded-lg shadow-md p-8 mb-8">
+            <div id="loading-screen" class="bg-dark-800 rounded-lg shadow-md p-8 mb-8">
                 <div class="flex flex-col items-center justify-center py-6">
-                    <div class="loader w-16 h-16 border-4 border-gray-200 rounded-full mb-4"></div>
-                    <h2 class="text-xl font-semibold text-gray-700 mb-2">Validando seu link...</h2>
-                    <p class="text-gray-600 text-center">Por favor, aguarde enquanto verificamos seu link de whitelist.</p>
+                    <div class="loader w-16 h-16 border-4 border-gray-600 rounded-full mb-4"></div>
+                    <h2 class="text-xl font-semibold text-gray-100 mb-2">Validando seu link...</h2>
+                    <p class="text-gray-400 text-center">Por favor, aguarde enquanto verificamos seu link de whitelist.</p>
                 </div>
             </div>
 
             <!-- Tela de link inválido -->
-            <div id="invalid-link-screen" class="hidden bg-white rounded-lg shadow-md p-8 mb-8">
+            <div id="invalid-link-screen" class="hidden bg-dark-800 rounded-lg shadow-md p-8 mb-8">
                 <div class="flex flex-col items-center justify-center py-6">
-                    <div class="bg-red-100 p-3 rounded-full mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="bg-red-900 p-3 rounded-full mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <h2 class="text-xl font-semibold text-gray-700 mb-2">Link Inválido ou Expirado</h2>
-                    <p class="text-gray-600 text-center mb-6">O link que você está tentando acessar é inválido ou expirou.</p>
-                    <p class="text-gray-600 text-center">Por favor, retorne ao Discord e use o comando <span class="font-mono bg-gray-100 px-2 py-1 rounded">/whitelist</span> para gerar um novo link.</p>
+                    <h2 class="text-xl font-semibold text-gray-100 mb-2">Link Inválido ou Expirado</h2>
+                    <p class="text-gray-400 text-center mb-6">O link que você está tentando acessar é inválido ou expirou.</p>
+                    <p class="text-gray-400 text-center">Por favor, retorne ao Discord e use o comando <span class="font-mono bg-gray-800 px-2 py-1 rounded">/whitelist</span> para gerar um novo link.</p>
                 </div>
             </div>
 
             <!-- Formulário de whitelist -->
             <div id="form-screen" class="hidden">
-                <div class="bg-white rounded-lg shadow-md p-8 mb-8">
-                    <h2 class="text-2xl font-semibold text-gray-800 mb-6">Formulário de Whitelist</h2>
+                <div class="bg-dark-800 rounded-lg shadow-md p-8 mb-8">
+                    <h2 class="text-2xl font-semibold text-gray-100 mb-6">Formulário de Whitelist</h2>
                     
                     <form id="whitelist-form" class="space-y-6">
                         <!-- Campos do formulário serão injetados aqui dinamicamente via JavaScript -->
@@ -97,8 +103,8 @@
                         </div>
                         
                         <!-- Botões -->
-                        <div class="flex justify-end space-x-4 pt-4 border-t border-gray-100">
-                            <button type="button" id="reset-button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
+                        <div class="flex justify-end space-x-4 pt-4 border-t border-gray-700">
+                            <button type="button" id="reset-button" class="px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 transition">
                                 Limpar
                             </button>
                             <button type="submit" id="submit-button" class="px-6 py-2 bg-discord-500 text-white rounded hover:bg-discord-600 transition flex items-center">
@@ -113,15 +119,15 @@
                 </div>
                 
                 <!-- Informações adicionais -->
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                <div class="bg-blue-900 border-l-4 border-blue-500 p-4 rounded">
                     <div class="flex">
                         <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <svg class="h-5 w-5 text-blue-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm text-blue-700">
+                            <p class="text-sm text-blue-200">
                                 Todas as informações fornecidas serão revisadas pela equipe de administração. Preencha com sinceridade e aguarde a aprovação.
                             </p>
                         </div>
@@ -130,19 +136,216 @@
             </div>
 
             <!-- Tela de processamento do envio -->
-            <div id="submitting-screen" class="hidden bg-white rounded-lg shadow-md p-8 mb-8">
+            <div id="submitting-screen" class="hidden bg-dark-800 rounded-lg shadow-md p-8 mb-8">
                 <div class="flex flex-col items-center justify-center py-6">
-                    <div class="loader w-16 h-16 border-4 border-gray-200 rounded-full mb-4"></div>
-                    <h2 class="text-xl font-semibold text-gray-700 mb-2">Enviando formulário...</h2>
-                    <p class="text-gray-600 text-center">Por favor, aguarde enquanto processamos sua solicitação.</p>
+                    <div class="loader w-16 h-16 border-4 border-gray-600 rounded-full mb-4"></div>
+                    <h2 class="text-xl font-semibold text-gray-100 mb-2">Enviando formulário...</h2>
+                    <p class="text-gray-400 text-center">Por favor, aguarde enquanto processamos sua solicitação.</p>
                 </div>
             </div>
 
             <!-- Tela de sucesso -->
-            <div id="success-screen" class="hidden bg-white rounded-lg shadow-md p-8 mb-8">
+            <div id="success-screen" class="hidden bg-dark-800 rounded-lg shadow-md p-8 mb-8">
                 <div class="flex flex-col items-center justify-center py-6">
-                    <div class="bg-green-100 p-3 rounded-full mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="bg-green-900 p-3 rounded-full mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-semibold text-gray-100 mb-2">Formulário Enviado com Sucesso!</h2>
+                    <p class="text-gray-400 text-center mb-6">Sua solicitação de whitelist foi recebida e está em análise.</p>
+                    <p class="text-gray-400 text-center">Você receberá uma notificação no Discord quando sua solicitação for aprovada ou rejeitada.</p>
+                </div>
+            </div>
+
+            <!-- Tela de erro -->
+            <div id="error-screen" class="hidden bg-dark-800 rounded-lg shadow-md p-8 mb-8">
+                <div class="flex flex-col items-center justify-center py-6">
+                    <div class="bg-red-900 p-3 rounded-full mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-semibold text-gray-100 mb-2">Erro ao Enviar Formulário</h2>
+                    <p id="error-message" class="text-gray-400 text-center mb-6">Ocorreu um erro ao processar sua solicitação.</p>
+                    <button id="retry-button" class="px-6 py-2 bg-discord-500 text-white rounded hover:bg-discord-600 transition">
+                        Tentar Novamente
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Rodapé -->
+        <footer class="text-center text-gray-500 text-sm mt-8">
+            <p>&copy; 2025 Metânia - Sistema de Whitelist</p>
+            <p class="mt-1">Desenvolvido para Metânia por Mr.Dark</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Extrair token da URL
+            const pathParts = window.location.pathname.split('/');
+            const token = pathParts[pathParts.length - 1];
+            
+            // Elementos de interface
+            const screens = {
+                loading: document.getElementById('loading-screen'),
+                invalidLink: document.getElementById('invalid-link-screen'),
+                form: document.getElementById('form-screen'),
+                submitting: document.getElementById('submitting-screen'),
+                success: document.getElementById('success-screen'),
+                error: document.getElementById('error-screen')
+            };
+            
+            const formElement = document.getElementById('whitelist-form');
+            const formFields = document.getElementById('form-fields');
+            const resetButton = document.getElementById('reset-button');
+            const submitButton = document.getElementById('submit-button');
+            const retryButton = document.getElementById('retry-button');
+            const errorMessage = document.getElementById('error-message');
+            
+            // Função para mostrar uma tela específica
+            function showScreen(screenName) {
+                Object.keys(screens).forEach(key => {
+                    screens[key].classList.add('hidden');
+                });
+                screens[screenName].classList.remove('hidden');
+            }
+            
+            // Inicialmente mostra a tela de carregamento
+            showScreen('loading');
+            
+            try {
+                // 1. Validar o token
+                const response = await fetch(`/api/validate-link/${token}`);
+                const data = await response.json();
+                
+                if (!response.ok || !data.valid) {
+                    showScreen('invalidLink');
+                    return;
+                }
+                
+                // 2. Token válido, carregar configuração do formulário
+                const configResponse = await fetch('/api/config');
+                const config = await configResponse.json();
+                
+                // 3. Construir o formulário dinamicamente
+                if (config.formFields && config.formFields.length > 0) {
+                    config.formFields.forEach(field => {
+                        const fieldContainer = document.createElement('div');
+                        
+                        // Label
+                        const label = document.createElement('label');
+                        label.setAttribute('for', field.id);
+                        label.className = 'block text-sm font-medium text-gray-300 mb-1';
+                        label.textContent = field.label + (field.required ? ' *' : '');
+                        
+                        // Input ou Textarea
+                        let input;
+                        if (field.type === 'textarea') {
+                            input = document.createElement('textarea');
+                            input.className = 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-discord-500 focus:border-discord-500';
+                            input.rows = 4;
+                        } else {
+                            input = document.createElement('input');
+                            input.type = field.type || 'text';
+                            input.className = 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-discord-500 focus:border-discord-500';
+                        }
+                        
+                        // Atributos comuns
+                        input.id = field.id;
+                        input.name = field.id;
+                        if (field.required) input.required = true;
+                        if (field.placeholder) input.placeholder = field.placeholder;
+                        if (field.min !== undefined) input.min = field.min;
+                        if (field.max !== undefined) input.max = field.max;
+                        
+                        // Mensagem de validação
+                        const validationMessage = document.createElement('p');
+                        validationMessage.className = 'mt-1 text-sm text-red-400 hidden';
+                        validationMessage.id = `${field.id}-error`;
+                        
+                        // Adicionar todos os elementos ao container
+                        fieldContainer.appendChild(label);
+                        fieldContainer.appendChild(input);
+                        fieldContainer.appendChild(validationMessage);
+                        
+                        // Adicionar o container ao formulário
+                        formFields.appendChild(fieldContainer);
+                    });
+                } else {
+                    throw new Error('Configuração do formulário não disponível');
+                }
+                
+                // 4. Mostrar o formulário
+                showScreen('form');
+                
+                // 5. Configurar eventos do formulário
+                formElement.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    // Validar o formulário (validação básica do HTML)
+                    if (!formElement.checkValidity()) {
+                        formElement.reportValidity();
+                        return;
+                    }
+                    
+                    // Coletar dados do formulário
+                    const formData = {};
+                    config.formFields.forEach(field => {
+                        const inputElement = document.getElementById(field.id);
+                        formData[field.id] = inputElement.value;
+                    });
+                    
+                    // Mostrar tela de envio
+                    showScreen('submitting');
+                    
+                    try {
+                        // Enviar dados
+                        const submitResponse = await fetch(`/api/submit/${token}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(formData)
+                        });
+                        
+                        const submitResult = await submitResponse.json();
+                        
+                        if (!submitResponse.ok) {
+                            throw new Error(submitResult.error || 'Erro ao enviar formulário');
+                        }
+                        
+                        // Mostrar tela de sucesso
+                        showScreen('success');
+                    } catch (error) {
+                        // Mostrar tela de erro
+                        errorMessage.textContent = error.message || 'Ocorreu um erro ao processar sua solicitação.';
+                        showScreen('error');
+                    }
+                });
+                
+                // Botão de limpar formulário
+                resetButton.addEventListener('click', () => {
+                    formElement.reset();
+                });
+                
+                // Botão de tentar novamente
+                retryButton.addEventListener('click', () => {
+                    showScreen('form');
+                });
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                errorMessage.textContent = error.message || 'Ocorreu um erro ao processar sua solicitação.';
+                showScreen('error');
+            }
+        });
+    </script>
+</body>
+</html> class="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
                     </div>

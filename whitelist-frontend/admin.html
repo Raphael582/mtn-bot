@@ -1,1181 +1,2377 @@
-<!DOCTYPE html>
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+</svg>
+Atualizar
+</button>
+</div>
+
+<div class="overflow-x-auto">
+<table class="min-w-full divide-y divide-gray-700">
+<thead class="bg-dark-900">
+    <tr>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            Admin
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            Ação
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            Data/Hora
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            IP
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            Detalhes
+        </th>
+    </tr>
+</thead>
+<tbody class="bg-dark-800 divide-y divide-gray-700" id="activity-logs-table">
+    <tr>
+        <td colspan="5" class="px-6 py-4">
+            <div class="loader mx-auto w-8 h-8 border-4 border-gray-700 rounded-full"></div>
+        </td>
+    </tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+// Auth Token management
+const TOKEN_KEY = 'admin_auth_token';
+let authToken = localStorage.getItem(TOKEN_KEY);
+let currentFormId = null;
+
+// Show Login or Dashboard based on auth status
+function checkAuth() {
+const loginScreen = document.getElementById('login-screen');
+const dashboard = document.getElementById('admin-dashboard');
+
+if (authToken) {
+loginScreen.classList.add('hidden');
+dashboard.classList.remove('hidden');
+loadDashboard();
+} else {
+loginScreen.classList.remove('hidden');
+dashboard.classList.add('hidden');
+}
+}
+
+// Handle login form submission
+const loginForm = document.getElementById('login-form');
+loginForm.addEventListener('submit', async (e) => {
+e.preventDefault();
+
+const username = document.getElementById('username').value;
+const password = document.getElementById('password').value;
+const loginError = document.getElementById('login-error');
+const loginErrorMessage = document.getElementById('login-error-message');
+
+try {
+const response = await fetch('/api/admin/login', {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json'
+},
+body: JSON.stringify({ username, password })
+});
+
+const data = await response.json();
+
+if (!response.ok) {
+loginError.classList.remove('hidden');
+loginErrorMessage.textContent = data.error || 'Credenciais inválidas';
+return;
+}
+
+// Store token and user info
+authToken = data.token;
+localStorage.setItem(TOKEN_KEY, authToken);
+
+// Update UI
+document.getElementById('admin-username').textContent = data.user.username;
+loginForm.reset();
+loginError.classList.add('hidden');
+
+// Show dashboard
+checkAuth();
+
+} catch (error) {
+console.error('Error during login:', error);
+loginError.classList.remove('hidden');
+loginErrorMessage.textContent = 'Erro ao tentar realizar login. Tente novamente.';
+}
+});
+
+// Handle logout
+document.getElementById('logout-button').addEventListener('click', () => {
+localStorage.removeItem(TOKEN_KEY);
+authToken = null;
+checkAuth();
+});
+
+// Toggle sidebar on mobile
+document.getElementById('sidebar-toggle').addEventListener('click', () => {
+const sidebar = document.getElementById('sidebar');
+sidebar.classList.toggle('collapsed');
+});
+
+// Navigation
+const sidebarLinks = document.querySelectorAll('.sidebar-link');
+const viewContents = document.querySelectorAll('.view-content');
+
+sidebarLinks.forEach(link => {
+link.addEventListener('click', (e) => {
+e.preventDefault();
+
+// Update active link
+sidebarLinks.forEach(l => {
+l.classList.remove('active-sidebar-link');
+l.classList.add('text-gray-300', 'hover:bg-dark-900');
+});
+
+e.currentTarget.classList.add('active-sidebar-link');
+e.currentTarget.classList.remove('text-gray-300', 'hover:bg-dark-900');
+
+// Show selected view
+const viewName = e.currentTarget.getAttribute('data-view');
+viewContents.forEach(view => {
+view.classList.add('hidden');
+});
+
+const targetView = document.getElementById(`${viewName}-view`);
+targetView.classList.remove('hidden');
+
+// Load content based on view
+if (viewName === 'forms') {
+loadForms();
+} else if (viewName === 'bot-settings') {
+loadBotSettings();
+} else if (viewName === 'activity-logs') {
+loadActivityLogs();
+} else if (viewName === 'dashboard') {
+loadDashboard();
+}
+});
+});
+
+// Dashboard functions
+async function loadDashboard() {
+try {
+const response = await fetch('/api/admin/dashboard', {
+headers: {
+'Authorization': `Bearer ${authToken}`
+}
+});
+
+if (!response.ok) {
+if (response.status === 401) {
+// Unauthorized - token expired
+localStorage.removeItem(TOKEN_KEY);
+authToken = null;
+checkAuth();
+return;
+}
+throw new Error('Erro ao carregar dashboard');
+}
+
+const data = await response.json();
+
+// Update statistics
+document.getElementById('stats-total').textContent = data.countByStatus.total;
+document.getElementById('stats-pending').textContent = data.countByStatus.pendente;
+document.getElementById('stats-approved').textContent = data.countByStatus.aprovado;
+document.getElementById('stats-rejected').textContent = data.countByStatus.rejeitado;
+
+// Update bot status cards
+const botStatusContainer = document.getElementById('bot-status-cards');
+botStatusContainer.innerHTML = '';
+
+// Add status cards
+const addStatusCard = (title, enabled) => {
+const card = document.createElement('div');
+card.className = 'p-4 border rounded-lg';
+card.classList.add(enabled ? 'border-green-800 bg-green-900' : 'border-red-800 bg-red-900');
+
+const statusHtml = `
+<div class="flex items-center">
+<div class="flex-shrink-0 h-10 w-10 rounded-full ${enabled ? 'bg-green-800' : 'bg-red-800'} flex items-center justify-center">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ${enabled ? 'text-green-300' : 'text-red-300'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        ${enabled ? 
+            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />' : 
+            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />'}
+    </svg>
+</div>
+<div class="ml-4">
+    <h3 class="text-lg font-medium ${enabled ? 'text-green-300' : 'text-red-300'}">${title}</h3>
+    <p class="text-sm ${enabled ? 'text-green-400' : 'text-red-400'}">${enabled ? 'Ativo' : 'Inativo'}</p>
+</div>
+</div>
+`;
+
+card.innerHTML = statusHtml;
+botStatusContainer.appendChild(card);
+};
+
+// Add bot status cards
+addStatusCard('Sistema de Whitelist', data.botSettings?.whitelistSystem?.enabled);
+addStatusCard('Filtro de Chat', data.botSettings?.chatFilter?.enabled);
+addStatusCard('Moderação Automática', data.botSettings?.autoModeration?.enabled);
+
+// Update recent activity
+const activityTable = document.getElementById('recent-activity-table');
+activityTable.innerHTML = '';
+
+if (data.recentActivity && data.recentActivity.length > 0) {
+data.recentActivity.forEach(activity => {
+const row = document.createElement('tr');
+
+const formatAction = (action) => {
+if (action.startsWith('formulario_aprovado')) return 'Aprovou whitelist';
+if (action.startsWith('formulario_rejeitado')) return 'Rejeitou whitelist';
+if (action === 'login') return 'Login no painel';
+if (action === 'atualizar_config_bot') return 'Atualizou configurações';
+return action;
+};
+
+// Format details
+let details = '-';
+if (log.details) {
+if (log.details.formId) {
+    details = `Form ID: ${log.details.formId}`;
+    if (log.details.userId) {
+        details += `<br/>User: ${log.details.userId}`;
+    }
+}
+}
+
+row.innerHTML = `
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${log.username}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${formatAction(log.action)}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${new Date(log.timestamp).toLocaleString()}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${log.details?.ip || '-'}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${details}</td>
+`;
+
+logsTable.appendChild(row);
+});
+} else {
+logsTable.innerHTML = `
+<tr>
+<td colspan="5" class="px-6 py-4 text-center text-sm text-gray-400">
+    Nenhum log de atividade encontrado
+</td>
+</tr>
+`;
+}
+
+} catch (error) {
+console.error('Error loading activity logs:', error);
+}
+}
+
+// Refresh logs button
+document.getElementById('refresh-logs').addEventListener('click', loadActivityLogs);
+
+// Initial check
+checkAuth();
+});
+</script>
+</body>
+</html>
+if (action.startsWith('formulario_aprovado')) return 'Aprovou whitelist';
+if (action.startsWith('formulario_rejeitado')) return 'Rejeitou whitelist';
+if (action === 'login') return 'Login no painel';
+if (action === 'atualizar_config_bot') return 'Atualizou configurações';
+return action;
+};
+
+row.innerHTML = `
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${activity.username}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${formatAction(activity.action)}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${new Date(activity.timestamp).toLocaleString()}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${activity.details.ip || '-'}</td>
+`;
+
+activityTable.appendChild(row);
+});
+} else {
+activityTable.innerHTML = `
+<tr>
+<td colspan="4" class="px-6 py-4 text-center text-sm text-gray-400">
+    Nenhuma atividade recente
+</td>
+</tr>
+`;
+}
+
+} catch (error) {
+console.error('Error loading dashboard:', error);
+}
+}
+
+// Forms functions
+async function loadForms() {
+try {
+const statusFilter = document.getElementById('status-filter').value;
+
+const response = await fetch('/api/admin/forms', {
+headers: {
+'Authorization': `Bearer ${authToken}`
+}
+});
+
+if (!response.ok) {
+if (response.status === 401) {
+// Unauthorized - token expired
+localStorage.removeItem(TOKEN_KEY);
+authToken = null;
+checkAuth();
+return;
+}
+throw new Error('Erro ao carregar formulários');
+}
+
+const forms = await response.json();
+
+// Filter forms by status
+const filteredForms = statusFilter === 'all' 
+? forms 
+: forms.filter(form => form.status === statusFilter);
+
+// Update forms table
+const formsTable = document.getElementById('forms-table');
+formsTable.innerHTML = '';
+
+if (filteredForms.length > 0) {
+filteredForms.forEach(form => {
+const row = document.createElement('tr');
+
+const statusBadge = getStatusBadge(form.status);
+
+row.innerHTML = `
+<td class="px-6 py-4 whitespace-nowrap">
+    <div class="flex items-center">
+        <div class="text-sm font-medium text-gray-200">${form.username}</div>
+        <div class="text-sm text-gray-400 ml-1">(${form.userId})</div>
+    </div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+    <div class="text-sm text-gray-200">${new Date(form.createdAt).toLocaleDateString()}</div>
+    <div class="text-sm text-gray-400">${new Date(form.createdAt).toLocaleTimeString()}</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+    ${statusBadge}
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+    ${form.clientIp || '-'}
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+    <button data-form-id="${form.id}" class="view-form-btn text-discord-500 hover:text-discord-300">
+        Ver Detalhes
+    </button>
+</td>
+`;
+
+formsTable.appendChild(row);
+});
+
+// Add event listeners to view buttons
+document.querySelectorAll('.view-form-btn').forEach(btn => {
+btn.addEventListener('click', () => {
+const formId = btn.getAttribute('data-form-id');
+openFormDetail(formId);
+});
+});
+} else {
+formsTable.innerHTML = `
+<tr>
+<td colspan="5" class="px-6 py-4 text-center text-sm text-gray-400">
+    Nenhum formulário encontrado
+</td>
+</tr>
+`;
+}
+} catch (error) {
+console.error('Error loading forms:', error);
+}
+}
+
+// Helper function to generate status badges
+function getStatusBadge(status) {
+let badgeClass = '';
+let badgeText = '';
+
+switch(status) {
+case 'pendente':
+badgeClass = 'bg-yellow-900 text-yellow-300';
+badgeText = 'Pendente';
+break;
+case 'aprovado':
+badgeClass = 'bg-green-900 text-green-300';
+badgeText = 'Aprovado';
+break;
+case 'rejeitado':
+badgeClass = 'bg-red-900 text-red-300';
+badgeText = 'Rejeitado';
+break;
+default:
+badgeClass = 'bg-gray-900 text-gray-300';
+badgeText = status;
+}
+
+return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeClass}">${badgeText}</span>`;
+}
+
+// Form detail functions
+async function openFormDetail(formId) {
+try {
+currentFormId = formId;
+
+const response = await fetch(`/api/admin/forms/${formId}`, {
+headers: {
+'Authorization': `Bearer ${authToken}`
+}
+});
+
+if (!response.ok) {
+throw new Error('Erro ao carregar detalhes do formulário');
+}
+
+const form = await response.json();
+
+// Update form detail content
+const contentElement = document.getElementById('form-detail-content');
+
+// Format form data
+let formFieldsHtml = '';
+for (const [key, value] of Object.entries(form.data)) {
+formFieldsHtml += `
+<div class="mb-4">
+<h4 class="text-sm font-medium text-gray-400">${key.charAt(0).toUpperCase() + key.slice(1)}</h4>
+<p class="mt-1 text-gray-200">${value}</p>
+</div>
+`;
+}
+
+const statusBadge = getStatusBadge(form.status);
+
+contentElement.innerHTML = `
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+<div>
+<h3 class="text-sm font-medium text-gray-400">Usuário</h3>
+<p class="mt-1 text-gray-200">${form.username} (${form.userId})</p>
+</div>
+<div>
+<h3 class="text-sm font-medium text-gray-400">Data de Envio</h3>
+<p class="mt-1 text-gray-200">${new Date(form.createdAt).toLocaleString()}</p>
+</div>
+<div>
+<h3 class="text-sm font-medium text-gray-400">Status</h3>
+<p class="mt-1">${statusBadge}</p>
+</div>
+<div>
+<h3 class="text-sm font-medium text-gray-400">IP do Cliente</h3>
+<p class="mt-1 text-gray-200">${form.clientIp || '-'}</p>
+</div>
+</div>
+
+<h3 class="text-lg font-medium text-white mb-4">Dados do Formulário</h3>
+<div class="bg-dark-900 p-4 rounded-lg">
+${formFieldsHtml}
+</div>
+`;
+
+// Show/hide approval actions based on status
+const approvalActions = document.getElementById('form-approval-actions');
+if (form.status === 'pendente') {
+approvalActions.classList.remove('hidden');
+} else {
+approvalActions.classList.add('hidden');
+}
+
+// Show modal
+document.getElementById('form-detail-modal').classList.remove('hidden');
+
+} catch (error) {
+console.error('Error opening form detail:', error);
+alert('Erro ao carregar detalhes do formulário');
+}
+}
+
+// Close form detail modal
+document.getElementById('close-form-modal').addEventListener('click', () => {
+document.getElementById('form-detail-modal').classList.add('hidden');
+document.getElementById('feedback').value = '';
+currentFormId = null;
+});
+
+// Approve form
+document.getElementById('approve-form-btn').addEventListener('click', async () => {
+if (!currentFormId) return;
+
+const feedback = document.getElementById('feedback').value;
+
+try {
+const response = await fetch(`/api/admin/forms/${currentFormId}/review`, {
+method: 'POST',
+headers: {
+'Authorization': `Bearer ${authToken}`,
+'Content-Type': 'application/json'
+},
+body: JSON.stringify({
+status: 'aprovado',
+feedback
+})
+});
+
+if (!response.ok) {
+throw new Error('Erro ao aprovar formulário');
+}
+
+// Close modal and reload forms
+document.getElementById('form-detail-modal').classList.add('hidden');
+document.getElementById('feedback').value = '';
+loadForms();
+
+} catch (error) {
+console.error('Error approving form:', error);
+alert('Erro ao aprovar formulário');
+}
+});
+
+// Reject form
+document.getElementById('reject-form-btn').addEventListener('click', async () => {
+if (!currentFormId) return;
+
+const feedback = document.getElementById('feedback').value;
+
+if (!feedback) {
+alert('Por favor, forneça um feedback para a rejeição');
+return;
+}
+
+try {
+const response = await fetch(`/api/admin/forms/${currentFormId}/review`, {
+method: 'POST',
+headers: {
+'Authorization': `Bearer ${authToken}`,
+'Content-Type': 'application/json'
+},
+body: JSON.stringify({
+status: 'rejeitado',
+feedback
+})
+});
+
+if (!response.ok) {
+throw new Error('Erro ao rejeitar formulário');
+}
+
+// Close modal and reload forms
+document.getElementById('form-detail-modal').classList.add('hidden');
+document.getElementById('feedback').value = '';
+loadForms();
+
+} catch (error) {
+console.error('Error rejecting form:', error);
+alert('Erro ao rejeitar formulário');
+}
+});
+
+// Status filter change
+document.getElementById('status-filter').addEventListener('change', loadForms);
+
+// Refresh forms button
+document.getElementById('refresh-forms').addEventListener('click', loadForms);
+
+// Bot Settings functions
+async function loadBotSettings() {
+try {
+const response = await fetch('/api/admin/bot-settings', {
+headers: {
+'Authorization': `Bearer ${authToken}`
+}
+});
+
+if (!response.ok) {
+if (response.status === 401) {
+localStorage.removeItem(TOKEN_KEY);
+authToken = null;
+checkAuth();
+return;
+}
+throw new Error('Erro ao carregar configurações do bot');
+}
+
+const settings = await response.json();
+
+// Update whitelist settings form
+const whitelistForm = document.getElementById('whitelist-settings-form');
+whitelistForm.innerHTML = `
+<div class="flex items-center justify-between">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="whitelist-enabled" class="h-4 w-4 text-discord-500 rounded border-gray-600 bg-gray-700 focus:ring-discord-500" ${settings.whitelistSystem?.enabled ? 'checked' : ''}>
+    <span class="ml-2 text-gray-300">Sistema de Whitelist Ativo</span>
+</label>
+</div>
+</div>
+
+<div class="flex items-center justify-between mt-4">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="whitelist-approval" class="h-4 w-4 text-discord-500 rounded border-gray-600 bg-gray-700 focus:ring-discord-500" ${settings.whitelistSystem?.requireApproval ? 'checked' : ''}>
+    <span class="ml-2 text-gray-300">Requer Aprovação Manual</span>
+</label>
+</div>
+</div>
+`;
+
+// Update chat filter settings form
+const chatFilterForm = document.getElementById('chatfilter-settings-form');
+chatFilterForm.innerHTML = `
+<div class="flex items-center justify-between">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="chatfilter-enabled" class="h-4 w-4 text-discord-500 rounded border-gray-600 bg-gray-700 focus:ring-discord-500" ${settings.chatFilter?.enabled ? 'checked' : ''}>
+    <span class="ml-2 text-gray-300">Filtro de Chat Ativo</span>
+</label>
+</div>
+</div>
+
+<div class="flex items-center justify-between mt-4">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="chatfilter-notify" class="h-4 w-4 text-discord-500 rounded border-gray-600 bg-gray-700 focus:ring-discord-500" ${settings.chatFilter?.notifyUser ? 'checked' : ''}>
+    <span class="ml-2 text-gray-300">Notificar Usuários</span>
+</label>
+</div>
+</div>
+
+<div class="flex items-center justify-between mt-4">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="chatfilter-delete" class="h-4 w-4 text-discord-500 rounded border-gray-600 bg-gray-700 focus:ring-discord-500" ${settings.chatFilter?.deleteMessage ? 'checked' : ''}>
+    <span class="ml-2 text-gray-300">Excluir Mensagens Filtradas</span>
+</label>
+</div>
+</div>
+`;
+
+// Update auto moderation settings form
+const autoModForm = document.getElementById('automod-settings-form');
+autoModForm.innerHTML = `
+<div class="flex items-center justify-between">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="automod-enabled" class="h-4 w-4 text-discord-500 rounded border-gray-600 bg-gray-700 focus:ring-discord-500" ${settings.autoModeration?.enabled ? 'checked' : ''}>
+    <span class="ml-2 text-gray-300">Moderação Automática Ativa</span>
+</label>
+</div>
+</div>
+
+<div class="flex items-center justify-between mt-4">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="automod-punish" class="h-4 w-4 text-discord-500 rounded border-gray-600 bg-gray-700 focus:ring-discord-500" ${settings.autoModeration?.applySanctions ? 'checked' : ''}>
+    <span class="ml-2 text-gray-300">Aplicar Punições Automáticas</span>
+</label>
+</div>
+</div>
+`;
+
+} catch (error) {
+console.error('Error loading bot settings:', error);
+}
+}
+
+// Save bot settings
+document.getElementById('save-bot-settings').addEventListener('click', async () => {
+try {
+// Collect settings from forms
+const settings = {
+whitelistSystem: {
+enabled: document.getElementById('whitelist-enabled').checked,
+requireApproval: document.getElementById('whitelist-approval').checked
+},
+chatFilter: {
+enabled: document.getElementById('chatfilter-enabled').checked,
+notifyUser: document.getElementById('chatfilter-notify').checked,
+deleteMessage: document.getElementById('chatfilter-delete').checked
+},
+autoModeration: {
+enabled: document.getElementById('automod-enabled').checked,
+applySanctions: document.getElementById('automod-punish').checked
+}
+};
+
+const response = await fetch('/api/admin/bot-settings', {
+method: 'POST',
+headers: {
+'Authorization': `Bearer ${authToken}`,
+'Content-Type': 'application/json'
+},
+body: JSON.stringify({ settings })
+});
+
+if (!response.ok) {
+throw new Error('Erro ao salvar configurações');
+}
+
+alert('Configurações salvas com sucesso!');
+
+} catch (error) {
+console.error('Error saving settings:', error);
+alert('Erro ao salvar configurações');
+}
+});
+
+// Activity Logs functions
+async function loadActivityLogs() {
+try {
+const response = await fetch('/api/admin/activity-logs', {
+headers: {
+'Authorization': `Bearer ${authToken}`
+}
+});
+
+if (!response.ok) {
+if (response.status === 401) {
+localStorage.removeItem(TOKEN_KEY);
+authToken = null;
+checkAuth();
+return;
+}
+throw new Error('Erro ao carregar logs de atividade');
+}
+
+const logs = await response.json();
+
+// Update activity logs table
+const logsTable = document.getElementById('activity-logs-table');
+logsTable.innerHTML = '';
+
+if (logs.length > 0) {
+logs.forEach(log => {
+const row = document.createElement('tr');
+
+const formatAction = (action) => {<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Administrativo - Sistema de Whitelist</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        discord: {
-                            500: '#5865F2',
-                            600: '#4752C4',
-                            700: '#3C45A5'
-                        },
-                        dark: {
-                            800: '#2C2F33',
-                            900: '#23272A'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f3f4f6;
-        }
-        
-        .loader {
-            border-top-color: #5865F2;
-            animation: spinner 0.6s linear infinite;
-        }
-        
-        @keyframes spinner {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Administrativo - Metânia</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+theme: {
+extend: {
+colors: {
+metania: {
+500: '#0f1122',
+600: '#0a0c17',
+700: '#06080e'
+},
+discord: {
+500: '#5865F2',
+600: '#4752C4',
+700: '#3C45A5'
+},
+dark: {
+800: '#1e2039',
+900: '#0f1122'
+}
+}
+}
+}
+}
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
-        .sidebar {
-            min-width: 250px;
-            transition: all 0.3s;
-        }
+body {
+font-family: 'Poppins', sans-serif;
+background-color: #0f1122;
+color: #e2e8f0;
+}
 
-        @media (max-width: 768px) {
-            .sidebar.collapsed {
-                margin-left: -250px;
-            }
-        }
+.loader {
+border-top-color: #5865F2;
+animation: spinner 0.6s linear infinite;
+}
 
-        .whitelist-table tbody tr:hover {
-            background-color: #f9fafb;
-        }
-    </style>
+@keyframes spinner {
+0% { transform: rotate(0deg); }
+100% { transform: rotate(360deg); }
+}
+
+.sidebar {
+min-width: 250px;
+transition: all 0.3s;
+}
+
+@media (max-width: 768px) {
+.sidebar.collapsed {
+margin-left: -250px;
+}
+}
+
+.whitelist-table tbody tr:hover {
+background-color: #1e2039;
+}
+
+.active-sidebar-link {
+background-color: #0f1122;
+color: white;
+}
+</style>
+</head>
+<body class="bg-dark-900 text-gray-100">
+<!-- Login Screen -->
+<div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+<div class="max-w-md w-full bg-dark-800 rounded-lg shadow-md p-8">
+<div class="text-center mb-8">
+<img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67c93051&is=67c7ded1&hm=a337ccc36d99cb5360371bfa81955bc8b14ddb78ed722cec120421d3460a8d34&=&format=webp&width=651&height=663" 
+alt="Logo Metânia" 
+class="w-24 h-24 rounded-full mx-auto mb-4">
+<h1 class="text-2xl font-semibold text-white">Metânia Admin Panel</h1>
+<p class="text-gray-400">Faça login para acessar o painel</p>
+</div>
+
+<form id="login-form" class="space-y-4">
+<div id="login-error" class="bg-red-900 border-l-4 border-red-500 p-4 hidden">
+<div class="flex">
+<div class="flex-shrink-0">
+<svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+</svg>
+</div>
+<div class="ml-3">
+<p class="text-sm text-red-300" id="login-error-message">
+Credenciais inválidas. Tente novamente.
+</p>
+</div>
+</div>
+</div>
+<div>
+<label for="username" class="block text-sm font-medium text-gray-300">Usuário</label>
+<input type="text" id="username" name="username" required
+class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-discord-500 focus:border-discord-500">
+</div>
+<div>
+<label for="password" class="block text-sm font-medium text-gray-300">Senha</label>
+<input type="password" id="password" name="password" required
+class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-discord-500 focus:border-discord-500">
+</div>
+<div>
+<button type="submit" 
+class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
+Entrar
+</button>
+</div>
+</form>
+</div>
+</div>
+
+<!-- Main Admin Dashboard -->
+<div id="admin-dashboard" class="hidden min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<nav class="bg-dark-800 shadow-sm">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex justify-between items-center h-16">
+<div class="flex items-center">
+<button id="sidebar-toggle" class="md:hidden text-gray-400 hover:text-white focus:outline-none">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+</svg>
+</button>
+<div class="flex-shrink-0 flex items-center ml-2 md:ml-0">
+<img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67c93051&is=67c7ded1&hm=a337ccc36d99cb5360371bfa81955bc8b14ddb78ed722cec120421d3460a8d34&=&format=webp&width=651&height=663" 
+ alt="Logo Metânia" 
+ class="w-8 h-8 rounded-full mr-2">
+<span class="text-lg font-semibold text-white">Metânia Admin</span>
+</div>
+</div>
+<div class="flex items-center">
+<div class="hidden md:block">
+<span id="admin-username" class="text-gray-300 mr-4">Admin</span>
+</div>
+<button id="logout-button" class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
+Sair
+</button>
+</div>
+</div>
+</div>
+</nav>
+
+<!-- Page Content Container -->
+<div class="flex-grow flex overflow-hidden">
+<!-- Sidebar -->
+<aside id="sidebar" class="bg-dark-800 text-white sidebar md:flex flex-col w-64">
+<nav class="mt-5 px-2 space-y-1">
+<a href="#" data-view="dashboard" class="sidebar-link active-sidebar-link group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+<svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+</svg>
+Dashboard
+</a>
+
+<a href="#" data-view="forms" class="sidebar-link text-gray-300 hover:bg-dark-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+<svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+</svg>
+Formulários
+</a>
+
+<a href="#" data-view="bot-settings" class="sidebar-link text-gray-300 hover:bg-dark-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+<svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+</svg>
+Configurações do Bot
+</a>
+
+<a href="#" data-view="activity-logs" class="sidebar-link text-gray-300 hover:bg-dark-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+<svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+</svg>
+Logs de Atividade
+</a>
+</nav>
+
+<div class="mt-auto p-4 text-xs text-gray-400">
+<p>Desenvolvido para Metânia por</p>
+<p class="font-semibold">Mr.Dark</p>
+</div>
+</aside>
+
+<!-- Main content area -->
+<div id="content-area" class="flex-1 overflow-auto bg-dark-900 p-4">
+<!-- Dashboard View -->
+<div id="dashboard-view" class="view-content space-y-6">
+<h1 class="text-2xl font-semibold text-white">Dashboard</h1>
+
+<!-- Overview Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-dark-800 overflow-hidden shadow rounded-lg">
+<div class="px-4 py-5 sm:p-6">
+<dt class="text-sm font-medium text-gray-400 truncate">
+    Total de Solicitações
+</dt>
+<dd class="mt-1 text-3xl font-semibold text-white" id="stats-total">
+    <div class="loader w-8 h-8 border-4 border-gray-700 rounded-full"></div>
+</dd>
+</div>
+</div>
+
+<div class="bg-dark-800 overflow-hidden shadow rounded-lg">
+<div class="px-4 py-5 sm:p-6">
+<dt class="text-sm font-medium text-gray-400 truncate">
+    Pendentes
+</dt>
+<dd class="mt-1 text-3xl font-semibold text-yellow-400" id="stats-pending">
+    <div class="loader w-8 h-8 border-4 border-gray-700 rounded-full"></div>
+</dd>
+</div>
+</div>
+
+<div class="bg-dark-800 overflow-hidden shadow rounded-lg">
+<div class="px-4 py-5 sm:p-6">
+<dt class="text-sm font-medium text-gray-400 truncate">
+    Aprovados
+</dt>
+<dd class="mt-1 text-3xl font-semibold text-green-400" id="stats-approved">
+    <div class="loader w-8 h-8 border-4 border-gray-700 rounded-full"></div>
+</dd>
+</div>
+</div>
+
+<div class="bg-dark-800 overflow-hidden shadow rounded-lg">
+<div class="px-4 py-5 sm:p-6">
+<dt class="text-sm font-medium text-gray-400 truncate">
+    Rejeitados
+</dt>
+<dd class="mt-1 text-3xl font-semibold text-red-400" id="stats-rejected">
+    <div class="loader w-8 h-8 border-4 border-gray-700 rounded-full"></div>
+</dd>
+</div>
+</div>
+</div>
+
+<!-- Bot Status -->
+<div class="bg-dark-800 shadow rounded-lg p-4">
+<h2 class="text-lg font-semibold text-white mb-4">Status do Bot</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="bot-status-cards">
+<div class="loader w-8 h-8 border-4 border-gray-700 rounded-full"></div>
+</div>
+</div>
+
+<!-- Recent Activity -->
+<div class="bg-dark-800 shadow rounded-lg p-4">
+<h2 class="text-lg font-semibold text-white mb-4">Atividade Recente</h2>
+<div class="overflow-x-auto">
+<table class="min-w-full divide-y divide-gray-700">
+<thead class="bg-dark-900">
+    <tr>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            Admin
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            Ação
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            Data/Hora
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            IP
+        </th>
+    </tr>
+</thead>
+<tbody class="bg-dark-800 divide-y divide-gray-700" id="recent-activity-table">
+    <tr>
+        <td colspan="4" class="px-6 py-4">
+            <div class="loader mx-auto w-8 h-8 border-4 border-gray-700 rounded-full"></div>
+        </td>
+    </tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<!-- Forms View -->
+<div id="forms-view" class="view-content hidden space-y-6">
+<div class="flex justify-between items-center">
+<h1 class="text-2xl font-semibold text-white">Formulários de Whitelist</h1>
+<div class="flex space-x-2">
+<select id="status-filter" class="border border-gray-600 bg-gray-700 text-white rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-discord-500 focus:border-discord-500 text-sm">
+<option value="all">Todos os Status</option>
+<option value="pendente">Pendentes</option>
+<option value="aprovado">Aprovados</option>
+<option value="rejeitado">Rejeitados</option>
+</select>
+<button id="refresh-forms" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+</svg>
+Atualizar
+</button>
+</div>
+</div>
+
+<div class="overflow-x-auto bg-dark-800 shadow rounded-lg">
+<table class="min-w-full divide-y divide-gray-700 whitelist-table">
+<thead class="bg-dark-900">
+<tr>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+        Usuário
+    </th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+        Data
+    </th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+        Status
+    </th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+        IP
+    </th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+        Ações
+    </th>
+</tr>
+</thead>
+<tbody class="bg-dark-800 divide-y divide-gray-700" id="forms-table">
+<tr>
+    <td colspan="5" class="px-6 py-4">
+        <div class="loader mx-auto w-8 h-8 border-4 border-gray-700 rounded-full"></div>
+    </td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Form Detail Modal -->
+<div id="form-detail-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden">
+<div class="bg-dark-800 rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+<div class="border-b border-gray-700 px-6 py-4 flex justify-between items-center">
+<h3 class="text-lg font-semibold text-white">Detalhes do Formulário</h3>
+<button id="close-form-modal" class="text-gray-400 hover:text-gray-300">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+</svg>
+</button>
+</div>
+
+<div class="px-6 py-4">
+<div id="form-detail-content">
+<div class="loader mx-auto w-8 h-8 border-4 border-gray-700 rounded-full"></div>
+</div>
+
+<div id="form-approval-actions" class="mt-6 border-t border-gray-700 pt-4">
+<h4 class="text-lg font-medium text-white mb-4">Ações do Administrador</h4>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <button id="approve-form-btn" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        Aprovar
+    </button>
+    
+    <button id="reject-form-btn" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        Rejeitar
+    </button>
+</div>
+
+<div class="mt-4">
+    <label for="feedback" class="block text-sm font-medium text-gray-300">Feedback (opcional)</label>
+    <textarea id="feedback" rows="3" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-discord-500 focus:border-discord-500"></textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Bot Settings View -->
+<div id="bot-settings-view" class="view-content hidden space-y-6">
+<h1 class="text-2xl font-semibold text-white">Configurações do Bot</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Whitelist Settings -->
+<div class="bg-dark-800 shadow rounded-lg p-4">
+<h2 class="text-lg font-semibold text-white mb-4">Sistema de Whitelist</h2>
+
+<div class="space-y-3" id="whitelist-settings-form">
+<div class="loader w-8 h-8 border-4 border-gray-700 rounded-full"></div>
+</div>
+</div>
+
+<!-- Chat Filter Settings -->
+<div class="bg-dark-800 shadow rounded-lg p-4">
+<h2 class="text-lg font-semibold text-white mb-4">Filtro de Chat</h2>
+
+<div class="space-y-3" id="chatfilter-settings-form">
+<div class="loader w-8 h-8 border-4 border-gray-700 rounded-full"></div>
+</div>
+</div>
+
+<!-- Auto Moderation Settings -->
+<div class="bg-dark-800 shadow rounded-lg p-4">
+<h2 class="text-lg font-semibold text-white mb-4">Moderação Automática</h2>
+
+<div class="space-y-3" id="automod-settings-form">
+<div class="loader w-8 h-8 border-4 border-gray-700 rounded-full"></div>
+</div>
+</div>
+</div>
+
+<div class="flex justify-end">
+<button id="save-bot-settings" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+</svg>
+Salvar Configurações
+</button>
+</div>
+</div>
+
+<!-- Activity Logs View -->
+<div id="activity-logs-view" class="view-content hidden space-y-6">
+<h1 class="text-2xl font-semibold text-white">Logs de Atividade</h1>
+
+<div class="bg-dark-800 shadow rounded-lg p-4">
+<div class="flex justify-end mb-4">
+<button id="refresh-logs" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Administrativo - Sistema de Whitelist</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+theme: {
+extend: {
+colors: {
+discord: {
+500: '#5865F2',
+600: '#4752C4',
+700: '#3C45A5'
+},
+dark: {
+800: '#2C2F33',
+900: '#23272A'
+}
+}
+}
+}
+}
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+body {
+font-family: 'Poppins', sans-serif;
+background-color: #f3f4f6;
+}
+
+.loader {
+border-top-color: #5865F2;
+animation: spinner 0.6s linear infinite;
+}
+
+@keyframes spinner {
+0% { transform: rotate(0deg); }
+100% { transform: rotate(360deg); }
+}
+
+.sidebar {
+min-width: 250px;
+transition: all 0.3s;
+}
+
+@media (max-width: 768px) {
+.sidebar.collapsed {
+margin-left: -250px;
+}
+}
+
+.whitelist-table tbody tr:hover {
+background-color: #f9fafb;
+}
+</style>
 </head>
 <body class="bg-gray-100 min-h-screen">
-    <!-- Login Screen -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
-        <div class="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-            <div class="text-center mb-8">
-                <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 127.14 96.36" class="fill-discord-500 mx-auto mb-4">
-                    <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
-                </svg>
-                <h1 class="text-2xl font-semibold">Admin Panel</h1>
-                <p class="text-gray-600">Faça login para acessar o painel</p>
-            </div>
-            
-            <form id="login-form" class="space-y-4">
-                <div id="login-error" class="bg-red-50 border-l-4 border-red-500 p-4 hidden">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm text-red-700" id="login-error-message">
-                                Credenciais inválidas. Tente novamente.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <label for="username" class="block text-sm font-medium text-gray-700">Usuário</label>
-                    <input type="text" id="username" name="username" required
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-discord-500 focus:border-discord-500">
-                </div>
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
-                    <input type="password" id="password" name="password" required
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-discord-500 focus:border-discord-500">
-                </div>
-                <div>
-                    <button type="submit" 
-                        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
-                        Entrar
-                    </button>
-                </div>
-            </form>
-        </div>
+<!-- Login Screen -->
+<div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+<div class="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+<div class="text-center mb-8">
+<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 127.14 96.36" class="fill-discord-500 mx-auto mb-4">
+<path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
+</svg>
+<h1 class="text-2xl font-semibold">Admin Panel</h1>
+<p class="text-gray-600">Faça login para acessar o painel</p>
+</div>
+
+<form id="login-form" class="space-y-4">
+<div id="login-error" class="bg-red-50 border-l-4 border-red-500 p-4 hidden">
+<div class="flex">
+<div class="flex-shrink-0">
+<svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+</svg>
+</div>
+<div class="ml-3">
+<p class="text-sm text-red-700" id="login-error-message">
+Credenciais inválidas. Tente novamente.
+</p>
+</div>
+</div>
+</div>
+<div>
+<label for="username" class="block text-sm font-medium text-gray-700">Usuário</label>
+<input type="text" id="username" name="username" required
+class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-discord-500 focus:border-discord-500">
+</div>
+<div>
+<label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
+<input type="password" id="password" name="password" required
+class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-discord-500 focus:border-discord-500">
+</div>
+<div>
+<button type="submit" 
+class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
+Entrar
+</button>
+</div>
+</form>
+</div>
+</div>
+
+<!-- Main Admin Dashboard -->
+<div id="admin-dashboard" class="hidden min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<nav class="bg-white shadow-sm">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex justify-between items-center h-16">
+<div class="flex items-center">
+<button id="sidebar-toggle" class="md:hidden text-gray-500 hover:text-gray-700 focus:outline-none">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+</svg>
+</button>
+<div class="flex-shrink-0 flex items-center ml-2 md:ml-0">
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 127.14 96.36" class="fill-discord-500 mr-2">
+<path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
+</svg>
+<span class="text-lg font-semibold">Admin Panel</span>
+</div>
+</div>
+<div class="flex items-center">
+<div class="hidden md:block">
+<span id="admin-username" class="text-gray-500 mr-4">Admin</span>
+</div>
+<button id="logout-button" class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
+Sair
+</button>
+</div>
+</div>
+</div>
+</nav>
+
+<!-- Page Content Container -->
+<div class="flex-grow flex overflow-hidden">
+<!-- Sidebar -->
+<aside id="sidebar" class="bg-dark-800 text-white sidebar md:flex flex-col w-64">
+<nav class="mt-5 px-2 space-y-1">
+<a href="#" data-view="dashboard" class="sidebar-link active-sidebar-link bg-dark-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+<svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+</svg>
+Dashboard
+</a>
+
+<a href="#" data-view="forms" class="sidebar-link text-gray-300 hover:bg-dark-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+<svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+</svg>
+Formulários
+</a>
+
+<a href="#" data-view="bot-settings" class="sidebar-link text-gray-300 hover:bg-dark-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+<svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+</svg>
+Configurações do Bot
+</a>
+
+<a href="#" data-view="activity-logs" class="sidebar-link text-gray-300 hover:bg-dark-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+<svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+</svg>
+Logs de Atividade
+</a>
+</nav>
+</aside>
+
+<!-- Main content area -->
+<div id="content-area" class="flex-1 overflow-auto bg-gray-100 p-4">
+<!-- Dashboard View -->
+<div id="dashboard-view" class="view-content space-y-6">
+<h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
+
+<!-- Overview Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-white overflow-hidden shadow rounded-lg">
+<div class="px-4 py-5 sm:p-6">
+<dt class="text-sm font-medium text-gray-500 truncate">
+    Total de Solicitações
+</dt>
+<dd class="mt-1 text-3xl font-semibold text-gray-900" id="stats-total">
+    <div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
+</dd>
+</div>
+</div>
+
+<div class="bg-white overflow-hidden shadow rounded-lg">
+<div class="px-4 py-5 sm:p-6">
+<dt class="text-sm font-medium text-gray-500 truncate">
+    Pendentes
+</dt>
+<dd class="mt-1 text-3xl font-semibold text-yellow-500" id="stats-pending">
+    <div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
+</dd>
+</div>
+</div>
+
+<div class="bg-white overflow-hidden shadow rounded-lg">
+<div class="px-4 py-5 sm:p-6">
+<dt class="text-sm font-medium text-gray-500 truncate">
+    Aprovados
+</dt>
+<dd class="mt-1 text-3xl font-semibold text-green-500" id="stats-approved">
+    <div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
+</dd>
+</div>
+</div>
+
+<div class="bg-white overflow-hidden shadow rounded-lg">
+<div class="px-4 py-5 sm:p-6">
+<dt class="text-sm font-medium text-gray-500 truncate">
+    Rejeitados
+</dt>
+<dd class="mt-1 text-3xl font-semibold text-red-500" id="stats-rejected">
+    <div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
+</dd>
+</div>
+</div>
+</div>
+
+<!-- Bot Status -->
+<div class="bg-white shadow rounded-lg p-4">
+<h2 class="text-lg font-semibold text-gray-900 mb-4">Status do Bot</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="bot-status-cards">
+<div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
+</div>
+</div>
+
+<!-- Recent Activity -->
+<div class="bg-white shadow rounded-lg p-4">
+<h2 class="text-lg font-semibold text-gray-900 mb-4">Atividade Recente</h2>
+<div class="overflow-x-auto">
+<table class="min-w-full divide-y divide-gray-200">
+<thead class="bg-gray-50">
+    <tr>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Admin
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Ação
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Data/Hora
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            IP
+        </th>
+    </tr>
+</thead>
+<tbody class="bg-white divide-y divide-gray-200" id="recent-activity-table">
+    <tr>
+        <td colspan="4" class="px-6 py-4">
+            <div class="loader mx-auto w-8 h-8 border-4 border-gray-200 rounded-full"></div>
+        </td>
+    </tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<!-- Forms View -->
+<div id="forms-view" class="view-content hidden space-y-6">
+<div class="flex justify-between items-center">
+<h1 class="text-2xl font-semibold text-gray-900">Formulários de Whitelist</h1>
+<div class="flex space-x-2">
+<select id="status-filter" class="border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-discord-500 focus:border-discord-500 text-sm">
+<option value="all">Todos os Status</option>
+<option value="pendente">Pendentes</option>
+<option value="aprovado">Aprovados</option>
+<option value="rejeitado">Rejeitados</option>
+</select>
+<button id="refresh-forms" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+</svg>
+Atualizar
+</button>
+</div>
+</div>
+
+<div class="overflow-x-auto bg-white shadow rounded-lg">
+<table class="min-w-full divide-y divide-gray-200 whitelist-table">
+<thead class="bg-gray-50">
+<tr>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        Usuário
+    </th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        Data
+    </th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        Status
+    </th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        IP
+    </th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        Ações
+    </th>
+</tr>
+</thead>
+<tbody class="bg-white divide-y divide-gray-200" id="forms-table">
+<tr>
+    <td colspan="5" class="px-6 py-4">
+        <div class="loader mx-auto w-8 h-8 border-4 border-gray-200 rounded-full"></div>
+    </td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Form Detail Modal -->
+<div id="form-detail-modal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center hidden">
+<div class="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+<div class="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+<h3 class="text-lg font-semibold text-gray-900">Detalhes do Formulário</h3>
+<button id="close-form-modal" class="text-gray-400 hover:text-gray-500">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+</svg>
+</button>
+</div>
+
+<div class="px-6 py-4">
+<div id="form-detail-content">
+<div class="loader mx-auto w-8 h-8 border-4 border-gray-200 rounded-full"></div>
+</div>
+
+<div id="form-approval-actions" class="mt-6 border-t border-gray-200 pt-4">
+<h4 class="text-lg font-medium text-gray-900 mb-4">Ações do Administrador</h4>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <button id="approve-form-btn" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        Aprovar
+    </button>
+    
+    <button id="reject-form-btn" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        Rejeitar
+    </button>
+</div>
+
+<div class="mt-4">
+    <label for="feedback" class="block text-sm font-medium text-gray-700">Feedback (opcional)</label>
+    <textarea id="feedback" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-discord-500 focus:border-discord-500"></textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Bot Settings View -->
+<div id="bot-settings-view" class="view-content hidden space-y-6">
+<h1 class="text-2xl font-semibold text-gray-900">Configurações do Bot</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Whitelist Settings -->
+<div class="bg-white shadow rounded-lg p-4">
+<h2 class="text-lg font-semibold text-gray-900 mb-4">Sistema de Whitelist</h2>
+
+<div class="space-y-3" id="whitelist-settings-form">
+<div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
+</div>
+</div>
+
+<!-- Chat Filter Settings -->
+<div class="bg-white shadow rounded-lg p-4">
+<h2 class="text-lg font-semibold text-gray-900 mb-4">Filtro de Chat</h2>
+
+<div class="space-y-3" id="chatfilter-settings-form">
+<div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
+</div>
+</div>
+
+<!-- Auto Moderation Settings -->
+<div class="bg-white shadow rounded-lg p-4">
+<h2 class="text-lg font-semibold text-gray-900 mb-4">Moderação Automática</h2>
+
+<div class="space-y-3" id="automod-settings-form">
+<div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
+</div>
+</div>
+</div>
+
+<div class="flex justify-end">
+<button id="save-bot-settings" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+</svg>
+Salvar Configurações
+</button>
+</div>
+</div>
+
+<!-- Activity Logs View -->
+<div id="activity-logs-view" class="view-content hidden space-y-6">
+<h1 class="text-2xl font-semibold text-gray-900">Logs de Atividade</h1>
+
+<div class="bg-white shadow rounded-lg p-4">
+<div class="flex justify-end mb-4">
+<button id="refresh-logs" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+</svg>
+Atualizar
+</button>
+</div>
+
+<div class="overflow-x-auto">
+<table class="min-w-full divide-y divide-gray-200">
+<thead class="bg-gray-50">
+    <tr>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Admin
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Ação
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Data/Hora
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            IP
+        </th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Detalhes
+        </th>
+    </tr>
+</thead>
+<tbody class="bg-white divide-y divide-gray-200" id="activity-logs-table">
+    <tr>
+        <td colspan="5" class="px-6 py-4">
+            <div class="loader mx-auto w-8 h-8 border-4 border-gray-200 rounded-full"></div>
+        </td>
+    </tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+// Auth Token management
+const TOKEN_KEY = 'admin_auth_token';
+let authToken = localStorage.getItem(TOKEN_KEY);
+let currentFormId = null;
+
+// Show Login or Dashboard based on auth status
+function checkAuth() {
+const loginScreen = document.getElementById('login-screen');
+const dashboard = document.getElementById('admin-dashboard');
+
+if (authToken) {
+loginScreen.classList.add('hidden');
+dashboard.classList.remove('hidden');
+loadDashboard();
+} else {
+loginScreen.classList.remove('hidden');
+dashboard.classList.add('hidden');
+}
+}
+
+// Handle login form submission
+const loginForm = document.getElementById('login-form');
+loginForm.addEventListener('submit', async (e) => {
+e.preventDefault();
+
+const username = document.getElementById('username').value;
+const password = document.getElementById('password').value;
+const loginError = document.getElementById('login-error');
+const loginErrorMessage = document.getElementById('login-error-message');
+
+try {
+const response = await fetch('/api/admin/login', {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json'
+},
+body: JSON.stringify({ username, password })
+});
+
+const data = await response.json();
+
+if (!response.ok) {
+loginError.classList.remove('hidden');
+loginErrorMessage.textContent = data.error || 'Credenciais inválidas';
+return;
+}
+
+// Store token and user info
+authToken = data.token;
+localStorage.setItem(TOKEN_KEY, authToken);
+
+// Update UI
+document.getElementById('admin-username').textContent = data.user.username;
+loginForm.reset();
+loginError.classList.add('hidden');
+
+// Show dashboard
+checkAuth();
+
+} catch (error) {
+console.error('Error during login:', error);
+loginError.classList.remove('hidden');
+loginErrorMessage.textContent = 'Erro ao tentar realizar login. Tente novamente.';
+}
+});
+
+// Handle logout
+document.getElementById('logout-button').addEventListener('click', () => {
+localStorage.removeItem(TOKEN_KEY);
+authToken = null;
+checkAuth();
+});
+
+// Toggle sidebar on mobile
+document.getElementById('sidebar-toggle').addEventListener('click', () => {
+const sidebar = document.getElementById('sidebar');
+sidebar.classList.toggle('collapsed');
+});
+
+// Navigation
+const sidebarLinks = document.querySelectorAll('.sidebar-link');
+const viewContents = document.querySelectorAll('.view-content');
+
+sidebarLinks.forEach(link => {
+link.addEventListener('click', (e) => {
+e.preventDefault();
+
+// Update active link
+sidebarLinks.forEach(l => {
+l.classList.remove('active-sidebar-link', 'bg-dark-900');
+l.classList.add('text-gray-300', 'hover:bg-dark-900');
+});
+
+e.currentTarget.classList.add('active-sidebar-link', 'bg-dark-900');
+e.currentTarget.classList.remove('text-gray-300', 'hover:bg-dark-900');
+
+// Show selected view
+const viewName = e.currentTarget.getAttribute('data-view');
+viewContents.forEach(view => {
+view.classList.add('hidden');
+});
+
+const targetView = document.getElementById(`${viewName}-view`);
+targetView.classList.remove('hidden');
+
+// Load content based on view
+if (viewName === 'forms') {
+loadForms();
+} else if (viewName === 'bot-settings') {
+loadBotSettings();
+} else if (viewName === 'activity-logs') {
+loadActivityLogs();
+} else if (viewName === 'dashboard') {
+loadDashboard();
+}
+});
+});
+
+// Dashboard functions
+async function loadDashboard() {
+try {
+const response = await fetch('/api/admin/dashboard', {
+headers: {
+'Authorization': `Bearer ${authToken}`
+}
+});
+
+if (!response.ok) {
+if (response.status === 401) {
+// Unauthorized - token expired
+localStorage.removeItem(TOKEN_KEY);
+authToken = null;
+checkAuth();
+return;
+}
+throw new Error('Erro ao carregar dashboard');
+}
+
+const data = await response.json();
+
+// Update statistics
+document.getElementById('stats-total').textContent = data.countByStatus.total;
+document.getElementById('stats-pending').textContent = data.countByStatus.pendente;
+document.getElementById('stats-approved').textContent = data.countByStatus.aprovado;
+document.getElementById('stats-rejected').textContent = data.countByStatus.rejeitado;
+
+// Update bot status cards
+const botStatusContainer = document.getElementById('bot-status-cards');
+botStatusContainer.innerHTML = '';
+
+// Add status cards
+const addStatusCard = (title, enabled) => {
+const card = document.createElement('div');
+card.className = 'p-4 border rounded-lg';
+card.classList.add(enabled ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50');
+
+const statusHtml = `
+<div class="flex items-center">
+<div class="flex-shrink-0 h-10 w-10 rounded-full ${enabled ? 'bg-green-100' : 'bg-red-100'} flex items-center justify-center">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ${enabled ? 'text-green-600' : 'text-red-600'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        ${enabled ? 
+            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />' : 
+            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />'}
+    </svg>
+</div>
+<div class="ml-4">
+    <h3 class="text-lg font-medium ${enabled ? 'text-green-800' : 'text-red-800'}">${title}</h3>
+    <p class="text-sm ${enabled ? 'text-green-600' : 'text-red-600'}">${enabled ? 'Ativo' : 'Inativo'}</p>
+</div>
+</div>
+`;
+
+card.innerHTML = statusHtml;
+botStatusContainer.appendChild(card);
+};
+
+// Add bot status cards
+addStatusCard('Sistema de Whitelist', data.botSettings?.whitelistSystem?.enabled);
+addStatusCard('Filtro de Chat', data.botSettings?.chatFilter?.enabled);
+addStatusCard('Moderação Automática', data.botSettings?.autoModeration?.enabled);
+
+// Update recent activity
+const activityTable = document.getElementById('recent-activity-table');
+activityTable.innerHTML = '';
+
+if (data.recentActivity && data.recentActivity.length > 0) {
+data.recentActivity.forEach(activity => {
+const row = document.createElement('tr');
+
+const formatAction = (action) => {
+if (action.startsWith('formulario_aprovado')) return 'Aprovou whitelist';
+if (action.startsWith('formulario_rejeitado')) return 'Rejeitou whitelist';
+if (action === 'login') return 'Login no painel';
+if (action === 'atualizar_config_bot') return 'Atualizou configurações';
+return action;
+};
+
+row.innerHTML = `
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${activity.username}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatAction(activity.action)}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(activity.timestamp).toLocaleString()}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${activity.details.ip || '-'}</td>
+`;
+
+activityTable.appendChild(row);
+});
+} else {
+activityTable.innerHTML = `
+<tr>
+<td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
+    Nenhuma atividade recente
+</td>
+</tr>
+`;
+}
+
+} catch (error) {
+console.error('Error loading dashboard:', error);
+}
+}
+
+// Forms functions
+async function loadForms() {
+try {
+const statusFilter = document.getElementById('status-filter').value;
+
+const response = await fetch('/api/admin/forms', {
+headers: {
+'Authorization': `Bearer ${authToken}`
+}
+});
+
+if (!response.ok) {
+if (response.status === 401) {
+// Unauthorized - token expired
+localStorage.removeItem(TOKEN_KEY);
+authToken = null;
+checkAuth();
+return;
+}
+throw new Error('Erro ao carregar formulários');
+}
+
+const forms = await response.json();
+
+// Filter forms by status
+const filteredForms = statusFilter === 'all' 
+? forms 
+: forms.filter(form => form.status === statusFilter);
+
+// Update forms table
+const formsTable = document.getElementById('forms-table');
+formsTable.innerHTML = '';
+
+if (filteredForms.length > 0) {
+filteredForms.forEach(form => {
+const row = document.createElement('tr');
+
+const statusBadge = getStatusBadge(form.status);
+
+row.innerHTML = `
+<td class="px-6 py-4 whitespace-nowrap">
+    <div class="flex items-center">
+        <div class="text-sm font-medium text-gray-900">${form.username}</div>
+        <div class="text-sm text-gray-500 ml-1">(${form.userId})</div>
     </div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+    <div class="text-sm text-gray-900">${new Date(form.createdAt).toLocaleDateString()}</div>
+    <div class="text-sm text-gray-500">${new Date(form.createdAt).toLocaleTimeString()}</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+    ${statusBadge}
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+    ${form.clientIp || '-'}
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+    <button data-form-id="${form.id}" class="view-form-btn text-discord-500 hover:text-discord-700">
+        Ver Detalhes
+    </button>
+</td>
+`;
 
-    <!-- Main Admin Dashboard -->
-    <div id="admin-dashboard" class="hidden min-h-screen flex flex-col">
-        <!-- Top Navigation -->
-        <nav class="bg-white shadow-sm">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center h-16">
-                    <div class="flex items-center">
-                        <button id="sidebar-toggle" class="md:hidden text-gray-500 hover:text-gray-700 focus:outline-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        </button>
-                        <div class="flex-shrink-0 flex items-center ml-2 md:ml-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 127.14 96.36" class="fill-discord-500 mr-2">
-                                <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
-                            </svg>
-                            <span class="text-lg font-semibold">Admin Panel</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center">
-                        <div class="hidden md:block">
-                            <span id="admin-username" class="text-gray-500 mr-4">Admin</span>
-                        </div>
-                        <button id="logout-button" class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
-                            Sair
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </nav>
+formsTable.appendChild(row);
+});
 
-        <!-- Page Content Container -->
-        <div class="flex-grow flex overflow-hidden">
-            <!-- Sidebar -->
-            <aside id="sidebar" class="bg-dark-800 text-white sidebar md:flex flex-col w-64">
-                <nav class="mt-5 px-2 space-y-1">
-                    <a href="#" data-view="dashboard" class="sidebar-link active-sidebar-link bg-dark-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        Dashboard
-                    </a>
-                    
-                    <a href="#" data-view="forms" class="sidebar-link text-gray-300 hover:bg-dark-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Formulários
-                    </a>
-                    
-                    <a href="#" data-view="bot-settings" class="sidebar-link text-gray-300 hover:bg-dark-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Configurações do Bot
-                    </a>
-                    
-                    <a href="#" data-view="activity-logs" class="sidebar-link text-gray-300 hover:bg-dark-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Logs de Atividade
-                    </a>
-                </nav>
-            </aside>
+// Add event listeners to view buttons
+document.querySelectorAll('.view-form-btn').forEach(btn => {
+btn.addEventListener('click', () => {
+const formId = btn.getAttribute('data-form-id');
+openFormDetail(formId);
+});
+});
+} else {
+formsTable.innerHTML = `
+<tr>
+<td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+    Nenhum formulário encontrado
+</td>
+</tr>
+`;
+}
+} catch (error) {
+console.error('Error loading forms:', error);
+}
+}
 
-            <!-- Main content area -->
-            <div id="content-area" class="flex-1 overflow-auto bg-gray-100 p-4">
-                <!-- Dashboard View -->
-                <div id="dashboard-view" class="view-content space-y-6">
-                    <h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
-                    
-                    <!-- Overview Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-white overflow-hidden shadow rounded-lg">
-                            <div class="px-4 py-5 sm:p-6">
-                                <dt class="text-sm font-medium text-gray-500 truncate">
-                                    Total de Solicitações
-                                </dt>
-                                <dd class="mt-1 text-3xl font-semibold text-gray-900" id="stats-total">
-                                    <div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
-                                </dd>
-                            </div>
-                        </div>
+// Helper function to generate status badges
+function getStatusBadge(status) {
+let badgeClass = '';
+let badgeText = '';
 
-                        <div class="bg-white overflow-hidden shadow rounded-lg">
-                            <div class="px-4 py-5 sm:p-6">
-                                <dt class="text-sm font-medium text-gray-500 truncate">
-                                    Pendentes
-                                </dt>
-                                <dd class="mt-1 text-3xl font-semibold text-yellow-500" id="stats-pending">
-                                    <div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
-                                </dd>
-                            </div>
-                        </div>
+switch(status) {
+case 'pendente':
+badgeClass = 'bg-yellow-100 text-yellow-800';
+badgeText = 'Pendente';
+break;
+case 'aprovado':
+badgeClass = 'bg-green-100 text-green-800';
+badgeText = 'Aprovado';
+break;
+case 'rejeitado':
+badgeClass = 'bg-red-100 text-red-800';
+badgeText = 'Rejeitado';
+break;
+default:
+badgeClass = 'bg-gray-100 text-gray-800';
+badgeText = status;
+}
 
-                        <div class="bg-white overflow-hidden shadow rounded-lg">
-                            <div class="px-4 py-5 sm:p-6">
-                                <dt class="text-sm font-medium text-gray-500 truncate">
-                                    Aprovados
-                                </dt>
-                                <dd class="mt-1 text-3xl font-semibold text-green-500" id="stats-approved">
-                                    <div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
-                                </dd>
-                            </div>
-                        </div>
+return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeClass}">${badgeText}</span>`;
+}
 
-                        <div class="bg-white overflow-hidden shadow rounded-lg">
-                            <div class="px-4 py-5 sm:p-6">
-                                <dt class="text-sm font-medium text-gray-500 truncate">
-                                    Rejeitados
-                                </dt>
-                                <dd class="mt-1 text-3xl font-semibold text-red-500" id="stats-rejected">
-                                    <div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
-                                </dd>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Bot Status -->
-                    <div class="bg-white shadow rounded-lg p-4">
-                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Status do Bot</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="bot-status-cards">
-                            <div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Recent Activity -->
-                    <div class="bg-white shadow rounded-lg p-4">
-                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Atividade Recente</h2>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Admin
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Ação
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Data/Hora
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            IP
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200" id="recent-activity-table">
-                                    <tr>
-                                        <td colspan="4" class="px-6 py-4">
-                                            <div class="loader mx-auto w-8 h-8 border-4 border-gray-200 rounded-full"></div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+// Form detail functions
+async function openFormDetail(formId) {
+try {
+currentFormId = formId;
 
-                <!-- Forms View -->
-                <div id="forms-view" class="view-content hidden space-y-6">
-                    <div class="flex justify-between items-center">
-                        <h1 class="text-2xl font-semibold text-gray-900">Formulários de Whitelist</h1>
-                        <div class="flex space-x-2">
-                            <select id="status-filter" class="border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-discord-500 focus:border-discord-500 text-sm">
-                                <option value="all">Todos os Status</option>
-                                <option value="pendente">Pendentes</option>
-                                <option value="aprovado">Aprovados</option>
-                                <option value="rejeitado">Rejeitados</option>
-                            </select>
-                            <button id="refresh-forms" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                Atualizar
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="overflow-x-auto bg-white shadow rounded-lg">
-                        <table class="min-w-full divide-y divide-gray-200 whitelist-table">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Usuário
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Data
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Status
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        IP
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Ações
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200" id="forms-table">
-                                <tr>
-                                    <td colspan="5" class="px-6 py-4">
-                                        <div class="loader mx-auto w-8 h-8 border-4 border-gray-200 rounded-full"></div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Form Detail Modal -->
-                <div id="form-detail-modal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center hidden">
-                    <div class="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
-                        <div class="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-                            <h3 class="text-lg font-semibold text-gray-900">Detalhes do Formulário</h3>
-                            <button id="close-form-modal" class="text-gray-400 hover:text-gray-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        
-                        <div class="px-6 py-4">
-                            <div id="form-detail-content">
-                                <div class="loader mx-auto w-8 h-8 border-4 border-gray-200 rounded-full"></div>
-                            </div>
-                            
-                            <div id="form-approval-actions" class="mt-6 border-t border-gray-200 pt-4">
-                                <h4 class="text-lg font-medium text-gray-900 mb-4">Ações do Administrador</h4>
-                                
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <button id="approve-form-btn" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        Aprovar
-                                    </button>
-                                    
-                                    <button id="reject-form-btn" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                        Rejeitar
-                                    </button>
-                                </div>
-                                
-                                <div class="mt-4">
-                                    <label for="feedback" class="block text-sm font-medium text-gray-700">Feedback (opcional)</label>
-                                    <textarea id="feedback" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-discord-500 focus:border-discord-500"></textarea>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+const response = await fetch(`/api/admin/forms/${formId}`, {
+headers: {
+'Authorization': `Bearer ${authToken}`
+}
+});
 
-                <!-- Bot Settings View -->
-                <div id="bot-settings-view" class="view-content hidden space-y-6">
-                    <h1 class="text-2xl font-semibold text-gray-900">Configurações do Bot</h1>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Whitelist Settings -->
-                        <div class="bg-white shadow rounded-lg p-4">
-                            <h2 class="text-lg font-semibold text-gray-900 mb-4">Sistema de Whitelist</h2>
-                            
-                            <div class="space-y-3" id="whitelist-settings-form">
-                                <div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Chat Filter Settings -->
-                        <div class="bg-white shadow rounded-lg p-4">
-                            <h2 class="text-lg font-semibold text-gray-900 mb-4">Filtro de Chat</h2>
-                            
-                            <div class="space-y-3" id="chatfilter-settings-form">
-                                <div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Auto Moderation Settings -->
-                        <div class="bg-white shadow rounded-lg p-4">
-                            <h2 class="text-lg font-semibold text-gray-900 mb-4">Moderação Automática</h2>
-                            
-                            <div class="space-y-3" id="automod-settings-form">
-                                <div class="loader w-8 h-8 border-4 border-gray-200 rounded-full"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-end">
-                        <button id="save-bot-settings" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                            Salvar Configurações
-                        </button>
-                    </div>
-                </div>
+if (!response.ok) {
+throw new Error('Erro ao carregar detalhes do formulário');
+}
 
-                <!-- Activity Logs View -->
-                <div id="activity-logs-view" class="view-content hidden space-y-6">
-                    <h1 class="text-2xl font-semibold text-gray-900">Logs de Atividade</h1>
-                    
-                    <div class="bg-white shadow rounded-lg p-4">
-                        <div class="flex justify-end mb-4">
-                            <button id="refresh-logs" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-discord-500 hover:bg-discord-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-discord-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                Atualizar
-                            </button>
-                        </div>
-                        
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Admin
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Ação
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Data/Hora
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            IP
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Detalhes
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200" id="activity-logs-table">
-                                    <tr>
-                                        <td colspan="5" class="px-6 py-4">
-                                            <div class="loader mx-auto w-8 h-8 border-4 border-gray-200 rounded-full"></div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+const form = await response.json();
 
-    <!-- Scripts -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Auth Token management
-            const TOKEN_KEY = 'admin_auth_token';
-            let authToken = localStorage.getItem(TOKEN_KEY);
-            let currentFormId = null;
+// Update form detail content
+const contentElement = document.getElementById('form-detail-content');
 
-            // Show Login or Dashboard based on auth status
-            function checkAuth() {
-                const loginScreen = document.getElementById('login-screen');
-                const dashboard = document.getElementById('admin-dashboard');
-                
-                if (authToken) {
-                    loginScreen.classList.add('hidden');
-                    dashboard.classList.remove('hidden');
-                    loadDashboard();
-                } else {
-                    loginScreen.classList.remove('hidden');
-                    dashboard.classList.add('hidden');
-                }
-            }
+// Format form data
+let formFieldsHtml = '';
+for (const [key, value] of Object.entries(form.data)) {
+formFieldsHtml += `
+<div class="mb-4">
+<h4 class="text-sm font-medium text-gray-500">${key.charAt(0).toUpperCase() + key.slice(1)}</h4>
+<p class="mt-1">${value}</p>
+</div>
+`;
+}
 
-            // Handle login form submission
-            const loginForm = document.getElementById('login-form');
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                const loginError = document.getElementById('login-error');
-                const loginErrorMessage = document.getElementById('login-error-message');
-                
-                try {
-                    const response = await fetch('/api/admin/login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ username, password })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (!response.ok) {
-                        loginError.classList.remove('hidden');
-                        loginErrorMessage.textContent = data.error || 'Credenciais inválidas';
-                        return;
-                    }
-                    
-                    // Store token and user info
-                    authToken = data.token;
-                    localStorage.setItem(TOKEN_KEY, authToken);
-                    
-                    // Update UI
-                    document.getElementById('admin-username').textContent = data.user.username;
-                    loginForm.reset();
-                    loginError.classList.add('hidden');
-                    
-                    // Show dashboard
-                    checkAuth();
-                    
-                } catch (error) {
-                    console.error('Error during login:', error);
-                    loginError.classList.remove('hidden');
-                    loginErrorMessage.textContent = 'Erro ao tentar realizar login. Tente novamente.';
-                }
-            });
-            
-            // Handle logout
-            document.getElementById('logout-button').addEventListener('click', () => {
-                localStorage.removeItem(TOKEN_KEY);
-                authToken = null;
-                checkAuth();
-            });
-            
-            // Toggle sidebar on mobile
-            document.getElementById('sidebar-toggle').addEventListener('click', () => {
-                const sidebar = document.getElementById('sidebar');
-                sidebar.classList.toggle('collapsed');
-            });
-            
-            // Navigation
-            const sidebarLinks = document.querySelectorAll('.sidebar-link');
-            const viewContents = document.querySelectorAll('.view-content');
-            
-            sidebarLinks.forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    
-                    // Update active link
-                    sidebarLinks.forEach(l => {
-                        l.classList.remove('active-sidebar-link', 'bg-dark-900');
-                        l.classList.add('text-gray-300', 'hover:bg-dark-900');
-                    });
-                    
-                    e.currentTarget.classList.add('active-sidebar-link', 'bg-dark-900');
-                    e.currentTarget.classList.remove('text-gray-300', 'hover:bg-dark-900');
-                    
-                    // Show selected view
-                    const viewName = e.currentTarget.getAttribute('data-view');
-                    viewContents.forEach(view => {
-                        view.classList.add('hidden');
-                    });
-                    
-                    const targetView = document.getElementById(`${viewName}-view`);
-                    targetView.classList.remove('hidden');
-                    
-                    // Load content based on view
-                    if (viewName === 'forms') {
-                        loadForms();
-                    } else if (viewName === 'bot-settings') {
-                        loadBotSettings();
-                    } else if (viewName === 'activity-logs') {
-                        loadActivityLogs();
-                    } else if (viewName === 'dashboard') {
-                        loadDashboard();
-                    }
-                });
-            });
-            
-            // Dashboard functions
-            async function loadDashboard() {
-                try {
-                    const response = await fetch('/api/admin/dashboard', {
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        if (response.status === 401) {
-                            // Unauthorized - token expired
-                            localStorage.removeItem(TOKEN_KEY);
-                            authToken = null;
-                            checkAuth();
-                            return;
-                        }
-                        throw new Error('Erro ao carregar dashboard');
-                    }
-                    
-                    const data = await response.json();
-                    
-                    // Update statistics
-                    document.getElementById('stats-total').textContent = data.countByStatus.total;
-                    document.getElementById('stats-pending').textContent = data.countByStatus.pendente;
-                    document.getElementById('stats-approved').textContent = data.countByStatus.aprovado;
-                    document.getElementById('stats-rejected').textContent = data.countByStatus.rejeitado;
-                    
-                    // Update bot status cards
-                    const botStatusContainer = document.getElementById('bot-status-cards');
-                    botStatusContainer.innerHTML = '';
-                    
-                    // Add status cards
-                    const addStatusCard = (title, enabled) => {
-                        const card = document.createElement('div');
-                        card.className = 'p-4 border rounded-lg';
-                        card.classList.add(enabled ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50');
-                        
-                        const statusHtml = `
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 h-10 w-10 rounded-full ${enabled ? 'bg-green-100' : 'bg-red-100'} flex items-center justify-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ${enabled ? 'text-green-600' : 'text-red-600'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        ${enabled ? 
-                                            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />' : 
-                                            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />'}
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <h3 class="text-lg font-medium ${enabled ? 'text-green-800' : 'text-red-800'}">${title}</h3>
-                                    <p class="text-sm ${enabled ? 'text-green-600' : 'text-red-600'}">${enabled ? 'Ativo' : 'Inativo'}</p>
-                                </div>
-                            </div>
-                        `;
-                        
-                        card.innerHTML = statusHtml;
-                        botStatusContainer.appendChild(card);
-                    };
-                    
-                    // Add bot status cards
-                    addStatusCard('Sistema de Whitelist', data.botSettings?.whitelistSystem?.enabled);
-                    addStatusCard('Filtro de Chat', data.botSettings?.chatFilter?.enabled);
-                    addStatusCard('Moderação Automática', data.botSettings?.autoModeration?.enabled);
-                    
-                    // Update recent activity
-                    const activityTable = document.getElementById('recent-activity-table');
-                    activityTable.innerHTML = '';
-                    
-                    if (data.recentActivity && data.recentActivity.length > 0) {
-                        data.recentActivity.forEach(activity => {
-                            const row = document.createElement('tr');
-                            
-                            const formatAction = (action) => {
-                                if (action.startsWith('formulario_aprovado')) return 'Aprovou whitelist';
-                                if (action.startsWith('formulario_rejeitado')) return 'Rejeitou whitelist';
-                                if (action === 'login') return 'Login no painel';
-                                if (action === 'atualizar_config_bot') return 'Atualizou configurações';
-                                return action;
-                            };
-                            
-                            row.innerHTML = `
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${activity.username}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatAction(activity.action)}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(activity.timestamp).toLocaleString()}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${activity.details.ip || '-'}</td>
-                            `;
-                            
-                            activityTable.appendChild(row);
-                        });
-                    } else {
-                        activityTable.innerHTML = `
-                            <tr>
-                                <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
-                                    Nenhuma atividade recente
-                                </td>
-                            </tr>
-                        `;
-                    }
-                    
-                } catch (error) {
-                    console.error('Error loading dashboard:', error);
-                }
-            }
-            
-            // Forms functions
-            async function loadForms() {
-                try {
-                    const statusFilter = document.getElementById('status-filter').value;
-                    
-                    const response = await fetch('/api/admin/forms', {
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        if (response.status === 401) {
-                            // Unauthorized - token expired
-                            localStorage.removeItem(TOKEN_KEY);
-                            authToken = null;
-                            checkAuth();
-                            return;
-                        }
-                        throw new Error('Erro ao carregar formulários');
-                    }
-                    
-                    const forms = await response.json();
-                    
-                    // Filter forms by status
-                    const filteredForms = statusFilter === 'all' 
-                        ? forms 
-                        : forms.filter(form => form.status === statusFilter);
-                    
-                    // Update forms table
-                    const formsTable = document.getElementById('forms-table');
-                    formsTable.innerHTML = '';
-                    
-                    if (filteredForms.length > 0) {
-                        filteredForms.forEach(form => {
-                            const row = document.createElement('tr');
-                            
-                            const statusBadge = getStatusBadge(form.status);
-                            
-                            row.innerHTML = `
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="text-sm font-medium text-gray-900">${form.username}</div>
-                                        <div class="text-sm text-gray-500 ml-1">(${form.userId})</div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">${new Date(form.createdAt).toLocaleDateString()}</div>
-                                    <div class="text-sm text-gray-500">${new Date(form.createdAt).toLocaleTimeString()}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    ${statusBadge}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    ${form.clientIp || '-'}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button data-form-id="${form.id}" class="view-form-btn text-discord-500 hover:text-discord-700">
-                                        Ver Detalhes
-                                    </button>
-                                </td>
-                            `;
-                            
-                            formsTable.appendChild(row);
-                        });
-                        
-                        // Add event listeners to view buttons
-                        document.querySelectorAll('.view-form-btn').forEach(btn => {
-                            btn.addEventListener('click', () => {
-                                const formId = btn.getAttribute('data-form-id');
-                                openFormDetail(formId);
-                            });
-                        });
-                    } else {
-                        formsTable.innerHTML = `
-                            <tr>
-                                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
-                                    Nenhum formulário encontrado
-                                </td>
-                            </tr>
-                        `;
-                    }
-                } catch (error) {
-                    console.error('Error loading forms:', error);
-                }
-            }
-            
-            // Helper function to generate status badges
-            function getStatusBadge(status) {
-                let badgeClass = '';
-                let badgeText = '';
-                
-                switch(status) {
-                    case 'pendente':
-                        badgeClass = 'bg-yellow-100 text-yellow-800';
-                        badgeText = 'Pendente';
-                        break;
-                    case 'aprovado':
-                        badgeClass = 'bg-green-100 text-green-800';
-                        badgeText = 'Aprovado';
-                        break;
-                    case 'rejeitado':
-                        badgeClass = 'bg-red-100 text-red-800';
-                        badgeText = 'Rejeitado';
-                        break;
-                    default:
-                        badgeClass = 'bg-gray-100 text-gray-800';
-                        badgeText = status;
-                }
-                
-                return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeClass}">${badgeText}</span>`;
-            }
-            
-            // Form detail functions
-            async function openFormDetail(formId) {
-                try {
-                    currentFormId = formId;
-                    
-                    const response = await fetch(`/api/admin/forms/${formId}`, {
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Erro ao carregar detalhes do formulário');
-                    }
-                    
-                    const form = await response.json();
-                    
-                    // Update form detail content
-                    const contentElement = document.getElementById('form-detail-content');
-                    
-                    // Format form data
-                    let formFieldsHtml = '';
-                    for (const [key, value] of Object.entries(form.data)) {
-                        formFieldsHtml += `
-                            <div class="mb-4">
-                                <h4 class="text-sm font-medium text-gray-500">${key.charAt(0).toUpperCase() + key.slice(1)}</h4>
-                                <p class="mt-1">${value}</p>
-                            </div>
-                        `;
-                    }
-                    
-                    const statusBadge = getStatusBadge(form.status);
-                    
-                    contentElement.innerHTML = `
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <div>
-                                <h3 class="text-sm font-medium text-gray-500">Usuário</h3>
-                                <p class="mt-1">${form.username} (${form.userId})</p>
-                            </div>
-                            <div>
-                                <h3 class="text-sm font-medium text-gray-500">Data de Envio</h3>
-                                <p class="mt-1">${new Date(form.createdAt).toLocaleString()}</p>
-                            </div>
-                            <div>
-                                <h3 class="text-sm font-medium text-gray-500">Status</h3>
-                                <p class="mt-1">${statusBadge}</p>
-                            </div>
-                            <div>
-                                <h3 class="text-sm font-medium text-gray-500">IP do Cliente</h3>
-                                <p class="mt-1">${form.clientIp || '-'}</p>
-                            </div>
-                        </div>
-                        
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Dados do Formulário</h3>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            ${formFieldsHtml}
-                        </div>
-                    `;
-                    
-                    // Show/hide approval actions based on status
-                    const approvalActions = document.getElementById('form-approval-actions');
-                    if (form.status === 'pendente') {
-                        approvalActions.classList.remove('hidden');
-                    } else {
-                        approvalActions.classList.add('hidden');
-                    }
-                    
-                    // Show modal
-                    document.getElementById('form-detail-modal').classList.remove('hidden');
-                    
-                } catch (error) {
-                    console.error('Error opening form detail:', error);
-                    alert('Erro ao carregar detalhes do formulário');
-                }
-            }
-            
-            // Close form detail modal
-            document.getElementById('close-form-modal').addEventListener('click', () => {
-                document.getElementById('form-detail-modal').classList.add('hidden');
-                document.getElementById('feedback').value = '';
-                currentFormId = null;
-            });
-            
-            // Approve form
-            document.getElementById('approve-form-btn').addEventListener('click', async () => {
-                if (!currentFormId) return;
-                
-                const feedback = document.getElementById('feedback').value;
-                
-                try {
-                    const response = await fetch(`/api/admin/forms/${currentFormId}/review`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            status: 'aprovado',
-                            feedback
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Erro ao aprovar formulário');
-                    }
-                    
-                    // Close modal and reload forms
-                    document.getElementById('form-detail-modal').classList.add('hidden');
-                    document.getElementById('feedback').value = '';
-                    loadForms();
-                    
-                } catch (error) {
-                    console.error('Error approving form:', error);
-                    alert('Erro ao aprovar formulário');
-                }
-            });
-            
-            // Reject form
-            document.getElementById('reject-form-btn').addEventListener('click', async () => {
-                if (!currentFormId) return;
-                
-                const feedback = document.getElementById('feedback').value;
-                
-                if (!feedback) {
-                    alert('Por favor, forneça um feedback para a rejeição');
-                    return;
-                }
-                
-                try {
-                    const response = await fetch(`/api/admin/forms/${currentFormId}/review`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            status: 'rejeitado',
-                            feedback
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Erro ao rejeitar formulário');
-                    }
-                    
-                    // Close modal and reload forms
-                    document.getElementById('form-detail-modal').classList.add('hidden');
-                    document.getElementById('feedback').value = '';
-                    loadForms();
-                    
-                } catch (error) {
-                    console.error('Error rejecting form:', error);
-                    alert('Erro ao rejeitar formulário');
-                }
-            });
-            
-            // Status filter change
-            document.getElementById('status-filter').addEventListener('change', loadForms);
-            
-            // Refresh forms button
-            document.getElementById('refresh-forms').addEventListener('click', loadForms);
-            
-            // Bot Settings functions
-            async function loadBotSettings() {
-                try {
-                    const response = await fetch('/api/admin/bot-settings', {
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        if (response.status === 401) {
-                            localStorage.removeItem(TOKEN_KEY);
-                            authToken = null;
-                            checkAuth();
-                            return;
-                        }
-                        throw new Error('Erro ao carregar configurações do bot');
-                    }
-                    
-                    const settings = await response.json();
-                    
-                    // Update whitelist settings form
-                    const whitelistForm = document.getElementById('whitelist-settings-form');
-                    whitelistForm.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="whitelist-enabled" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.whitelistSystem?.enabled ? 'checked' : ''}>
-                                    <span class="ml-2 text-gray-700">Sistema de Whitelist Ativo</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between mt-4">
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="whitelist-approval" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.whitelistSystem?.requireApproval ? 'checked' : ''}>
-                                    <span class="ml-2 text-gray-700">Requer Aprovação Manual</span>
-                                </label>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Update chat filter settings form
-                    const chatFilterForm = document.getElementById('chatfilter-settings-form');
-                    chatFilterForm.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="chatfilter-enabled" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.chatFilter?.enabled ? 'checked' : ''}>
-                                    <span class="ml-2 text-gray-700">Filtro de Chat Ativo</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between mt-4">
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="chatfilter-notify" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.chatFilter?.notifyUser ? 'checked' : ''}>
-                                    <span class="ml-2 text-gray-700">Notificar Usuários</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between mt-4">
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="chatfilter-delete" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.chatFilter?.deleteMessage ? 'checked' : ''}>
-                                    <span class="ml-2 text-gray-700">Excluir Mensagens Filtradas</span>
-                                </label>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Update auto moderation settings form
-                    const autoModForm = document.getElementById('automod-settings-form');
-                    autoModForm.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="automod-enabled" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.autoModeration?.enabled ? 'checked' : ''}>
-                                    <span class="ml-2 text-gray-700">Moderação Automática Ativa</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between mt-4">
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="automod-punish" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.autoModeration?.applySanctions ? 'checked' : ''}>
-                                    <span class="ml-2 text-gray-700">Aplicar Punições Automáticas</span>
-                                </label>
-                            </div>
-                        </div>
-                    `;
-                    
-                } catch (error) {
-                    console.error('Error loading bot settings:', error);
-                }
-            }
-            
-            // Save bot settings
-            document.getElementById('save-bot-settings').addEventListener('click', async () => {
-                try {
-                    // Collect settings from forms
-                    const settings = {
-                        whitelistSystem: {
-                            enabled: document.getElementById('whitelist-enabled').checked,
-                            requireApproval: document.getElementById('whitelist-approval').checked
-                        },
-                        chatFilter: {
-                            enabled: document.getElementById('chatfilter-enabled').checked,
-                            notifyUser: document.getElementById('chatfilter-notify').checked,
-                            deleteMessage: document.getElementById('chatfilter-delete').checked
-                        },
-                        autoModeration: {
-                            enabled: document.getElementById('automod-enabled').checked,
-                            applySanctions: document.getElementById('automod-punish').checked
-                        }
-                    };
-                    
-                    const response = await fetch('/api/admin/bot-settings', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ settings })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Erro ao salvar configurações');
-                    }
-                    
-                    alert('Configurações salvas com sucesso!');
-                    
-                } catch (error) {
-                    console.error('Error saving settings:', error);
-                    alert('Erro ao salvar configurações');
-                }
-            });
-            
-            // Activity Logs functions
-            async function loadActivityLogs() {
-                try {
-                    const response = await fetch('/api/admin/activity-logs', {
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        if (response.status === 401) {
-                            localStorage.removeItem(TOKEN_KEY);
-                            authToken = null;
-                            checkAuth();
-                            return;
-                        }
-                        throw new Error('Erro ao carregar logs de atividade');
-                    }
-                    
-                    const logs = await response.json();
-                    
-                    // Update activity logs table
-                    const logsTable = document.getElementById('activity-logs-table');
-                    logsTable.innerHTML = '';
-                    
-                    if (logs.length > 0) {
-                        logs.forEach(log => {
-                            const row = document.createElement('tr');
-                            
-                            const formatAction = (action) => {
-                                if (action.startsWith('formulario_aprovado')) return 'Aprovou whitelist';
-                                if (action.startsWith('formulario_rejeitado')) return 'Rejeitou whitelist';
-                                if (action === 'login') return 'Login no painel';
-                                if (action === 'atualizar_config_bot') return 'Atualizou configurações';
-                                return action;
-                            };
-                            
-                            // Format details
-                            let details = '-';
-                            if (log.details) {
-                                if (log.details.formId) {
-                                    details = `Form ID: ${log.details.formId}`;
-                                    if (log.details.userId) {
-                                        details += `<br/>User: ${log.details.userId}`;
-                                    }
-                                }
-                            }
-                            
-                            row.innerHTML = `
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${log.username}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatAction(log.action)}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(log.timestamp).toLocaleString()}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${log.details?.ip || '-'}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${details}</td>
-                            `;
-                            
-                            logsTable.appendChild(row);
-                        });
-                    } else {
-                        logsTable.innerHTML = `
-                            <tr>
-                                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
-                                    Nenhum log de atividade encontrado
-                                </td>
-                            </tr>
-                        `;
-                    }
-                    
-                } catch (error) {
-                    console.error('Error loading activity logs:', error);
-                }
-            }
-            
-            // Refresh logs button
-            document.getElementById('refresh-logs').addEventListener('click', loadActivityLogs);
-            
-            // Initial check
-            checkAuth();
-        });
-    </script>
+const statusBadge = getStatusBadge(form.status);
+
+contentElement.innerHTML = `
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+<div>
+<h3 class="text-sm font-medium text-gray-500">Usuário</h3>
+<p class="mt-1">${form.username} (${form.userId})</p>
+</div>
+<div>
+<h3 class="text-sm font-medium text-gray-500">Data de Envio</h3>
+<p class="mt-1">${new Date(form.createdAt).toLocaleString()}</p>
+</div>
+<div>
+<h3 class="text-sm font-medium text-gray-500">Status</h3>
+<p class="mt-1">${statusBadge}</p>
+</div>
+<div>
+<h3 class="text-sm font-medium text-gray-500">IP do Cliente</h3>
+<p class="mt-1">${form.clientIp || '-'}</p>
+</div>
+</div>
+
+<h3 class="text-lg font-medium text-gray-900 mb-4">Dados do Formulário</h3>
+<div class="bg-gray-50 p-4 rounded-lg">
+${formFieldsHtml}
+</div>
+`;
+
+// Show/hide approval actions based on status
+const approvalActions = document.getElementById('form-approval-actions');
+if (form.status === 'pendente') {
+approvalActions.classList.remove('hidden');
+} else {
+approvalActions.classList.add('hidden');
+}
+
+// Show modal
+document.getElementById('form-detail-modal').classList.remove('hidden');
+
+} catch (error) {
+console.error('Error opening form detail:', error);
+alert('Erro ao carregar detalhes do formulário');
+}
+}
+
+// Close form detail modal
+document.getElementById('close-form-modal').addEventListener('click', () => {
+document.getElementById('form-detail-modal').classList.add('hidden');
+document.getElementById('feedback').value = '';
+currentFormId = null;
+});
+
+// Approve form
+document.getElementById('approve-form-btn').addEventListener('click', async () => {
+if (!currentFormId) return;
+
+const feedback = document.getElementById('feedback').value;
+
+try {
+const response = await fetch(`/api/admin/forms/${currentFormId}/review`, {
+method: 'POST',
+headers: {
+'Authorization': `Bearer ${authToken}`,
+'Content-Type': 'application/json'
+},
+body: JSON.stringify({
+status: 'aprovado',
+feedback
+})
+});
+
+if (!response.ok) {
+throw new Error('Erro ao aprovar formulário');
+}
+
+// Close modal and reload forms
+document.getElementById('form-detail-modal').classList.add('hidden');
+document.getElementById('feedback').value = '';
+loadForms();
+
+} catch (error) {
+console.error('Error approving form:', error);
+alert('Erro ao aprovar formulário');
+}
+});
+
+// Reject form
+document.getElementById('reject-form-btn').addEventListener('click', async () => {
+if (!currentFormId) return;
+
+const feedback = document.getElementById('feedback').value;
+
+if (!feedback) {
+alert('Por favor, forneça um feedback para a rejeição');
+return;
+}
+
+try {
+const response = await fetch(`/api/admin/forms/${currentFormId}/review`, {
+method: 'POST',
+headers: {
+'Authorization': `Bearer ${authToken}`,
+'Content-Type': 'application/json'
+},
+body: JSON.stringify({
+status: 'rejeitado',
+feedback
+})
+});
+
+if (!response.ok) {
+throw new Error('Erro ao rejeitar formulário');
+}
+
+// Close modal and reload forms
+document.getElementById('form-detail-modal').classList.add('hidden');
+document.getElementById('feedback').value = '';
+loadForms();
+
+} catch (error) {
+console.error('Error rejecting form:', error);
+alert('Erro ao rejeitar formulário');
+}
+});
+
+// Status filter change
+document.getElementById('status-filter').addEventListener('change', loadForms);
+
+// Refresh forms button
+document.getElementById('refresh-forms').addEventListener('click', loadForms);
+
+// Bot Settings functions
+async function loadBotSettings() {
+try {
+const response = await fetch('/api/admin/bot-settings', {
+headers: {
+'Authorization': `Bearer ${authToken}`
+}
+});
+
+if (!response.ok) {
+if (response.status === 401) {
+localStorage.removeItem(TOKEN_KEY);
+authToken = null;
+checkAuth();
+return;
+}
+throw new Error('Erro ao carregar configurações do bot');
+}
+
+const settings = await response.json();
+
+// Update whitelist settings form
+const whitelistForm = document.getElementById('whitelist-settings-form');
+whitelistForm.innerHTML = `
+<div class="flex items-center justify-between">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="whitelist-enabled" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.whitelistSystem?.enabled ? 'checked' : ''}>
+    <span class="ml-2 text-gray-700">Sistema de Whitelist Ativo</span>
+</label>
+</div>
+</div>
+
+<div class="flex items-center justify-between mt-4">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="whitelist-approval" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.whitelistSystem?.requireApproval ? 'checked' : ''}>
+    <span class="ml-2 text-gray-700">Requer Aprovação Manual</span>
+</label>
+</div>
+</div>
+`;
+
+// Update chat filter settings form
+const chatFilterForm = document.getElementById('chatfilter-settings-form');
+chatFilterForm.innerHTML = `
+<div class="flex items-center justify-between">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="chatfilter-enabled" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.chatFilter?.enabled ? 'checked' : ''}>
+    <span class="ml-2 text-gray-700">Filtro de Chat Ativo</span>
+</label>
+</div>
+</div>
+
+<div class="flex items-center justify-between mt-4">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="chatfilter-notify" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.chatFilter?.notifyUser ? 'checked' : ''}>
+    <span class="ml-2 text-gray-700">Notificar Usuários</span>
+</label>
+</div>
+</div>
+
+<div class="flex items-center justify-between mt-4">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="chatfilter-delete" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.chatFilter?.deleteMessage ? 'checked' : ''}>
+    <span class="ml-2 text-gray-700">Excluir Mensagens Filtradas</span>
+</label>
+</div>
+</div>
+`;
+
+// Update auto moderation settings form
+const autoModForm = document.getElementById('automod-settings-form');
+autoModForm.innerHTML = `
+<div class="flex items-center justify-between">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="automod-enabled" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.autoModeration?.enabled ? 'checked' : ''}>
+    <span class="ml-2 text-gray-700">Moderação Automática Ativa</span>
+</label>
+</div>
+</div>
+
+<div class="flex items-center justify-between mt-4">
+<div>
+<label class="flex items-center">
+    <input type="checkbox" id="automod-punish" class="h-4 w-4 text-discord-500 rounded border-gray-300 focus:ring-discord-500" ${settings.autoModeration?.applySanctions ? 'checked' : ''}>
+    <span class="ml-2 text-gray-700">Aplicar Punições Automáticas</span>
+</label>
+</div>
+</div>
+`;
+
+} catch (error) {
+console.error('Error loading bot settings:', error);
+}
+}
+
+// Save bot settings
+document.getElementById('save-bot-settings').addEventListener('click', async () => {
+try {
+// Collect settings from forms
+const settings = {
+whitelistSystem: {
+enabled: document.getElementById('whitelist-enabled').checked,
+requireApproval: document.getElementById('whitelist-approval').checked
+},
+chatFilter: {
+enabled: document.getElementById('chatfilter-enabled').checked,
+notifyUser: document.getElementById('chatfilter-notify').checked,
+deleteMessage: document.getElementById('chatfilter-delete').checked
+},
+autoModeration: {
+enabled: document.getElementById('automod-enabled').checked,
+applySanctions: document.getElementById('automod-punish').checked
+}
+};
+
+const response = await fetch('/api/admin/bot-settings', {
+method: 'POST',
+headers: {
+'Authorization': `Bearer ${authToken}`,
+'Content-Type': 'application/json'
+},
+body: JSON.stringify({ settings })
+});
+
+if (!response.ok) {
+throw new Error('Erro ao salvar configurações');
+}
+
+alert('Configurações salvas com sucesso!');
+
+} catch (error) {
+console.error('Error saving settings:', error);
+alert('Erro ao salvar configurações');
+}
+});
+
+// Activity Logs functions
+async function loadActivityLogs() {
+try {
+const response = await fetch('/api/admin/activity-logs', {
+headers: {
+'Authorization': `Bearer ${authToken}`
+}
+});
+
+if (!response.ok) {
+if (response.status === 401) {
+localStorage.removeItem(TOKEN_KEY);
+authToken = null;
+checkAuth();
+return;
+}
+throw new Error('Erro ao carregar logs de atividade');
+}
+
+const logs = await response.json();
+
+// Update activity logs table
+const logsTable = document.getElementById('activity-logs-table');
+logsTable.innerHTML = '';
+
+if (logs.length > 0) {
+logs.forEach(log => {
+const row = document.createElement('tr');
+
+const formatAction = (action) => {
+if (action.startsWith('formulario_aprovado')) return 'Aprovou whitelist';
+if (action.startsWith('formulario_rejeitado')) return 'Rejeitou whitelist';
+if (action === 'login') return 'Login no painel';
+if (action === 'atualizar_config_bot') return 'Atualizou configurações';
+return action;
+};
+
+// Format details
+let details = '-';
+if (log.details) {
+if (log.details.formId) {
+    details = `Form ID: ${log.details.formId}`;
+    if (log.details.userId) {
+        details += `<br/>User: ${log.details.userId}`;
+    }
+}
+}
+
+row.innerHTML = `
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${log.username}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatAction(log.action)}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(log.timestamp).toLocaleString()}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${log.details?.ip || '-'}</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${details}</td>
+`;
+
+logsTable.appendChild(row);
+});
+} else {
+logsTable.innerHTML = `
+<tr>
+<td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+    Nenhum log de atividade encontrado
+</td>
+</tr>
+`;
+}
+
+} catch (error) {
+console.error('Error loading activity logs:', error);
+}
+}
+
+// Refresh logs button
+document.getElementById('refresh-logs').addEventListener('click', loadActivityLogs);
+
+// Initial check
+checkAuth();
+});
+</script>
 </body>
 </html>
