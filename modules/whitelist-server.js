@@ -16,14 +16,6 @@ const CONFIG = {
     jwtSecret: process.env.JWT_SECRET || uuidv4(), // Gerar segredo único ao iniciar
     adminPassword: process.env.ADMIN_PASSWORD || 'admin123', // Senha para painel admin
     sessionDuration: '24h', // Duração do token de sessão
-    whitelistLinkDuration: 30, // Minutos que um link de convite é válido
-    // Configuração OAuth do Discord
-    discord: {
-        clientId: process.env.DISCORD_CLIENT_ID,
-        clientSecret: process.env.DISCORD_CLIENT_SECRET,
-        redirectUri: process.env.DISCORD_REDIRECT_URI || `http://56.124.64.115/auth/discord/callback`,
-        scope: ['identify', 'email']
-    },
     formFields: [
         { 
             id: 'nome', 
@@ -110,9 +102,8 @@ class WhitelistServer {
         this.server = null;
         this.db = {
             forms: {},
-            pendingLinks: {},
+            users: {},
             admins: {},
-            authStates: {},
             botSettings: {
                 chatFilter: {
                     enabled: true
@@ -147,6 +138,17 @@ class WhitelistServer {
             } catch (error) {
                 console.error('Erro ao carregar formulários:', error);
                 this.db.forms = {};
+            }
+        }
+        
+        // Carregar usuários
+        const usersPath = path.join(dbPath, 'whitelist-users.json');
+        if (fs.existsSync(usersPath)) {
+            try {
+                this.db.users = JSON.parse(fs.readFileSync(usersPath, 'utf-8'));
+            } catch (error) {
+                console.error('Erro ao carregar usuários:', error);
+                this.db.users = {};
             }
         }
         
@@ -230,9 +232,6 @@ class WhitelistServer {
         // Servir o frontend
         this.app.use(express.static(path.join(__dirname, '..', 'whitelist-frontend')));
         
-        // Rotas de autenticação do Discord
-        this.setupDiscordAuth();
-        
         // API de informações gerais
         this.app.get('/api/config', (req, res) => {
             res.json({
@@ -240,26 +239,9 @@ class WhitelistServer {
                 serverName: this.client.guilds.cache.first()?.name || 'Servidor Discord'
             });
         });
-        
-        // Validar link de whitelist
-        this.app.get('/api/validate-link/:token', (req, res) => {
-            const { token } = req.params;
-            
-            if (!this.db.pendingLinks[token]) {
-                return res.status(404).json({ valid: false, error: 'Link inválido ou expirado' });
-            }
-            
-            const link = this.db.pendingLinks[token];
-            const now = new Date();
-            const expiry = new Date(link.expiresAt);
-            
-            if (now > expiry) {
-                delete this.db.pendingLinks[token];
-                return res.status(400).json({ valid: false, error: 'Link expirado' });
-            }
-            
-            res.json({ valid: true, userId: link.userId, username: link.username });
-        });
+
+        // Rotas para autenticação direta (sem Discord)
+        this.setupDirectAuth();
         
         // Verificar status de autenticação
         this.app.get('/api/auth/status', (req, res) => {
@@ -276,7 +258,7 @@ class WhitelistServer {
                     user: {
                         id: decoded.id,
                         username: decoded.username,
-                        avatar: decoded.avatar
+                        discordId: decoded.discordId
                     }
                 });
             } catch (error) {
@@ -326,11 +308,11 @@ class WhitelistServer {
                     id: formId,
                     userId: decoded.id,
                     username: decoded.username,
-                    discordTag: decoded.discordTag,
-                    guildId: decoded.guildId || this.client.guilds.cache.first()?.id,
+                    discordId: decoded.discordId || null,
+                    guildId: this.client.guilds.cache.first()?.id,
                     status: 'pendente',
                     data: formData,
-                    clientIp: clientIp, // Registrar IP do cliente
+                    clientIp: clientIp,
                     userAgent: req.headers['user-agent'] || 'Unknown',
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
@@ -435,13 +417,13 @@ class WhitelistServer {
                 ip: req.realIp
             });
             
-            // Notificar o usuário
-            await this.notifyUser(form, status, feedback);
+            // Notificar o usuário se tiver ID do Discord
+            if (form.discordId) {
+                await this.notifyUser(form, status, feedback);
+            }
             
             res.json({ success: true, form });
         });
-        
-        // ==== NOVAS ROTAS DO PAINEL ADMIN ====
         
         // Obter configurações do bot
         this.app.get('/api/admin/bot-settings', this.authMiddleware, (req, res) => {
@@ -530,149 +512,161 @@ class WhitelistServer {
         });
     }
     
-    // Configuração das rotas de autenticação do Discord
-    setupDiscordAuth() {
-        // Rota para iniciar autenticação com Discord
-        this.app.get('/auth/discord', (req, res) => {
-            console.log("[AUTH] Iniciando autenticação Discord");
-            const state = uuidv4();
-            const discordAuthUrl = new URL('https://discord.com/api/oauth2/authorize');
+    // Configuração das rotas de autenticação direta (sem Discord)
+    setupDirectAuth() {
+        // Registro de usuário
+        this.app.post('/api/auth/register', async (req, res) => {
+            const { username, password, discordId } = req.body;
             
-            // Log das configurações de Discord antes de montar a URL
-            console.log("[AUTH] Config do Discord:", JSON.stringify({
-                clientId: this.options.discord.clientId,
-                redirectUri: this.options.discord.redirectUri,
-                scope: this.options.discord.scope
-            }));
+            if (!username || !password) {
+                return res.status(400).json({ error: 'Nome de usuário e senha são obrigatórios' });
+            }
             
-            discordAuthUrl.searchParams.append('client_id', this.options.discord.clientId);
-            discordAuthUrl.searchParams.append('redirect_uri', this.options.discord.redirectUri);
-            discordAuthUrl.searchParams.append('response_type', 'code');
-            discordAuthUrl.searchParams.append('scope', this.options.discord.scope.join(' '));
-            discordAuthUrl.searchParams.append('state', state);
+            // Validação básica
+            if (username.length < 3 || username.length > 20) {
+                return res.status(400).json({ error: 'Nome de usuário deve ter entre 3 e 20 caracteres' });
+            }
             
-            // Log da URL final
-            console.log("[AUTH] URL de redirecionamento Discord completa:", discordAuthUrl.toString());
+            if (password.length < 6) {
+                return res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
+            }
             
-            // Armazenar o estado para verificar depois
-            this.db.authStates = this.db.authStates || {};
-            this.db.authStates[state] = {
+            // Verificar se nome de usuário já existe
+            if (Object.values(this.db.users).some(user => user.username.toLowerCase() === username.toLowerCase())) {
+                return res.status(400).json({ error: 'Nome de usuário já em uso' });
+            }
+            
+            // Criar novo usuário
+            const userId = uuidv4();
+            const newUser = {
+                id: userId,
+                username,
+                discordId: discordId || null,
+                passwordHash: bcrypt.hashSync(password, 10),
                 createdAt: new Date().toISOString(),
-                returnUrl: req.query.returnUrl || '/'
+                lastLogin: new Date().toISOString(),
+                ip: req.realIp
             };
             
-            res.redirect(discordAuthUrl.toString());
+            // Salvar usuário
+            this.db.users[userId] = newUser;
+            this.saveUsers();
+            
+            // Gerar token JWT
+            const token = jwt.sign(
+                { 
+                    id: userId, 
+                    username,
+                    discordId: discordId || null
+                },
+                this.options.jwtSecret,
+                { expiresIn: this.options.sessionDuration }
+            );
+            
+            // Retornar token e dados básicos do usuário
+            res.json({ 
+                token, 
+                user: { 
+                    id: userId, 
+                    username, 
+                    discordId: discordId || null 
+                } 
+            });
         });
         
-        // Callback da autenticação com Discord
-        this.app.get('/auth/discord/callback', async (req, res) => {
-            console.log("[AUTH] Recebido callback do Discord", {
-                code: req.query.code ? "Presente" : "Ausente", 
-                state: req.query.state,
-                error: req.query.error
+        // Login
+        this.app.post('/api/auth/login', async (req, res) => {
+            const { username, password } = req.body;
+            
+            if (!username || !password) {
+                return res.status(400).json({ error: 'Nome de usuário e senha são obrigatórios' });
+            }
+            
+            // Buscar usuário pelo nome de usuário
+            const user = Object.values(this.db.users).find(
+                u => u.username.toLowerCase() === username.toLowerCase()
+            );
+            
+            if (!user) {
+                return res.status(401).json({ error: 'Nome de usuário ou senha inválidos' });
+            }
+            
+            // Verificar senha
+            const passwordMatch = bcrypt.compareSync(password, user.passwordHash);
+            if (!passwordMatch) {
+                return res.status(401).json({ error: 'Nome de usuário ou senha inválidos' });
+            }
+            
+            // Atualizar último login
+            user.lastLogin = new Date().toISOString();
+            user.ip = req.realIp;
+            this.saveUsers();
+            
+            // Gerar token JWT
+            const token = jwt.sign(
+                { 
+                    id: user.id, 
+                    username: user.username,
+                    discordId: user.discordId
+                },
+                this.options.jwtSecret,
+                { expiresIn: this.options.sessionDuration }
+            );
+            
+            // Retornar token e dados básicos do usuário
+            res.json({ 
+                token, 
+                user: { 
+                    id: user.id, 
+                    username: user.username, 
+                    discordId: user.discordId 
+                } 
             });
-            
-            const { code, state, error } = req.query;
-            
-            // Verificar o estado para prevenir CSRF
-            if (!state || !this.db.authStates[state]) {
-                console.log("[AUTH] Erro: Estado inválido ou ausente");
-                return res.redirect('/?error=invalid_state');
-            }
-            
-            const returnUrl = this.db.authStates[state].returnUrl;
-            delete this.db.authStates[state];
-            
-            if (error) {
-                console.log("[AUTH] Erro retornado pelo Discord:", error);
-                return res.redirect(`/?error=${error}`);
-            }
-            
-            if (!code) {
-                console.log("[AUTH] Erro: Nenhum código recebido");
-                return res.redirect('/?error=no_code');
-            }
-            
-            try {
-                console.log("[AUTH] Trocando código por token de acesso");
-                
-                // Log dos parâmetros da requisição token
-                const tokenParams = {
-                    client_id: this.options.discord.clientId,
-                    client_secret: "******", // oculto por segurança
-                    grant_type: 'authorization_code',
-                    code: code,
-                    redirect_uri: this.options.discord.redirectUri
-                };
-                console.log("[AUTH] Parâmetros da requisição token:", JSON.stringify({
-                    ...tokenParams,
-                    client_secret: "[OCULTO]"
-                }));
-                
-                // Trocar o código por um token de acesso
-                const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: new URLSearchParams({
-                        client_id: this.options.discord.clientId,
-                        client_secret: this.options.discord.clientSecret,
-                        grant_type: 'authorization_code',
-                        code: code,
-                        redirect_uri: this.options.discord.redirectUri
-                    })
-                });
-                
-                if (!tokenResponse.ok) {
-                    const errorText = await tokenResponse.text();
-                    console.error('[AUTH] Erro na resposta do token Discord:', errorText);
-                    return res.redirect('/?error=token_exchange');
-                }
-                
-                const tokenData = await tokenResponse.json();
-                console.log("[AUTH] Token obtido com sucesso");
-                
-                // Obter informações do usuário
-                console.log("[AUTH] Obtendo informações do usuário");
-                const userResponse = await fetch('https://discord.com/api/users/@me', {
-                    headers: {
-                        Authorization: `Bearer ${tokenData.access_token}`
-                    }
-                });
-                
-                if (!userResponse.ok) {
-                    console.log("[AUTH] Erro ao obter informações do usuário:", await userResponse.text());
-                    return res.redirect('/?error=user_info');
-                }
-                
-                const userData = await userResponse.json();
-                console.log("[AUTH] Informações do usuário obtidas:", 
-                    JSON.stringify({id: userData.id, username: userData.username}));
-                
-                // Gerar JWT para o usuário
-                const token = jwt.sign(
-                    { 
-                        id: userData.id,
-                        username: userData.username,
-                        discordTag: `${userData.username}#${userData.discriminator || '0'}`,
-                        avatar: userData.avatar,
-                        email: userData.email,
-                        guildId: this.client.guilds.cache.first()?.id
-                    },
-                    this.options.jwtSecret,
-                    { expiresIn: this.options.sessionDuration }
-                );
-                
-                // Redirecionar para a página de origem com o token
-                console.log("[AUTH] Redirecionando para:", `${returnUrl}?token=${token.substring(0, 10)}...`);
-                return res.redirect(`${returnUrl}?token=${token}`);
-                
-            } catch (error) {
-                console.error('[AUTH] Erro na autenticação Discord:', error);
-                return res.redirect('/?error=auth_error');
-            }
         });
+        
+        // Associar ID do Discord (opcional, pode ser útil se os usuários quiserem vincular suas contas)
+        this.app.post('/api/auth/link-discord', this.authMiddleware, async (req, res) => {
+            const { discordId } = req.body;
+            const userId = req.user.id;
+            
+            if (!discordId) {
+                return res.status(400).json({ error: 'ID do Discord é obrigatório' });
+            }
+            
+            // Verificar se o usuário existe
+            const user = this.db.users[userId];
+            if (!user) {
+                return res.status(404).json({ error: 'Usuário não encontrado' });
+            }
+            
+            // Atualizar ID do Discord
+            user.discordId = discordId;
+            this.saveUsers();
+            
+            // Retornar dados atualizados
+            res.json({ 
+                success: true, 
+                user: { 
+                    id: user.id, 
+                    username: user.username, 
+                    discordId: user.discordId 
+                } 
+            });
+        });
+    }
+    
+    // Salvar usuários
+    saveUsers() {
+        const dbPath = path.join(__dirname, '..', 'database');
+        const usersPath = path.join(dbPath, 'whitelist-users.json');
+        
+        try {
+            fs.writeFileSync(usersPath, JSON.stringify(this.db.users, null, 2), 'utf-8');
+            return true;
+        } catch (error) {
+            console.error('Erro ao salvar usuários:', error);
+            return false;
+        }
     }
     
     // Registra atividade do admin
@@ -788,7 +782,7 @@ class WhitelistServer {
                 .setTitle('📝 Nova Solicitação de Whitelist')
                 .setDescription(`Usuário **${form.username}** enviou um formulário de whitelist pelo site.`)
                 .addFields(
-                    { name: 'Usuário', value: `<@${form.userId}>`, inline: true },
+                    { name: 'Usuário', value: form.discordId ? `<@${form.discordId}>` : form.username, inline: true },
                     { name: 'ID do Formulário', value: form.id.substring(0, 8), inline: true },
                     { name: 'IP do Cliente', value: form.clientIp || 'Desconhecido', inline: true },
                     { name: 'Enviado em', value: new Date(form.createdAt).toLocaleString('pt-BR'), inline: true }
@@ -837,7 +831,7 @@ class WhitelistServer {
             // Também registrar no novo sistema de logs
             if (logger && logger.logWhitelist) {
                 logger.logWhitelist(guild, {
-                    userId: form.userId,
+                    userId: form.discordId || form.userId,
                     username: form.username,
                     status: 'pendente',
                     clientIp: form.clientIp,
@@ -852,8 +846,11 @@ class WhitelistServer {
     // Notifica o usuário sobre a decisão
     async notifyUser(form, status, feedback) {
         try {
+            // Se não tiver ID do Discord, não podemos notificar
+            if (!form.discordId) return;
+            
             // Encontrar o usuário
-            const user = await this.client.users.fetch(form.userId).catch(() => null);
+            const user = await this.client.users.fetch(form.discordId).catch(() => null);
             if (!user) return;
             
             const guild = this.client.guilds.cache.get(form.guildId);
@@ -884,7 +881,7 @@ class WhitelistServer {
             // Se aprovado, adicionar cargo de whitelist
             if (status === 'aprovado') {
                 try {
-                    const member = await guild.members.fetch(form.userId);
+                    const member = await guild.members.fetch(form.discordId);
                     const role = guild.roles.cache.find(r => r.name === 'Acess');
                     
                     if (member && role) {
@@ -901,7 +898,7 @@ class WhitelistServer {
                 const logEmbed = new EmbedBuilder()
                     .setColor(status === 'aprovado' ? '#2ecc71' : '#e74c3c')
                     .setTitle(status === 'aprovado' ? '✅ Whitelist Aprovada' : '❌ Whitelist Rejeitada')
-                    .setDescription(`A whitelist de <@${form.userId}> foi ${status}.`)
+                    .setDescription(`A whitelist de <@${form.discordId}> foi ${status}.`)
                     .addFields(
                         { name: 'Revisado por', value: form.reviewedBy, inline: true },
                         { name: 'ID do Formulário', value: form.id.substring(0, 8), inline: true },
@@ -918,7 +915,7 @@ class WhitelistServer {
                 // Usar o novo sistema de logs também
                 if (logger && logger.logWhitelist) {
                     logger.logWhitelist(guild, {
-                        userId: form.userId,
+                        userId: form.discordId,
                         username: form.username,
                         status,
                         approver: form.reviewedBy,
@@ -930,60 +927,6 @@ class WhitelistServer {
         } catch (error) {
             console.error('Erro ao notificar usuário:', error);
         }
-    }
-    
-    // Cria um link único para um usuário acessar o formulário
-    createWhitelistLink(userId, guildId) {
-        // Obter informações do usuário
-        const user = this.client.users.cache.get(userId);
-        if (!user) return null;
-        
-        const guild = this.client.guilds.cache.get(guildId);
-        if (!guild) return null;
-        
-        // Verificar se o usuário já tem um link pendente
-        const existingToken = Object.entries(this.db.pendingLinks).find(([_, link]) => link.userId === userId);
-        if (existingToken) {
-            // Se o link ainda for válido, retorna ele
-            const [token, link] = existingToken;
-            const now = new Date();
-            const expiry = new Date(link.expiresAt);
-            
-            if (now < expiry) {
-                return `http://56.124.64.115/whitelist/${token}`;
-            }
-            
-            // Se expirado, remove
-            delete this.db.pendingLinks[token];
-        }
-        
-        // Verificar se o usuário já tem um formulário enviado
-        const existingForm = Object.values(this.db.forms).find(form => 
-            form.userId === userId && form.status === 'pendente'
-        );
-        
-        if (existingForm) {
-            return null; // Usuário já tem um formulário pendente
-        }
-        
-        // Gerar token único
-        const token = uuidv4();
-        
-        // Calcular data de expiração
-        const expiresAt = new Date();
-        expiresAt.setMinutes(expiresAt.getMinutes() + this.options.whitelistLinkDuration);
-        
-        // Armazenar link
-        this.db.pendingLinks[token] = {
-            userId,
-            username: user.username,
-            discordTag: user.tag,
-            guildId,
-            createdAt: new Date().toISOString(),
-            expiresAt: expiresAt.toISOString()
-        };
-        
-        return `http://56.124.64.115/whitelist/${token}`;
     }
     
     // Inicia o servidor HTTP
@@ -1043,11 +986,26 @@ class WhitelistServer {
         <div class="bg-dark-800 p-8 rounded-lg shadow-md max-w-md w-full">
             <div class="text-center mb-6">
                 <h1 class="text-2xl font-bold text-white">Sistema de Whitelist Metânia</h1>
-                <p class="text-gray-400">
-                    Por favor, acesse através do Discord usando o comando /whitelist.
+                <p class="text-gray-400 mt-2">
+                    Preencha o formulário para solicitar acesso ao servidor.
                 </p>
             </div>
-            <div class="mt-4 text-center text-sm text-gray-500">
+            
+            <div class="space-y-4">
+                <div>
+                    <a href="/cadastro.html" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded text-center transition">
+                        Criar Conta
+                    </a>
+                </div>
+                
+                <div>
+                    <a href="/login.html" class="block w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded text-center transition">
+                        Entrar
+                    </a>
+                </div>
+            </div>
+            
+            <div class="mt-6 text-center text-sm text-gray-500">
                 <p>Desenvolvido para Metânia por Mr.Dark</p>
             </div>
         </div>
@@ -1056,7 +1014,488 @@ class WhitelistServer {
 </html>`;
             fs.writeFileSync(indexPath, basicHtml);
             
-            console.log('⚠️ Diretório do frontend criado com um arquivo HTML básico.');
+            // Criar arquivo de login
+            const loginPath = path.join(frontendPath, 'login.html');
+            const loginHtml = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Whitelist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        metania: {
+                            500: '#0f1122',
+                            600: '#0a0c17',
+                            700: '#06080e'
+                        },
+                        dark: {
+                            800: '#1e2039',
+                            900: '#0f1122'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0f1122;
+            color: #e2e8f0;
+        }
+    </style>
+</head>
+<body class="bg-dark-900 min-h-screen text-gray-100">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="bg-dark-800 p-8 rounded-lg shadow-md max-w-md w-full">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-white">Entrar</h1>
+                <p class="text-gray-400 mt-2">
+                    Faça login para acessar o sistema de whitelist
+                </p>
+            </div>
+            
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-300">Nome de usuário</label>
+                    <input type="text" id="username" name="username" required class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-300">Senha</label>
+                    <input type="password" id="password" name="password" required class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Entrar
+                    </button>
+                </div>
+                
+                <div id="errorMessage" class="text-red-500 text-sm hidden"></div>
+            </form>
+            
+            <div class="mt-4 text-center text-sm">
+                <p class="text-gray-400">
+                    Não tem uma conta? <a href="/cadastro.html" class="text-indigo-400 hover:text-indigo-300">Cadastre-se</a>
+                </p>
+            </div>
+            
+            <div class="mt-6 text-center text-sm text-gray-500">
+                <p>Desenvolvido para Metânia por Mr.Dark</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            try {
+                errorMessage.classList.add('hidden');
+                
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erro ao fazer login');
+                }
+                
+                // Salvar token no localStorage
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
+                // Redirecionar para o formulário de whitelist
+                window.location.href = '/formulario.html';
+            } catch (error) {
+                errorMessage.textContent = error.message;
+                errorMessage.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>`;
+            fs.writeFileSync(loginPath, loginHtml);
+            
+            // Criar arquivo de cadastro
+            const registerPath = path.join(frontendPath, 'cadastro.html');
+            const registerHtml = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - Sistema de Whitelist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        metania: {
+                            500: '#0f1122',
+                            600: '#0a0c17',
+                            700: '#06080e'
+                        },
+                        dark: {
+                            800: '#1e2039',
+                            900: '#0f1122'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0f1122;
+            color: #e2e8f0;
+        }
+    </style>
+</head>
+<body class="bg-dark-900 min-h-screen text-gray-100">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="bg-dark-800 p-8 rounded-lg shadow-md max-w-md w-full">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-white">Criar Conta</h1>
+                <p class="text-gray-400 mt-2">
+                    Crie sua conta para acessar o sistema de whitelist
+                </p>
+            </div>
+            
+            <form id="registerForm" class="space-y-4">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-300">Nome de usuário</label>
+                    <input type="text" id="username" name="username" required class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <p class="text-xs text-gray-400 mt-1">Entre 3 e 20 caracteres</p>
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-300">Senha</label>
+                    <input type="password" id="password" name="password" required class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <p class="text-xs text-gray-400 mt-1">Mínimo de 6 caracteres</p>
+                </div>
+                
+                <div>
+                    <label for="discordId" class="block text-sm font-medium text-gray-300">ID do Discord (opcional)</label>
+                    <input type="text" id="discordId" name="discordId" class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <p class="text-xs text-gray-400 mt-1">Se você já tem uma conta no Discord, informe seu ID</p>
+                </div>
+                
+                <div>
+                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Cadastrar
+                    </button>
+                </div>
+                
+                <div id="errorMessage" class="text-red-500 text-sm hidden"></div>
+            </form>
+            
+            <div class="mt-4 text-center text-sm">
+                <p class="text-gray-400">
+                    Já tem uma conta? <a href="/login.html" class="text-indigo-400 hover:text-indigo-300">Faça login</a>
+                </p>
+            </div>
+            
+            <div class="mt-6 text-center text-sm text-gray-500">
+                <p>Desenvolvido para Metânia por Mr.Dark</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const discordId = document.getElementById('discordId').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            try {
+                errorMessage.classList.add('hidden');
+                
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password, discordId })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erro ao criar conta');
+                }
+                
+                // Salvar token no localStorage
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
+                // Redirecionar para o formulário de whitelist
+                window.location.href = '/formulario.html';
+            } catch (error) {
+                errorMessage.textContent = error.message;
+                errorMessage.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>`;
+            fs.writeFileSync(registerPath, registerHtml);
+            
+            // Criar arquivo do formulário
+            const formPath = path.join(frontendPath, 'formulario.html');
+            const formHtml = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Whitelist - Metânia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        metania: {
+                            500: '#0f1122',
+                            600: '#0a0c17',
+                            700: '#06080e'
+                        },
+                        dark: {
+                            800: '#1e2039',
+                            900: '#0f1122'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0f1122;
+            color: #e2e8f0;
+        }
+    </style>
+</head>
+<body class="bg-dark-900 min-h-screen text-gray-100">
+    <div class="min-h-screen flex justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="bg-dark-800 p-8 rounded-lg shadow-md max-w-4xl w-full">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-white">Formulário de Whitelist</h1>
+                <p class="text-gray-400 mt-2">
+                    Preencha o formulário abaixo para solicitar acesso ao servidor Metânia
+                </p>
+            </div>
+            
+            <div id="notLoggedIn" class="hidden text-center py-8">
+                <p class="text-lg text-gray-300 mb-4">Você precisa estar logado para acessar o formulário</p>
+                <div class="flex justify-center space-x-4">
+                    <a href="/login.html" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded">Fazer Login</a>
+                    <a href="/cadastro.html" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded">Criar Conta</a>
+                </div>
+            </div>
+            
+            <form id="whitelistForm" class="space-y-6">
+                <div id="formFields">
+                    <!-- Os campos serão inseridos aqui via JavaScript -->
+                </div>
+                
+                <div>
+                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Enviar Solicitação
+                    </button>
+                </div>
+                
+                <div id="submitMessage" class="hidden p-4 rounded-md">
+                    <!-- Mensagem após envio -->
+                </div>
+            </form>
+            
+            <div class="mt-6 text-center text-sm text-gray-500">
+                <p>Desenvolvido para Metânia por Mr.Dark</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            const formFieldsContainer = document.getElementById('formFields');
+            const notLoggedInDiv = document.getElementById('notLoggedIn');
+            const whitelistForm = document.getElementById('whitelistForm');
+            const submitMessage = document.getElementById('submitMessage');
+            
+            // Verificar se está logado
+            if (!token) {
+                whitelistForm.classList.add('hidden');
+                notLoggedInDiv.classList.remove('hidden');
+                return;
+            }
+            
+            // Carregar configuração do formulário
+            try {
+                const configResponse = await fetch('/api/config', {
+                    headers: {
+                        'Authorization': \`Bearer \${token}\`
+                    }
+                });
+                
+                if (!configResponse.ok) {
+                    throw new Error('Erro ao carregar configuração');
+                }
+                
+                const config = await configResponse.json();
+                
+                // Criar campos do formulário
+                config.formFields.forEach(field => {
+                    const fieldDiv = document.createElement('div');
+                    
+                    const label = document.createElement('label');
+                    label.setAttribute('for', field.id);
+                    label.className = 'block text-sm font-medium text-gray-300';
+                    label.textContent = \`\${field.label}\${field.required ? ' *' : ''}\`;
+                    
+                    let input;
+                    if (field.type === 'textarea') {
+                        input = document.createElement('textarea');
+                        input.rows = 4;
+                    } else {
+                        input = document.createElement('input');
+                        input.type = field.type;
+                    }
+                    
+                    input.id = field.id;
+                    input.name = field.id;
+                    input.className = 'mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500';
+                    input.placeholder = field.placeholder;
+                    
+                    if (field.required) {
+                        input.required = true;
+                    }
+                    
+                    if (field.min) {
+                        input.min = field.min;
+                    }
+                    
+                    if (field.max) {
+                        input.max = field.max;
+                    }
+                    
+                    fieldDiv.appendChild(label);
+                    fieldDiv.appendChild(input);
+                    
+                    if (field.validation && field.validation.message) {
+                        const helpText = document.createElement('p');
+                        helpText.className = 'text-xs text-gray-400 mt-1';
+                        helpText.textContent = field.validation.message;
+                        fieldDiv.appendChild(helpText);
+                    }
+                    
+                    formFieldsContainer.appendChild(fieldDiv);
+                });
+                
+            } catch (error) {
+                console.error('Erro ao carregar configuração:', error);
+                formFieldsContainer.innerHTML = \`<div class="text-red-500">Erro ao carregar formulário: \${error.message}</div>\`;
+            }
+            
+            // Submeter formulário
+            whitelistForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const formData = {};
+                const formElements = Array.from(whitelistForm.elements);
+                
+                formElements.forEach(element => {
+                    if (element.name && element.name !== '' && element.type !== 'submit') {
+                        formData[element.name] = element.value;
+                    }
+                });
+                
+                try {
+                    const response = await fetch('/api/submit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': \`Bearer \${token}\`
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Erro ao enviar formulário');
+                    }
+                    
+                    // Mostrar mensagem de sucesso
+                    submitMessage.innerHTML = \`
+                        <div class="bg-green-800 text-white p-4 rounded-md">
+                            <h3 class="font-medium">Solicitação enviada com sucesso!</h3>
+                            <p class="mt-2">Sua solicitação de whitelist foi enviada e está sendo analisada pela equipe. Você receberá uma notificação quando for aprovada ou rejeitada.</p>
+                        </div>
+                    \`;
+                    submitMessage.classList.remove('hidden');
+                    
+                    // Desabilitar formulário
+                    Array.from(whitelistForm.elements).forEach(element => {
+                        if (element.type !== 'submit') {
+                            element.disabled = true;
+                        }
+                    });
+                    
+                    // Esconder botão de envio
+                    whitelistForm.querySelector('button[type="submit"]').classList.add('hidden');
+                    
+                } catch (error) {
+                    console.error('Erro ao enviar formulário:', error);
+                    
+                    // Mostrar mensagem de erro
+                    submitMessage.innerHTML = \`
+                        <div class="bg-red-800 text-white p-4 rounded-md">
+                            <h3 class="font-medium">Erro ao enviar solicitação</h3>
+                            <p class="mt-2">\${error.message}</p>
+                        </div>
+                    \`;
+                    submitMessage.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>`;
+            fs.writeFileSync(formPath, formHtml);
+            
+            console.log('✅ Arquivos de frontend básicos criados');
         }
         
         // Iniciar servidor HTTP

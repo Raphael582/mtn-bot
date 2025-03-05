@@ -31,46 +31,30 @@ const logger = require('./modules/logger');
 // Função para inicializar o servidor de whitelist
 async function initWhitelistServer() {
     try {
-        console.log('🔍 Verificando se o servidor whitelist já existe...');
         if (!whitelistServer) {
             console.log('🌐 Iniciando servidor de whitelist...');
+            whitelistServer = new WhitelistServer(client);
+            await whitelistServer.start();
+            console.log(`✅ Servidor de whitelist iniciado na porta ${whitelistServer.options.port}`);
             
-            console.log('📂 Verificando módulo WhitelistServer...');
-            const WhitelistServerPath = path.join(__dirname, 'modules', 'whitelist-server.js');
-            console.log(`📄 Caminho do módulo: ${WhitelistServerPath}`);
-            console.log(`📄 Módulo existe: ${fs.existsSync(WhitelistServerPath)}`);
-            
-            try {
-                console.log('🔄 Importando módulo WhitelistServer...');
-                const WhitelistServerModule = require('./modules/whitelist-server');
-                console.log('✅ Módulo importado com sucesso');
+            // Criar diretório de frontend se não existir
+            const frontendPath = path.join(__dirname, 'whitelist-frontend');
+            if (!fs.existsSync(frontendPath)) {
+                fs.mkdirSync(frontendPath, { recursive: true });
+                console.log('📁 Diretório de frontend criado');
                 
-                console.log('🏗️ Criando instância do servidor...');
-                whitelistServer = new WhitelistServerModule(client);
-                console.log('✅ Instância criada com sucesso');
-                
-                console.log('🔧 Verificando opções do servidor...');
-                console.log(JSON.stringify(whitelistServer.options, null, 2));
-                
-                console.log('🚀 Iniciando servidor...');
-                await whitelistServer.start();
-                console.log(`✅ Servidor de whitelist iniciado na porta ${whitelistServer.options.port}`);
-                
-                // Disponibilizar globalmente
-                global.whitelistServer = whitelistServer;
-                return whitelistServer;
-            } catch (initError) {
-                console.error('❌ Erro durante inicialização:', initError);
-                console.error(initError.stack);
-                return null;
+                // O servidor já cria os arquivos básicos ao iniciar
+                console.log('✅ Arquivos de frontend básicos criados pelo servidor');
             }
+            
+            // Disponibilizar globalmente
+            global.whitelistServer = whitelistServer;
+            return whitelistServer;
         } else {
-            console.log('⚠️ Servidor whitelist já está iniciado');
             return whitelistServer;
         }
     } catch (error) {
-        console.error('❌ Erro ao iniciar servidor whitelist:', error);
-        console.error(error.stack);
+        console.error('❌ Erro ao iniciar servidor de whitelist:', error);
         return null;
     }
 }
@@ -269,6 +253,128 @@ client.on('interactionCreate', async (interaction) => {
                         ephemeral: true 
                     });
                 }
+            } 
+            // Novos botões específicos para o servidor web
+            else if (customId.startsWith('wl_approve_') || customId.startsWith('wl_reject_')) {
+                const formId = customId.split('_')[2];
+                const action = customId.startsWith('wl_approve_') ? 'aprovado' : 'rejeitado';
+                
+                if (!whitelistServer) {
+                    await initWhitelistServer();
+                }
+                
+                if (whitelistServer) {
+                    try {
+                        // Buscar formulário
+                        const form = whitelistServer.db.forms[formId];
+                        
+                        if (!form) {
+                            await interaction.reply({
+                                content: '❌ Formulário não encontrado ou já processado.',
+                                ephemeral: true
+                            });
+                            return;
+                        }
+                        
+                        // Confirmar ação
+                        await interaction.reply({
+                            content: `⚠️ Tem certeza que deseja ${action === 'aprovado' ? 'aprovar' : 'rejeitar'} a whitelist de **${form.username}**?`,
+                            ephemeral: true,
+                            components: [
+                                {
+                                    type: 1,
+                                    components: [
+                                        {
+                                            type: 2,
+                                            style: action === 'aprovado' ? 3 : 4,
+                                            label: 'Confirmar',
+                                            custom_id: `confirm_${action}_${formId}`
+                                        },
+                                        {
+                                            type: 2,
+                                            style: 2,
+                                            label: 'Cancelar',
+                                            custom_id: 'cancel_action'
+                                        }
+                                    ]
+                                }
+                            ]
+                        });
+                    } catch (error) {
+                        console.error('❌ Erro ao processar botão de whitelist:', error);
+                        await interaction.reply({
+                            content: 'Ocorreu um erro ao processar esta ação.',
+                            ephemeral: true
+                        });
+                    }
+                } else {
+                    await interaction.reply({
+                        content: '❌ Servidor de whitelist não está disponível.',
+                        ephemeral: true
+                    });
+                }
+            }
+            // Confirmação de ações de whitelist
+            else if (customId.startsWith('confirm_aprovado_') || customId.startsWith('confirm_rejeitado_')) {
+                const [_, action, formId] = customId.split('_');
+                
+                await interaction.deferUpdate();
+                
+                if (!whitelistServer) {
+                    await initWhitelistServer();
+                }
+                
+                if (whitelistServer) {
+                    try {
+                        // Buscar formulário
+                        const form = whitelistServer.db.forms[formId];
+                        
+                        if (!form) {
+                            await interaction.followUp({
+                                content: '❌ Formulário não encontrado ou já processado.',
+                                ephemeral: true
+                            });
+                            return;
+                        }
+                        
+                        // Atualizar formulário
+                        form.status = action;
+                        form.reviewedBy = interaction.user.tag;
+                        form.reviewedAt = new Date().toISOString();
+                        
+                        // Salvar
+                        whitelistServer.saveForms();
+                        
+                        // Notificar usuário se tiver Discord ID
+                        if (form.discordId) {
+                            await whitelistServer.notifyUser(form, action, '');
+                        }
+                        
+                        // Atualizar resposta
+                        await interaction.editReply({
+                            content: `✅ Whitelist de **${form.username}** foi ${action} com sucesso!`,
+                            components: []
+                        });
+                        
+                    } catch (error) {
+                        console.error('❌ Erro ao processar confirmação:', error);
+                        await interaction.followUp({
+                            content: 'Ocorreu um erro ao processar esta ação.',
+                            ephemeral: true
+                        });
+                    }
+                } else {
+                    await interaction.followUp({
+                        content: '❌ Servidor de whitelist não está disponível.',
+                        ephemeral: true
+                    });
+                }
+            }
+            else if (customId === 'cancel_action') {
+                await interaction.update({
+                    content: '❌ Ação cancelada.',
+                    components: []
+                });
             }
         }
         
@@ -345,39 +451,5 @@ process.on('SIGINT', async () => {
     console.log('👋 Bot desconectado.');
     process.exit(0);
 });
-
-// Inicie o servidor whitelist alternativo
-// Verifique se o arquivo new-whitelist-server.js existe antes de tentar carregar
-const newWhitelistServerPath = path.join(__dirname, 'new-whitelist-server.js');
-if (fs.existsSync(newWhitelistServerPath)) {
-    try {
-        console.log('🔄 Carregando servidor whitelist alternativo...');
-        require('./new-whitelist-server');
-        console.log('✅ Servidor whitelist alternativo iniciado');
-    } catch (error) {
-        console.error('❌ Erro ao iniciar servidor whitelist alternativo:', error);
-        console.error(error.stack);
-    }
-} else {
-    console.log('⚠️ Arquivo new-whitelist-server.js não encontrado');
-    
-    // Criar um servidor express simples como fallback
-    try {
-        console.log('🔄 Criando servidor Express simples como fallback...');
-        const express = require('express');
-        const app = express();
-        const PORT = 3000;
-        
-        app.get('/', (req, res) => {
-            res.send('<h1>Servidor Whitelist Metânia</h1><p>Versão simplificada em manutenção.</p>');
-        });
-        
-        app.listen(PORT, () => {
-            console.log(`✅ Servidor fallback iniciado na porta ${PORT}`);
-        });
-    } catch (fallbackError) {
-        console.error('❌ Erro ao criar servidor fallback:', fallbackError);
-    }
-}
 
 client.login(token);

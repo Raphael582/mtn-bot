@@ -38,7 +38,7 @@ module.exports = {
         }
         
         try {
-            // Determinar URL do painel admin
+            // URL do painel admin
             const adminURL = `http://56.124.64.115/admin.html`;
             
             // Criar embed informativo
@@ -53,7 +53,7 @@ module.exports = {
                         '• Ajustar configurações do bot\n' +
                         '• Visualizar logs de atividade'
                     },
-                    { name: '👤 Credenciais', value: 'Use o nome de usuário e senha configurados no arquivo .env' }
+                    { name: '👤 Credenciais', value: 'Nome de usuário: admin\nSenha: admin123 (ou a senha configurada no .env)' }
                 )
                 .setFooter({ text: 'Painel acessível apenas para administradores' })
                 .setTimestamp();
