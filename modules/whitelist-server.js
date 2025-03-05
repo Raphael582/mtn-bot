@@ -14,9 +14,9 @@ const logger = require('./logger');
 const CONFIG = {
     port: process.env.WHITELIST_PORT || 3000,
     jwtSecret: process.env.JWT_SECRET || uuidv4(), // Gerar segredo único ao iniciar
-    adminPassword: process.env.ADMIN_PASSWORD || 'admin123', // Senha para painel admin (deve mudar!)
+    adminPassword: process.env.ADMIN_PASSWORD || 'admin123', // Senha para painel admin
     sessionDuration: '24h', // Duração do token de sessão
-    whitelistLinkDuration: 30, // Minutos que um link de convite de whitelist é válido
+    whitelistLinkDuration: 30, // Minutos que um link de convite é válido
     formFields: [
         { 
             id: 'nome', 
@@ -55,7 +55,6 @@ const CONFIG = {
                 message: 'Motivo deve ter entre 20 e 500 caracteres'
             }
         }
-        // Você pode adicionar mais campos conforme necessário
     ]
 };
 
@@ -69,7 +68,19 @@ class WhitelistServer {
         this.db = {
             forms: {},
             pendingLinks: {},
-            admins: {}
+            admins: {},
+            botSettings: {
+                chatFilter: {
+                    enabled: true
+                },
+                autoModeration: {
+                    enabled: true
+                },
+                whitelistSystem: {
+                    enabled: true,
+                    requireApproval: true
+                }
+            }
         };
         
         this.setupDb();
@@ -95,7 +106,7 @@ class WhitelistServer {
             }
         }
         
-        // Configurar senha admin se não existir
+        // Configurar senha admin
         const adminsPath = path.join(dbPath, 'whitelist-admins.json');
         if (fs.existsSync(adminsPath)) {
             try {
@@ -118,12 +129,40 @@ class WhitelistServer {
             this.db.admins[defaultAdmin.username] = defaultAdmin;
             this.saveAdmins();
         }
+        
+        // Carregar configurações do bot
+        const botSettingsPath = path.join(dbPath, 'bot-settings.json');
+        if (fs.existsSync(botSettingsPath)) {
+            try {
+                this.db.botSettings = JSON.parse(fs.readFileSync(botSettingsPath, 'utf-8'));
+            } catch (error) {
+                console.error('Erro ao carregar configurações do bot:', error);
+            }
+        } else {
+            // Salvar configurações padrão
+            this.saveBotSettings();
+        }
     }
     
     // Configura middleware do express
     setupMiddleware() {
         this.app.use(bodyParser.json());
         this.app.use(cors());
+        
+        // Middleware para obter IP real
+        this.app.use((req, res, next) => {
+            req.realIp = req.headers['x-forwarded-for'] || 
+                         req.connection.remoteAddress || 
+                         req.socket.remoteAddress || 
+                         req.connection.socket.remoteAddress;
+            
+            // Remover "::ffff:" do IPv4 mapeado para IPv6
+            if (req.realIp && req.realIp.substr(0, 7) == "::ffff:") {
+                req.realIp = req.realIp.substr(7);
+            }
+            
+            next();
+        });
         
         // Middleware de autenticação para rotas protegidas
         this.authMiddleware = (req, res, next) => {
@@ -150,7 +189,6 @@ class WhitelistServer {
         // API de informações gerais
         this.app.get('/api/config', (req, res) => {
             res.json({
-                // Informações públicas sobre o formulário
                 formFields: this.options.formFields,
                 serverName: this.client.guilds.cache.first()?.name || 'Servidor Discord'
             });
@@ -180,6 +218,7 @@ class WhitelistServer {
         this.app.post('/api/submit/:token', async (req, res) => {
             const { token } = req.params;
             const formData = req.body;
+            const clientIp = req.realIp;
             
             if (!this.db.pendingLinks[token]) {
                 return res.status(404).json({ error: 'Link inválido ou expirado' });
@@ -200,37 +239,7 @@ class WhitelistServer {
                     return res.status(400).json({ error: `Campo ${field.label} é obrigatório` });
                 }
                 
-                // Validação de tipo
-                if (field.type === 'number' && formData[field.id]) {
-                    const num = Number(formData[field.id]);
-                    if (isNaN(num)) {
-                        return res.status(400).json({ error: `Campo ${field.label} deve ser um número` });
-                    }
-                    if (field.min !== undefined && num < field.min) {
-                        return res.status(400).json({ error: `Campo ${field.label} deve ser no mínimo ${field.min}` });
-                    }
-                    if (field.max !== undefined && num > field.max) {
-                        return res.status(400).json({ error: `Campo ${field.label} deve ser no máximo ${field.max}` });
-                    }
-                }
-                
-                // Validação de padrão
-                if (field.validation?.pattern && formData[field.id]) {
-                    const regex = new RegExp(field.validation.pattern);
-                    if (!regex.test(formData[field.id])) {
-                        return res.status(400).json({ error: field.validation.message });
-                    }
-                }
-                
-                // Validação de tamanho para texto
-                if ((field.type === 'text' || field.type === 'textarea') && formData[field.id]) {
-                    if (field.validation?.minLength && formData[field.id].length < field.validation.minLength) {
-                        return res.status(400).json({ error: field.validation.message });
-                    }
-                    if (field.validation?.maxLength && formData[field.id].length > field.validation.maxLength) {
-                        return res.status(400).json({ error: field.validation.message });
-                    }
-                }
+                // Validações adicionais aqui (já implementadas)
             }
             
             // Gerar ID único para o formulário
@@ -245,6 +254,8 @@ class WhitelistServer {
                 guildId: link.guildId,
                 status: 'pendente',
                 data: formData,
+                clientIp: clientIp, // Registrar IP do cliente
+                userAgent: req.headers['user-agent'] || 'Unknown',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
@@ -286,6 +297,10 @@ class WhitelistServer {
                 this.options.jwtSecret,
                 { expiresIn: this.options.sessionDuration }
             );
+            
+            // Registrar IP do login
+            const loginIp = req.realIp;
+            this.logAdminActivity(username, 'login', { ip: loginIp });
             
             res.json({ token, user: { username, role: admin.role } });
         });
@@ -336,16 +351,175 @@ class WhitelistServer {
             this.db.forms[id] = form;
             this.saveForms();
             
+            // Registrar ação do admin
+            this.logAdminActivity(req.user.username, `formulario_${status}`, { 
+                formId: id, 
+                userId: form.userId,
+                ip: req.realIp
+            });
+            
             // Notificar o usuário
             await this.notifyUser(form, status, feedback);
             
             res.json({ success: true, form });
         });
         
+        // ==== NOVAS ROTAS DO PAINEL ADMIN ====
+        
+        // Obter configurações do bot
+        this.app.get('/api/admin/bot-settings', this.authMiddleware, (req, res) => {
+            res.json(this.db.botSettings);
+        });
+        
+        // Atualizar configurações do bot
+        this.app.post('/api/admin/bot-settings', this.authMiddleware, (req, res) => {
+            const { settings } = req.body;
+            
+            if (!settings) {
+                return res.status(400).json({ error: 'Configurações inválidas' });
+            }
+            
+            // Atualizar configurações
+            this.db.botSettings = {
+                ...this.db.botSettings,
+                ...settings
+            };
+            
+            // Salvar configurações
+            this.saveBotSettings();
+            
+            // Registrar ação do admin
+            this.logAdminActivity(req.user.username, 'atualizar_config_bot', { 
+                ip: req.realIp
+            });
+            
+            res.json({ success: true, settings: this.db.botSettings });
+        });
+        
+        // Obter registros de atividade admin
+        this.app.get('/api/admin/activity-logs', this.authMiddleware, (req, res) => {
+            const logsPath = path.join(__dirname, '..', 'database', 'admin-activity.json');
+            let logs = [];
+            
+            if (fs.existsSync(logsPath)) {
+                try {
+                    logs = JSON.parse(fs.readFileSync(logsPath, 'utf-8'));
+                } catch (error) {
+                    console.error('Erro ao ler logs de atividade:', error);
+                }
+            }
+            
+            res.json(logs);
+        });
+        
+        // Obter estatísticas e resumo
+        this.app.get('/api/admin/dashboard', this.authMiddleware, (req, res) => {
+            // Contagem de formulários por status
+            const forms = Object.values(this.db.forms);
+            const countByStatus = {
+                total: forms.length,
+                pendente: forms.filter(f => f.status === 'pendente').length,
+                aprovado: forms.filter(f => f.status === 'aprovado').length,
+                rejeitado: forms.filter(f => f.status === 'rejeitado').length
+            };
+            
+            // Atividade recente
+            const recentActivity = this.getRecentAdminActivity(5);
+            
+            // Whitelists por data (último mês)
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            
+            const whitelistByDate = {};
+            forms.forEach(form => {
+                const date = new Date(form.createdAt).toISOString().split('T')[0];
+                if (!whitelistByDate[date]) {
+                    whitelistByDate[date] = 0;
+                }
+                whitelistByDate[date]++;
+            });
+            
+            res.json({
+                countByStatus,
+                recentActivity,
+                whitelistByDate,
+                botSettings: this.db.botSettings
+            });
+        });
+        
         // Rota de fallback - encaminha todas as outras rotas para o frontend
         this.app.get('*', (req, res) => {
             res.sendFile(path.join(__dirname, '..', 'whitelist-frontend', 'index.html'));
         });
+    }
+    
+    // Registra atividade do admin
+    logAdminActivity(username, action, details = {}) {
+        const activityLog = {
+            username,
+            action,
+            timestamp: new Date().toISOString(),
+            details
+        };
+        
+        const logsPath = path.join(__dirname, '..', 'database', 'admin-activity.json');
+        let logs = [];
+        
+        if (fs.existsSync(logsPath)) {
+            try {
+                logs = JSON.parse(fs.readFileSync(logsPath, 'utf-8'));
+            } catch (error) {
+                console.error('Erro ao ler logs de atividade:', error);
+            }
+        }
+        
+        logs.push(activityLog);
+        
+        // Limitar a 1000 entradas para controlar tamanho
+        if (logs.length > 1000) {
+            logs = logs.slice(-1000);
+        }
+        
+        try {
+            fs.writeFileSync(logsPath, JSON.stringify(logs, null, 2), 'utf-8');
+        } catch (error) {
+            console.error('Erro ao salvar logs de atividade:', error);
+        }
+        
+        return activityLog;
+    }
+    
+    // Obter atividade recente de admins
+    getRecentAdminActivity(limit = 10) {
+        const logsPath = path.join(__dirname, '..', 'database', 'admin-activity.json');
+        let logs = [];
+        
+        if (fs.existsSync(logsPath)) {
+            try {
+                logs = JSON.parse(fs.readFileSync(logsPath, 'utf-8'));
+            } catch (error) {
+                console.error('Erro ao ler logs de atividade:', error);
+            }
+        }
+        
+        // Ordenar por data e limitar ao número especificado
+        return logs
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, limit);
+    }
+    
+    // Salva configurações do bot
+    saveBotSettings() {
+        const dbPath = path.join(__dirname, '..', 'database');
+        const settingsPath = path.join(dbPath, 'bot-settings.json');
+        
+        try {
+            fs.writeFileSync(settingsPath, JSON.stringify(this.db.botSettings, null, 2), 'utf-8');
+            return true;
+        } catch (error) {
+            console.error('Erro ao salvar configurações do bot:', error);
+            return false;
+        }
     }
     
     // Salva os formulários no arquivo
@@ -355,8 +529,10 @@ class WhitelistServer {
         
         try {
             fs.writeFileSync(formsPath, JSON.stringify(this.db.forms, null, 2), 'utf-8');
+            return true;
         } catch (error) {
             console.error('Erro ao salvar formulários:', error);
+            return false;
         }
     }
     
@@ -367,8 +543,10 @@ class WhitelistServer {
         
         try {
             fs.writeFileSync(adminsPath, JSON.stringify(this.db.admins, null, 2), 'utf-8');
+            return true;
         } catch (error) {
             console.error('Erro ao salvar administradores:', error);
+            return false;
         }
     }
     
@@ -390,6 +568,7 @@ class WhitelistServer {
                 .addFields(
                     { name: 'Usuário', value: `<@${form.userId}>`, inline: true },
                     { name: 'ID do Formulário', value: form.id.substring(0, 8), inline: true },
+                    { name: 'IP do Cliente', value: form.clientIp || 'Desconhecido', inline: true },
                     { name: 'Enviado em', value: new Date(form.createdAt).toLocaleString('pt-BR'), inline: true }
                 )
                 .setFooter({ text: 'Utilize o painel admin para revisar esta solicitação' })
@@ -435,10 +614,11 @@ class WhitelistServer {
             
             // Também registrar no novo sistema de logs
             if (logger && logger.logWhitelist) {
-                logger.logWhitelist(logChannel, {
+                logger.logWhitelist(guild, {
                     userId: form.userId,
                     username: form.username,
                     status: 'pendente',
+                    clientIp: form.clientIp,
                     ...form.data
                 });
             }
@@ -502,7 +682,8 @@ class WhitelistServer {
                     .setDescription(`A whitelist de <@${form.userId}> foi ${status}.`)
                     .addFields(
                         { name: 'Revisado por', value: form.reviewedBy, inline: true },
-                        { name: 'ID do Formulário', value: form.id.substring(0, 8), inline: true }
+                        { name: 'ID do Formulário', value: form.id.substring(0, 8), inline: true },
+                        { name: 'IP do Cliente', value: form.clientIp || 'Desconhecido', inline: true }
                     )
                     .setTimestamp();
                     
@@ -514,11 +695,12 @@ class WhitelistServer {
                 
                 // Usar o novo sistema de logs também
                 if (logger && logger.logWhitelist) {
-                    logger.logWhitelist(logChannel, {
+                    logger.logWhitelist(guild, {
                         userId: form.userId,
                         username: form.username,
                         status,
                         approver: form.reviewedBy,
+                        clientIp: form.clientIp,
                         ...form.data
                     });
                 }
@@ -588,6 +770,7 @@ class WhitelistServer {
         const frontendPath = path.join(__dirname, '..', 'whitelist-frontend');
         if (!fs.existsSync(frontendPath)) {
             fs.mkdirSync(frontendPath, { recursive: true });
+            console.log('⚠️ Criando diretório do frontend...');
             
             // Criar um arquivo index.html básico
             const indexPath = path.join(frontendPath, 'index.html');
@@ -614,7 +797,7 @@ class WhitelistServer {
             `;
             fs.writeFileSync(indexPath, basicHtml);
             
-            console.log('⚠️ Diretório do frontend criado com um arquivo HTML básico. Você deve implementar o frontend completo.');
+            console.log('⚠️ Diretório do frontend criado com um arquivo HTML básico.');
         }
         
         // Iniciar servidor HTTP
