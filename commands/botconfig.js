@@ -1,177 +1,382 @@
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, Collection } = require('discord.js');
+const fs = require('fs');
+const path = require('path');
+require('dotenv').config();
 
-// Referência para o servidor de whitelist
+// Importar o servidor de whitelist
+const WhitelistServer = require('./modules/whitelist-server');
 let whitelistServer = null;
 
-module.exports = {
-    data: {
-        name: 'botconfig',
-        description: '⚙️ Gerencia as configurações do bot (apenas para administradores)'
-    },
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers
+    ]
+});
+
+const clientId = process.env.CLIENT_ID;
+const token = process.env.TOKEN;
+
+// Coleção para comandos
+client.commands = new Collection();
+
+// Módulo de filtro de chat
+let chatFilter;
+
+// Carregar logger
+const logger = require('./modules/logger');
+
+// Função para inicializar o servidor de whitelist
+async function initWhitelistServer() {
+    try {
+        if (!whitelistServer) {
+            console.log('🌐 Iniciando servidor de whitelist...');
+            whitelistServer = new WhitelistServer(client);
+            await whitelistServer.start();
+            console.log(`✅ Servidor de whitelist iniciado na porta ${whitelistServer.options.port}`);
+            
+            // Disponibilizar globalmente
+            global.whitelistServer = whitelistServer;
+            return whitelistServer;
+        }
+    } catch (error) {
+        console.error('❌ Erro ao iniciar servidor de whitelist:', error);
+        return null;
+    }
+}
+
+// Carregando comandos
+const commandsPath = path.join(__dirname, 'commands');
+if (fs.existsSync(commandsPath)) {
+    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+
+    for (const file of commandFiles) {
+        const filePath = path.join(commandsPath, file);
+        try {
+            // Tentar carregar o módulo de diferentes formas
+            let command;
+            try {
+                command = require(filePath);
+            } catch (importError) {
+                console.error(`❌ Erro ao importar ${file}:`, importError);
+                continue;
+            }
+
+            // Normalizar o comando
+            const commandModule = command.default || command;
+            
+            // Se for o módulo de filtro de chat, armazená-lo separadamente
+            if (file === 'chatfilter.js') {
+                chatFilter = commandModule;
+                if (commandModule.commands) {
+                    client.commands.set(commandModule.commands.data.name, commandModule.commands);
+                    console.log(`✅ Comando de filtro carregado: ${commandModule.commands.data.name}`);
+                }
+                continue;
+            }
+            
+            // Verificar diferentes formatos de comando
+            if (commandModule.data && commandModule.execute) {
+                // Slash command com data e execute
+                client.commands.set(commandModule.data.name, commandModule);
+                console.log(`✅ Comando slash carregado: ${commandModule.data.name}`);
+            } 
+            else if (commandModule.execute) {
+                // Comando legado
+                const commandName = file.replace('.js', '');
+                client.commands.set(commandName, commandModule);
+                console.log(`✅ Comando legado carregado: ${commandName}`);
+            } 
+            else {
+                console.warn(`⚠️ Comando em ${filePath} não tem propriedades necessárias.`);
+            }
+        } catch (error) {
+            console.error(`❌ Erro ao carregar comando ${file}:`, error);
+        }
+    }
+}
+
+// Registrando comandos slash
+async function registerCommands() {
+    const commands = [];
     
-    async execute(interaction, client) {
-        // Verificar permissões do usuário
-        if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-            return await interaction.reply({
-                content: '❌ Você não tem permissão para gerenciar as configurações do bot.',
-                ephemeral: true
-            });
+    // Coletar comandos para registro
+    for (const command of client.commands.values()) {
+        if (command.data) {
+            // Usar toJSON se disponível, senão usar diretamente
+            const commandData = typeof command.data.toJSON === 'function' 
+                ? command.data.toJSON() 
+                : command.data;
+            commands.push(commandData);
+        }
+    }
+
+    console.log('📤 Registrando comandos...');
+    console.log(`📋 Total de comandos: ${commands.length}`);
+    
+    if (commands.length > 0) {
+        const rest = new REST({ version: '10' }).setToken(token);
+        
+        try {
+            await rest.put(Routes.applicationCommands(clientId), { body: commands });
+            console.log('✅ Comandos registrados!');
+        } catch (error) {
+            console.error(`❌ Erro ao registrar comandos: ${error}`);
+        }
+    } else {
+        console.warn('⚠️ Nenhum comando para registrar!');
+    }
+}
+
+// Evento quando o bot estiver pronto
+client.once('ready', async () => {
+    console.log(`✅ Bot está online como ${client.user.tag}`);
+    
+    // Registrar comandos
+    await registerCommands();
+    
+    // Verificar diretório de banco de dados
+    const dbPath = path.join(__dirname, 'database');
+    if (!fs.existsSync(dbPath)) {
+        fs.mkdirSync(dbPath, { recursive: true });
+        console.log('📁 Diretório de banco de dados criado');
+    }
+    
+    // Iniciar servidor de whitelist
+    await initWhitelistServer();
+});
+
+// Evento de mensagem (para o filtro de chat)
+client.on('messageCreate', async (message) => {
+    // Verificar se o módulo de filtro está disponível
+    if (chatFilter && chatFilter.handleMessage) {
+        try {
+            await chatFilter.handleMessage(message, client);
+        } catch (error) {
+            console.error('❌ Erro ao processar filtro de chat:', error);
+            // Registrar o erro no sistema de logs
+            try {
+                await logger.logError(message.guild, 'filtro-chat', error, {
+                    userId: message.author.id,
+                    messageId: message.id,
+                    channelId: message.channel.id,
+                    content: message.content
+                });
+            } catch (logError) {
+                console.error('❌ Erro ao registrar erro de filtro:', logError);
+            }
+        }
+    }
+});
+
+// Evento de interação
+client.on('interactionCreate', async (interaction) => {
+    try {
+        // Comandos slash
+        if (interaction.isChatInputCommand()) {
+            const command = client.commands.get(interaction.commandName);
+
+            if (!command) {
+                console.error(`❌ Comando ${interaction.commandName} não encontrado.`);
+                await interaction.reply({ 
+                    content: 'Este comando não está configurado corretamente.', 
+                    ephemeral: true 
+                });
+                return;
+            }
+
+            try {
+                await command.execute(interaction, client);
+            } catch (error) {
+                console.error(`❌ Erro executando o comando ${interaction.commandName}:`, error);
+                
+                // Registrar o erro no sistema de logs
+                try {
+                    await logger.logError(interaction.guild, `comando-${interaction.commandName}`, error, {
+                        userId: interaction.user.id,
+                        channelId: interaction.channelId
+                    });
+                } catch (logError) {
+                    console.error('❌ Erro ao registrar erro de comando:', logError);
+                }
+                
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({ 
+                        content: 'Ocorreu um erro ao executar este comando.', 
+                        ephemeral: true 
+                    }).catch(console.error);
+                } else {
+                    await interaction.editReply({
+                        content: 'Ocorreu um erro ao executar este comando.'
+                    }).catch(console.error);
+                }
+            }
         }
         
-        // Verificar se o servidor web está rodando
-        if (global.whitelistServer) {
-            whitelistServer = global.whitelistServer;
-        } else {
-            const WhitelistServer = require('../modules/whitelist-server');
+        // Botões
+        else if (interaction.isButton()) {
+            const customId = interaction.customId;
             
-            try {
-                whitelistServer = new WhitelistServer(client);
-                await whitelistServer.start();
-                global.whitelistServer = whitelistServer;
-            } catch (error) {
-                console.error('❌ Erro ao iniciar servidor de whitelist:', error);
-                return await interaction.reply({
-                    content: 'Erro ao acessar as configurações do bot. Por favor, tente novamente mais tarde.',
-                    ephemeral: true
+            if (customId === 'start_whitelist') {
+                const whitelistCommand = client.commands.get('whitelist');
+                if (whitelistCommand) {
+                    await whitelistCommand.handleButton(interaction, client);
+                }
+            } 
+            else if (customId.startsWith('approve_whitelist') || customId.startsWith('reject_whitelist')) {
+                // Tentativa com managewhitelist primeiro
+                const manageWhitelist = client.commands.get('wlnew');
+                if (manageWhitelist && manageWhitelist.handleButtonApproval) {
+                    await manageWhitelist.handleButtonApproval(interaction, client);
+                } else {
+                    console.error('❌ Método handleButtonApproval não encontrado');
+                    await interaction.reply({ 
+                        content: 'Função de aprovação/rejeição não configurada.', 
+                        ephemeral: true 
+                    });
+                }
+            }
+            else if (customId.startsWith('wl_approve_') || customId.startsWith('wl_reject_')) {
+                // Novos botões do sistema de whitelist web
+                const formId = customId.split('_')[2];
+                
+                if (!formId) {
+                    await interaction.reply({ 
+                        content: 'ID do formulário não encontrado.', 
+                        ephemeral: true 
+                    });
+                    return;
+                }
+                
+                const isApprove = customId.startsWith('wl_approve_');
+                const status = isApprove ? 'aprovado' : 'rejeitado';
+                
+                // Obter o formulário
+                const form = whitelistServer?.db?.forms?.[formId];
+                if (!form) {
+                    await interaction.reply({ 
+                        content: 'Formulário não encontrado.', 
+                        ephemeral: true 
+                    });
+                    return;
+                }
+                
+                // Perguntar por feedback se for rejeição
+                if (!isApprove) {
+                    await interaction.reply({ 
+                        content: 'Por favor, forneça um feedback para a rejeição no painel administrativo.', 
+                        ephemeral: true 
+                    });
+                    return;
+                }
+                
+                // Atualizar o formulário
+                form.status = status;
+                form.reviewedBy = interaction.user.tag;
+                form.reviewedAt = new Date().toISOString();
+                form.updatedAt = new Date().toISOString();
+                
+                // Salvar formulário atualizado
+                whitelistServer.db.forms[formId] = form;
+                whitelistServer.saveForms();
+                
+                // Registrar ação do admin
+                whitelistServer.logAdminActivity(interaction.user.tag, `formulario_${status}`, { 
+                    formId, 
+                    userId: form.userId,
+                    ip: 'Discord Interaction'
+                });
+                
+                // Notificar o usuário
+                await whitelistServer.notifyUser(form, status, '');
+                
+                // Atualizar mensagem
+                const embed = EmbedBuilder.from(interaction.message.embeds[0])
+                    .setColor(isApprove ? '#2ecc71' : '#e74c3c')
+                    .setTitle(isApprove ? '✅ Whitelist Aprovada' : '❌ Whitelist Rejeitada')
+                    .setFooter({ text: `Avaliado por ${interaction.user.tag}` });
+                
+                await interaction.message.edit({ 
+                    embeds: [embed], 
+                    components: [] 
+                });
+                
+                await interaction.reply({ 
+                    content: `Whitelist ${status} com sucesso!`, 
+                    ephemeral: true 
                 });
             }
         }
-
-        // Obter subcomando
-        const subCommand = interaction.options.getSubcommand(false);
         
-        // Se não houver subcomando, mostrar status atual
-        if (!subCommand) {
-            return await showStatus(interaction, whitelistServer);
+        // Modais
+        else if (interaction.isModalSubmit()) {
+            const customId = interaction.customId;
+            
+            if (customId === 'whitelist_modal_new') {
+                const wlnewCommand = client.commands.get('wlnew');
+                if (wlnewCommand && wlnewCommand.handleModal) {
+                    await wlnewCommand.handleModal(interaction, client);
+                } else {
+                    console.error('❌ Método handleModal não encontrado para wlnew');
+                    await interaction.reply({ 
+                        content: 'Erro ao processar o formulário de whitelist.', 
+                        ephemeral: true 
+                    });
+                }
+            }
+        }
+    } catch (error) {
+        console.error('❌ Erro geral na interação:', error);
+        
+        // Tentar registrar o erro
+        try {
+            if (interaction.guild) {
+                await logger.logError(interaction.guild, 'interacao', error, {
+                    userId: interaction.user?.id,
+                    type: interaction.type,
+                    commandName: interaction.commandName
+                });
+            }
+        } catch (logError) {
+            console.error('❌ Erro ao registrar erro de interação:', logError);
         }
         
-        // Processar subcomandos
-        switch (subCommand) {
-            case 'whitelist':
-                return await toggleWhitelist(interaction, whitelistServer);
-            case 'filtro':
-                return await toggleChatFilter(interaction, whitelistServer);
-            case 'automod':
-                return await toggleAutoMod(interaction, whitelistServer);
-            default:
-                return await showStatus(interaction, whitelistServer);
+        // Responder ao usuário
+        try {
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({ 
+                    content: 'Ocorreu um erro ao processar esta interação.', 
+                    ephemeral: true 
+                });
+            } else {
+                await interaction.editReply({ 
+                    content: 'Ocorreu um erro ao processar esta interação.' 
+                });
+            }
+        } catch (replyError) {
+            console.error('❌ Erro ao tentar informar erro ao usuário:', replyError);
         }
     }
-};
+});
 
-// Função para mostrar o status atual das configurações
-async function showStatus(interaction, whitelistServer) {
-    const settings = whitelistServer.db.botSettings;
-    
-    const embed = new EmbedBuilder()
-        .setColor('#3498db')
-        .setTitle('⚙️ Configurações do Bot')
-        .addFields(
-            { 
-                name: '📝 Sistema de Whitelist', 
-                value: settings.whitelistSystem?.enabled ? '✅ Ativo' : '❌ Inativo',
-                inline: true 
-            },
-            { 
-                name: '🔍 Filtro de Chat', 
-                value: settings.chatFilter?.enabled ? '✅ Ativo' : '❌ Inativo',
-                inline: true 
-            },
-            { 
-                name: '🛡️ Moderação Automática', 
-                value: settings.autoModeration?.enabled ? '✅ Ativa' : '❌ Inativa',
-                inline: true 
-            }
-        )
-        .setFooter({ text: 'Use /botconfig <módulo> para ativar/desativar cada módulo' })
-        .setTimestamp();
-    
-    return await interaction.reply({
-        embeds: [embed],
-        ephemeral: true
-    });
-}
+// Tratamento de erros não capturados
+process.on('unhandledRejection', error => {
+    console.error('Unhandled promise rejection:', error);
+});
 
-// Função para ativar/desativar o sistema de whitelist
-async function toggleWhitelist(interaction, whitelistServer) {
-    const settings = whitelistServer.db.botSettings;
+// Adicionar tratamento para encerrar o servidor web ao desconectar
+process.on('SIGINT', async () => {
+    console.log('🛑 Encerrando aplicação...');
     
-    // Inverter o estado atual
-    settings.whitelistSystem.enabled = !settings.whitelistSystem.enabled;
+    if (whitelistServer) {
+        console.log('🌐 Parando servidor de whitelist...');
+        await whitelistServer.stop();
+    }
     
-    // Salvar configurações
-    whitelistServer.saveBotSettings();
-    
-    // Registrar ação do administrador
-    whitelistServer.logAdminActivity(
-        interaction.user.tag,
-        'atualizar_config_bot',
-        { 
-            ip: 'Discord Command',
-            module: 'whitelist',
-            enabled: settings.whitelistSystem.enabled
-        }
-    );
-    
-    // Responder ao usuário
-    return await interaction.reply({
-        content: `✅ Sistema de Whitelist foi ${settings.whitelistSystem.enabled ? 'ativado' : 'desativado'} com sucesso!`,
-        ephemeral: true
-    });
-}
+    console.log('👋 Bot desconectado.');
+    process.exit(0);
+});
 
-// Função para ativar/desativar o filtro de chat
-async function toggleChatFilter(interaction, whitelistServer) {
-    const settings = whitelistServer.db.botSettings;
-    
-    // Inverter o estado atual
-    settings.chatFilter.enabled = !settings.chatFilter.enabled;
-    
-    // Salvar configurações
-    whitelistServer.saveBotSettings();
-    
-    // Registrar ação do administrador
-    whitelistServer.logAdminActivity(
-        interaction.user.tag,
-        'atualizar_config_bot',
-        { 
-            ip: 'Discord Command',
-            module: 'chatfilter',
-            enabled: settings.chatFilter.enabled
-        }
-    );
-    
-    // Responder ao usuário
-    return await interaction.reply({
-        content: `✅ Filtro de Chat foi ${settings.chatFilter.enabled ? 'ativado' : 'desativado'} com sucesso!`,
-        ephemeral: true
-    });
-}
-
-// Função para ativar/desativar a moderação automática
-async function toggleAutoMod(interaction, whitelistServer) {
-    const settings = whitelistServer.db.botSettings;
-    
-    // Inverter o estado atual
-    settings.autoModeration.enabled = !settings.autoModeration.enabled;
-    
-    // Salvar configurações
-    whitelistServer.saveBotSettings();
-    
-    // Registrar ação do administrador
-    whitelistServer.logAdminActivity(
-        interaction.user.tag,
-        'atualizar_config_bot',
-        { 
-            ip: 'Discord Command',
-            module: 'automod',
-            enabled: settings.autoModeration.enabled
-        }
-    );
-    
-    // Responder ao usuário
-    return await interaction.reply({
-        content: `✅ Moderação Automática foi ${settings.autoModeration.enabled ? 'ativada' : 'desativada'} com sucesso!`,
-        ephemeral: true
-    });
-}
+client.login(token);

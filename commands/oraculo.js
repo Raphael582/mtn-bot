@@ -244,7 +244,8 @@ module.exports = {
                         
                     // Tentar encontrar Mr.Dark pelo ID (você precisaria definir o ID real)
                     try {
-                        const mrDark = await interaction.client.users.fetch('SEU_ID_AQUI'); // Substitua pelo ID real
+                        // O ID aqui pode ser substituído pelo ID do desenvolvedor
+                        const mrDark = await interaction.client.users.fetch('1337115887772749875');
                         await mrDark.send({ embeds: [alertEmbed] });
                     } catch(err) {
                         console.error("Não foi possível alertar Mr.Dark:", err);

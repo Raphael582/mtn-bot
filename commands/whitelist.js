@@ -57,37 +57,28 @@ module.exports = {
                 });
             }
 
-            // Criar link único para este usuário
-            const whitelistLink = whitelistServer.createWhitelistLink(
-                interaction.user.id,
-                interaction.guild.id
-            );
-
-            if (!whitelistLink) {
-                return await interaction.reply({
-                    content: 'Não foi possível gerar seu link de whitelist. Pode ser que você já tenha uma solicitação pendente ou aprovada.',
-                    ephemeral: true
-                });
-            }
+            // Gerar URL direta para o sistema web
+            const whitelistUrl = `http://localhost:${whitelistServer.options.port}/auth/discord?returnUrl=/`;
 
             // Criar embed com o link
             const embed = new EmbedBuilder()
                 .setColor('#3498db')
-                .setTitle('📝 Sistema de Whitelist')
+                .setTitle('📝 Sistema de Whitelist Metânia')
                 .setDescription(`Olá ${interaction.user.username}! Clique no botão abaixo para acessar o formulário de whitelist.`)
                 .addFields(
-                    { name: '⏱️ Atenção', value: 'Este link é válido por **30 minutos**. Após esse período, você precisará gerar um novo.' },
-                    { name: '📋 Instruções', value: '1. Clique no botão para abrir o formulário\n2. Preencha todas as informações corretamente\n3. Envie o formulário e aguarde a aprovação' }
+                    { name: '⚠️ Atenção', value: 'Você será redirecionado para fazer login com sua conta do Discord.' },
+                    { name: '📋 Instruções', value: '1. Clique no botão para acessar o sistema\n2. Faça login com sua conta Discord\n3. Preencha todas as informações corretamente\n4. Envie o formulário e aguarde a aprovação' }
                 )
-                .setFooter({ text: 'Acesse o site para preencher seu formulário completo' })
+                .setImage('https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67c93051&is=67c7ded1&hm=a337ccc36d99cb5360371bfa81955bc8b14ddb78ed722cec120421d3460a8d34&=&format=webp&width=651&height=663')
+                .setFooter({ text: 'Desenvolvido para Metânia por Mr.Dark' })
                 .setTimestamp();
 
             // Botão para o link
             const button = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
-                    .setLabel('Abrir Formulário de Whitelist')
+                    .setLabel('Abrir Sistema de Whitelist')
                     .setStyle(ButtonStyle.Link)
-                    .setURL(whitelistLink)
+                    .setURL(whitelistUrl)
                     .setEmoji('📝'),
             );
 
