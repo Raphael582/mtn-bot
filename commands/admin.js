@@ -39,7 +39,7 @@ module.exports = {
         
         try {
             // Determinar URL do painel admin
-            const adminURL = `http://56.124.64.115:${whitelistServer.options.port}/admin.html`;
+            const adminURL = `http://56.124.64.115/admin.html`;
             
             // Criar embed informativo
             const embed = new EmbedBuilder()
