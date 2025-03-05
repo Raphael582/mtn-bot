@@ -21,7 +21,7 @@ const CONFIG = {
     discord: {
         clientId: process.env.DISCORD_CLIENT_ID,
         clientSecret: process.env.DISCORD_CLIENT_SECRET,
-        redirectUri: process.env.DISCORD_REDIRECT_URI || `http://56.124.64.115:3000/auth/discord/callback`,
+        redirectUri: process.env.DISCORD_REDIRECT_URI || `http://56.124.64.115/auth/discord/callback`,
         scope: ['identify', 'email']
     },
     formFields: [
