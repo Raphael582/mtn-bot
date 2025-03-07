@@ -1,4 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const jwt = require('jsonwebtoken');
+const config = require('../config/whitelist.config');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -7,8 +9,19 @@ module.exports = {
         
     async execute(interaction) {
         try {
+            // Gerar token único para o usuário
+            const token = jwt.sign(
+                { 
+                    userId: interaction.user.id,
+                    username: interaction.user.username,
+                    discriminator: interaction.user.discriminator
+                },
+                process.env.JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+            
             // Gerar link único para o usuário
-            const formUrl = `${process.env.WHITELIST_URL}/form/${interaction.user.id}`;
+            const formUrl = `${process.env.WHITELIST_URL}/form?token=${token}`;
             
             // Criar embed com instruções
             const embed = new EmbedBuilder()

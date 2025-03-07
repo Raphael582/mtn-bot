@@ -38,7 +38,7 @@ class WhitelistServer {
                 console.log('🔗 Configurando webhook...');
                 this.webhookClient = new WebhookClient({ 
                     url: webhookUrl,
-                    channelId: '1336768867690745946'
+                    channelId: process.env.LOG_WHITELIST
                 });
                 console.log('✅ Webhook configurado');
             } else {
@@ -78,11 +78,21 @@ class WhitelistServer {
             res.sendFile(path.join(__dirname, '..', 'whitelist-frontend', 'index.html'));
         });
 
-        // Rota para link único
-        this.app.get('/form/:userId', (req, res) => {
-            const userId = req.params.userId;
-            console.log(`📄 Servindo formulário para usuário ${userId}`);
-            res.sendFile(path.join(__dirname, '..', 'whitelist-frontend', 'form.html'));
+        // Rota para formulário com validação de token
+        this.app.get('/form', (req, res) => {
+            const token = req.query.token;
+            if (!token) {
+                return res.redirect('/');
+            }
+
+            try {
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                console.log(`📄 Servindo formulário para usuário ${decoded.userId}`);
+                res.sendFile(path.join(__dirname, '..', 'whitelist-frontend', 'form.html'));
+            } catch (error) {
+                console.error('❌ Token inválido:', error);
+                res.redirect('/');
+            }
         });
 
         // Rota do painel admin
@@ -92,7 +102,7 @@ class WhitelistServer {
         });
 
         // API Routes
-        this.app.post('/api/whitelist/submit', this.handleWhitelistSubmit.bind(this));
+        this.app.post('/api/whitelist/submit', this.validateUserToken.bind(this), this.handleWhitelistSubmit.bind(this));
         this.app.post('/api/whitelist/approve', this.handleWhitelistApprove.bind(this));
         this.app.post('/api/whitelist/reject', this.handleWhitelistReject.bind(this));
         this.app.get('/api/whitelist/forms', this.handleGetForms.bind(this));
@@ -121,9 +131,25 @@ class WhitelistServer {
         console.log('✅ Rotas configuradas');
     }
 
+    validateUserToken(req, res, next) {
+        const token = req.headers['x-user-token'];
+        if (!token) {
+            return res.status(401).json({ error: 'Token não fornecido' });
+        }
+
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            req.user = decoded;
+            next();
+        } catch (error) {
+            return res.status(403).json({ error: 'Token inválido' });
+        }
+    }
+
     async handleWhitelistSubmit(req, res) {
         try {
-            const { userId, ...formData } = req.body;
+            const { ...formData } = req.body;
+            const userId = req.user.userId;
             
             // Verificar se já existe um formulário para este usuário
             const existingForm = Object.values(this.db.forms).find(f => f.userId === userId);
@@ -144,7 +170,7 @@ class WhitelistServer {
             this.db.forms[formId] = form;
             
             // Enviar notificação para o canal de whitelist
-            const channel = this.client.channels.cache.get('1336768867690745946');
+            const channel = this.client.channels.cache.get(process.env.LOG_WHITELIST);
             if (channel) {
                 const embed = new EmbedBuilder()
                     .setTitle('Nova Solicitação de Whitelist')

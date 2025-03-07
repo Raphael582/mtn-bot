@@ -139,6 +139,9 @@
                     const result = await response.json();
                     
                     if (response.ok) {
+                        // Salvar o token
+                        localStorage.setItem('adminToken', result.token);
+                        // Redirecionar para a página de admin
                         window.location.href = '/admin';
                     } else {
                         status.textContent = result.error || 'Erro ao fazer login';

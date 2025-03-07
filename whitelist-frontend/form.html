@@ -138,34 +138,44 @@
             const form = document.getElementById('whitelistForm');
             const status = document.getElementById('status');
             
-            // Pegar ID do usuário da URL
-            const userId = window.location.pathname.split('/').pop();
+            // Pegar token da URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
             
             // Verificar se já existe um formulário para este usuário
-            fetch(`/api/whitelist/user/${userId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.exists) {
-                        status.textContent = 'Você já enviou uma solicitação. Aguarde a resposta.';
-                        status.className = 'text-yellow-500 bg-yellow-500 bg-opacity-10 p-4 rounded-lg text-center';
-                        status.classList.remove('hidden');
-                        form.classList.add('opacity-50', 'pointer-events-none');
-                    }
-                })
-                .catch(error => console.error('Erro ao verificar status:', error));
+            fetch(`/api/whitelist/user/${token}`, {
+                headers: {
+                    'x-user-token': token
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    status.textContent = 'Você já enviou uma solicitação. Aguarde a resposta.';
+                    status.className = 'text-yellow-500 bg-yellow-500 bg-opacity-10 p-4 rounded-lg text-center';
+                    status.classList.remove('hidden');
+                    form.classList.add('opacity-50', 'pointer-events-none');
+                }
+            })
+            .catch(error => console.error('Erro ao verificar status:', error));
             
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
                 const formData = new FormData(form);
                 const data = Object.fromEntries(formData.entries());
-                data.userId = userId;
                 
                 try {
                     const response = await fetch('/api/whitelist/submit', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'x-user-token': token
                         },
                         body: JSON.stringify(data)
                     });
