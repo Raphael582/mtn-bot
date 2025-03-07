@@ -1,9 +1,21 @@
 const path = require('path');
 const dotenv = require('dotenv');
+const fs = require('fs');
 
 // Carregar variáveis de ambiente com caminho absoluto
 const envPath = path.resolve(__dirname, '..', '.env');
 console.log('\n🔍 Carregando arquivo .env:', envPath);
+
+// Verificar se o arquivo existe
+if (!fs.existsSync(envPath)) {
+    console.error('❌ Arquivo .env não encontrado em:', envPath);
+    throw new Error('Arquivo .env não encontrado');
+}
+
+// Ler o conteúdo do arquivo
+const envContent = fs.readFileSync(envPath, 'utf8');
+console.log('\n📄 Conteúdo do arquivo .env:');
+console.log(envContent);
 
 // Carregar o arquivo .env
 const result = dotenv.config({ path: envPath });
@@ -28,10 +40,10 @@ const defaultConfig = {
     PORT: process.env.PORT || 3000,
 
     // Autenticação Admin
-    ADMIN_USERNAME: process.env.ADMIN_USERNAME,
-    ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
+    ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin',
+    ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'metania@@2025',
     JWT_SECRET: process.env.JWT_SECRET,
-    ADMIN_JWT_SECRET: process.env.ADMIN_JWT_SECRET,
+    ADMIN_JWT_SECRET: process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET,
 
     // Canais de Log
     LOG_ORACULO: process.env.LOG_ORACULO,
@@ -68,14 +80,18 @@ const requiredVars = [
     'LOG_WHITELIST'
 ];
 
+console.log('\n🔍 Verificando variáveis obrigatórias:');
 for (const varName of requiredVars) {
     if (!config[varName]) {
         console.error(`❌ Variável ${varName} não está configurada`);
+        console.error(`Valor atual: ${config[varName]}`);
+        console.error(`Valor do process.env: ${process.env[varName]}`);
         throw new Error(`Variável ${varName} não está configurada`);
     }
+    console.log(`✅ ${varName}: ${config[varName]}`);
 }
 
-console.log('✅ Arquivo .env carregado com sucesso');
+console.log('\n✅ Arquivo .env carregado com sucesso');
 console.log('\n📋 Configurações carregadas:');
 console.log('- TOKEN:', config.TOKEN ? 'Configurado' : 'Não configurado');
 console.log('- CLIENT_ID:', config.CLIENT_ID);
