@@ -224,28 +224,8 @@ class WhitelistServer {
 
     async start() {
         try {
-            const host = config.server.useLocalhost ? 'localhost' : '0.0.0.0';
-            let port;
-
-            if (config.server.port.specific) {
-                try {
-                    port = await this.findAvailablePort(
-                        config.server.port.specific,
-                        config.server.port.specific
-                    );
-                } catch (error) {
-                    console.log('⚠️ Porta específica em uso, usando porta aleatória...');
-                    port = await this.findAvailablePort(
-                        config.server.port.min,
-                        config.server.port.max
-                    );
-                }
-            } else {
-                port = await this.findAvailablePort(
-                    config.server.port.min,
-                    config.server.port.max
-                );
-            }
+            const host = '0.0.0.0';
+            const port = 3000;
 
             console.log('🚀 Iniciando servidor:', { host, port });
             
