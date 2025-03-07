@@ -675,49 +675,56 @@
             // Função para enviar formulário
             async function submitForm() {
                 try {
-                    const formData = new FormData(form);
-                    const data = Object.fromEntries(formData.entries());
-                    
-                    console.log('Enviando formulário:', data);
-                    console.log('Token:', window.formToken);
-                    
+                    const formData = {
+                        nome: document.getElementById('nome').value,
+                        idade: document.getElementById('idade').value,
+                        estado: document.getElementById('estado').value,
+                        experiencia: document.getElementById('experiencia').value,
+                        motivacao: document.getElementById('motivacao').value
+                    };
+
                     const response = await fetch('/api/whitelist/submit', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-User-Token': window.formToken
                         },
-                        body: JSON.stringify(data)
+                        body: JSON.stringify(formData)
                     });
-                    
-                    const result = await response.json();
-                    
+
+                    const data = await response.json();
+
                     if (response.ok) {
-                        // Sucesso
+                        // Esconder o formulário
+                        document.getElementById('formContainer').classList.add('hidden');
+                        
+                        // Mostrar mensagem de sucesso
+                        const status = document.getElementById('status');
                         status.innerHTML = `
-                            <div class="bg-green-500 text-white p-4 rounded-lg">
-                                <i class="fas fa-check-circle mr-2"></i>
-                                Solicitação enviada com sucesso! Aguarde a resposta da equipe.
+                            <div class="bg-green-500 bg-opacity-10 border border-green-500 rounded-lg p-6 text-center">
+                                <div class="text-green-500 text-4xl mb-4">✓</div>
+                                <h2 class="text-2xl font-bold text-green-500 mb-2">Solicitação Enviada!</h2>
+                                <p class="text-gray-300 mb-4">${data.message}</p>
+                                <p class="text-sm text-gray-400">
+                                    Você receberá uma notificação no Discord quando sua solicitação for analisada.
+                                </p>
                             </div>
                         `;
-                        form.style.display = 'none';
+                        status.classList.remove('hidden');
                     } else {
-                        // Erro
-                        status.innerHTML = `
-                            <div class="bg-red-500 text-white p-4 rounded-lg">
-                                <i class="fas fa-exclamation-circle mr-2"></i>
-                                ${result.error || 'Erro ao enviar solicitação. Tente novamente.'}
-                            </div>
-                        `;
+                        throw new Error(data.error || 'Erro ao enviar solicitação');
                     }
                 } catch (error) {
                     console.error('Erro ao enviar formulário:', error);
+                    const status = document.getElementById('status');
                     status.innerHTML = `
-                        <div class="bg-red-500 text-white p-4 rounded-lg">
-                            <i class="fas fa-exclamation-circle mr-2"></i>
-                            Erro ao enviar solicitação. Tente novamente.
+                        <div class="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-6 text-center">
+                            <div class="text-red-500 text-4xl mb-4">✕</div>
+                            <h2 class="text-2xl font-bold text-red-500 mb-2">Erro</h2>
+                            <p class="text-gray-300">${error.message}</p>
                         </div>
                     `;
+                    status.classList.remove('hidden');
                 }
             }
 

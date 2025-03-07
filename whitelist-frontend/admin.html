@@ -3,468 +3,371 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Administrativo - MTN</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <title>Painel Admin - Whitelist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
             min-height: 100vh;
-            color: #ffffff;
+            color: #fff;
         }
-        .container {
-            background: rgba(255, 255, 255, 0.05);
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
             transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
         }
         .input-field {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 0.5rem;
-            color: #ffffff;
             transition: all 0.3s ease;
         }
         .input-field:focus {
             background: rgba(255, 255, 255, 0.1);
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-        }
-        .btn-success {
-            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-            transition: all 0.3s ease;
-        }
-        .btn-success:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2);
-        }
-        .btn-danger {
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-            transition: all 0.3s ease;
-        }
-        .btn-danger:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2);
-        }
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-        .status-pending {
-            background: rgba(234, 179, 8, 0.1);
-            color: #eab308;
-        }
-        .status-approved {
-            background: rgba(34, 197, 94, 0.1);
-            color: #22c55e;
-        }
-        .status-rejected {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-        }
-        .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #ffffff;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-            z-index: 1000;
-        }
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            background: #1a1a1a;
-            border-radius: 1rem;
-            padding: 2rem;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .stats-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-        }
-        .stats-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
         }
     </style>
 </head>
-<body class="py-12 px-4">
-    <div class="max-w-7xl mx-auto">
-        <div class="text-center mb-8 animate__animated animate__fadeIn">
-            <img src="https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png" 
-                 alt="MTN Logo" 
-                 class="max-w-[200px] mx-auto mb-4"
-                 onerror="this.src='https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png'">
-            <h1 class="text-3xl font-bold mb-2">Painel Administrativo</h1>
-            <p class="text-gray-300">Gerencie as solicitações de whitelist</p>
+<body>
+    <!-- Login Form -->
+    <div id="loginForm" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass rounded-lg p-8 w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-6 text-center">Login Admin</h2>
+            <form id="loginFormElement" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Usuário</label>
+                    <input type="text" id="username" class="input-field w-full rounded-lg px-4 py-2" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Senha</label>
+                    <input type="password" id="password" class="input-field w-full rounded-lg px-4 py-2" required>
+                </div>
+                <button type="submit" class="btn-primary w-full rounded-lg px-4 py-2 font-medium">
+                    Entrar
+                </button>
+            </form>
         </div>
+    </div>
 
-        <!-- Estatísticas -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="stats-card">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-400">Total de Solicitações</p>
-                        <h3 class="text-2xl font-bold" id="totalRequests">0</h3>
-                    </div>
-                    <div class="text-3xl text-blue-500">
-                        <i class="fas fa-file-alt"></i>
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="hidden min-h-screen p-4">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="glass rounded-lg p-4 mb-6 flex justify-between items-center">
+                <h1 class="text-2xl font-bold">Painel Admin</h1>
+                <div class="flex items-center space-x-4">
+                    <span id="adminUsername" class="text-sm"></span>
+                    <button id="logoutBtn" class="btn-primary px-4 py-2 rounded-lg text-sm">
+                        Sair
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="glass rounded-lg p-4 mb-6">
+                <div class="flex space-x-4">
+                    <button class="tab-btn active px-4 py-2 rounded-lg" data-tab="whitelist">
+                        Whitelist
+                    </button>
+                    <button class="tab-btn px-4 py-2 rounded-lg" data-tab="admins">
+                        Admins
+                    </button>
+                    <button class="tab-btn px-4 py-2 rounded-lg" data-tab="audit">
+                        Auditoria
+                    </button>
+                </div>
+            </div>
+
+            <!-- Whitelist Tab -->
+            <div id="whitelistTab" class="tab-content active">
+                <div class="glass rounded-lg p-4">
+                    <h2 class="text-xl font-bold mb-4">Solicitações de Whitelist</h2>
+                    <div id="whitelistRequests" class="space-y-4">
+                        <!-- Requests will be loaded here -->
                     </div>
                 </div>
             </div>
-            <div class="stats-card">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-400">Pendentes</p>
-                        <h3 class="text-2xl font-bold" id="pendingRequests">0</h3>
+
+            <!-- Admins Tab -->
+            <div id="adminsTab" class="tab-content hidden">
+                <div class="glass rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">Gerenciar Admins</h2>
+                        <button id="addAdminBtn" class="btn-primary px-4 py-2 rounded-lg">
+                            Novo Admin
+                        </button>
                     </div>
-                    <div class="text-3xl text-yellow-500">
-                        <i class="fas fa-clock"></i>
+                    <div id="adminsList" class="space-y-4">
+                        <!-- Admins will be loaded here -->
                     </div>
                 </div>
             </div>
-            <div class="stats-card">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-400">Aprovadas</p>
-                        <h3 class="text-2xl font-bold" id="approvedRequests">0</h3>
+
+            <!-- Audit Tab -->
+            <div id="auditTab" class="tab-content hidden">
+                <div class="glass rounded-lg p-4">
+                    <h2 class="text-xl font-bold mb-4">Logs de Auditoria</h2>
+                    <div id="auditLogs" class="space-y-4">
+                        <!-- Audit logs will be loaded here -->
                     </div>
-                    <div class="text-3xl text-green-500">
-                        <i class="fas fa-check-circle"></i>
-            </div>
                 </div>
-                            </div>
-                        </div>
-                        
-        <!-- Filtros -->
-        <div class="container p-6 mb-8">
-            <div class="flex flex-wrap gap-4">
-                <div class="flex-1 min-w-[200px]">
-                    <label class="block text-sm font-medium mb-2">Status</label>
-                    <select id="statusFilter" class="input-field w-full">
-                        <option value="">Todos</option>
-                                        <option value="pendente">Pendentes</option>
-                                        <option value="aprovado">Aprovados</option>
-                                        <option value="rejeitado">Rejeitados</option>
-                                    </select>
-                </div>
-                <div class="flex-1 min-w-[200px]">
-                    <label class="block text-sm font-medium mb-2">Buscar</label>
-                    <input type="text" id="searchInput" class="input-field w-full" placeholder="Nome, Discord ID...">
-                </div>
-                <div class="flex-1 min-w-[200px]">
-                    <label class="block text-sm font-medium mb-2">Ordenar por</label>
-                    <select id="sortBy" class="input-field w-full">
-                        <option value="data">Data</option>
-                        <option value="nome">Nome</option>
-                        <option value="estado">Estado</option>
-                    </select>
-                </div>
-                                </div>
-                            </div>
-                            
-        <!-- Lista de Solicitações -->
-        <div class="container p-6">
-                            <div class="overflow-x-auto">
-                <table class="w-full">
-                                    <thead>
-                        <tr class="text-left border-b border-gray-700">
-                            <th class="pb-4">Nome</th>
-                            <th class="pb-4">Discord</th>
-                            <th class="pb-4">Estado</th>
-                            <th class="pb-4">Status</th>
-                            <th class="pb-4">Data</th>
-                            <th class="pb-4">Ações</th>
-                                        </tr>
-                                    </thead>
-                    <tbody id="requestsList">
-                        <!-- Solicitações serão inseridas aqui via JavaScript -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    
-    <!-- Modal de Aprovação -->
-    <div id="approveModal" class="modal">
-        <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-4">Aprovar Solicitação</h2>
-            <p class="text-gray-300 mb-4">Tem certeza que deseja aprovar esta solicitação?</p>
-            <div class="flex justify-end gap-4">
-                <button class="btn-primary px-4 py-2 rounded-lg" onclick="closeModal('approveModal')">
-                    Cancelar
-                                    </button>
-                <button class="btn-success px-4 py-2 rounded-lg" onclick="confirmApprove()">
-                    Aprovar
-                                    </button>
             </div>
         </div>
     </div>
-    
-    <!-- Modal de Rejeição -->
-    <div id="rejectModal" class="modal">
-        <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-4">Rejeitar Solicitação</h2>
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-2">Motivo da Rejeição</label>
-                <textarea id="rejectReason" class="input-field w-full px-4 py-2 min-h-[100px]" required></textarea>
-            </div>
-            <div class="flex justify-end gap-4">
-                <button class="btn-primary px-4 py-2 rounded-lg" onclick="closeModal('rejectModal')">
-                    Cancelar
-                        </button>
-                <button class="btn-danger px-4 py-2 rounded-lg" onclick="confirmReject()">
-                            Rejeitar
-                        </button>
-            </div>
+
+    <!-- Add Admin Modal -->
+    <div id="addAdminModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="glass rounded-lg p-8 w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-6">Novo Admin</h2>
+            <form id="addAdminForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Usuário</label>
+                    <input type="text" id="newAdminUsername" class="input-field w-full rounded-lg px-4 py-2" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Senha</label>
+                    <input type="password" id="newAdminPassword" class="input-field w-full rounded-lg px-4 py-2" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Cargo</label>
+                    <select id="newAdminRole" class="input-field w-full rounded-lg px-4 py-2" required>
+                        <option value="admin">Admin</option>
+                        <option value="superadmin">Super Admin</option>
+                    </select>
+                </div>
+                <div class="flex space-x-4">
+                    <button type="submit" class="btn-primary flex-1 rounded-lg px-4 py-2">
+                        Criar
+                    </button>
+                    <button type="button" id="cancelAddAdmin" class="flex-1 rounded-lg px-4 py-2 bg-gray-700 hover:bg-gray-600">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script>
-        let currentRequest = null;
-        let requests = [];
+        let token = localStorage.getItem('adminToken');
+        let currentUser = JSON.parse(localStorage.getItem('adminUser'));
 
-        // Carregar solicitações
-        async function loadRequests() {
+        // Login Form
+        document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
             try {
-                const response = await fetch('/api/whitelist/pending');
-                requests = await response.json();
-                updateStats();
-                renderRequests();
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    token = data.token;
+                    currentUser = {
+                        username: data.username,
+                        role: data.role,
+                        permissions: data.permissions
+                    };
+                    localStorage.setItem('adminToken', token);
+                    localStorage.setItem('adminUser', JSON.stringify(currentUser));
+                    showAdminPanel();
+                } else {
+                    alert(data.error);
+                }
+            } catch (error) {
+                alert('Erro ao fazer login');
+            }
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            showLoginForm();
+        });
+
+        // Tab Navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                switchTab(tab);
+            });
+        });
+
+        // Add Admin Modal
+        document.getElementById('addAdminBtn').addEventListener('click', () => {
+            document.getElementById('addAdminModal').classList.remove('hidden');
+        });
+
+        document.getElementById('cancelAddAdmin').addEventListener('click', () => {
+            document.getElementById('addAdminModal').classList.add('hidden');
+        });
+
+        document.getElementById('addAdminForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('newAdminUsername').value;
+            const password = document.getElementById('newAdminPassword').value;
+            const role = document.getElementById('newAdminRole').value;
+
+            try {
+                const response = await fetch('/api/admin/admins', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ username, password, role })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    document.getElementById('addAdminModal').classList.add('hidden');
+                    loadAdmins();
+                } else {
+                    alert(data.error);
+                }
+            } catch (error) {
+                alert('Erro ao criar admin');
+            }
+        });
+
+        // Functions
+        function showLoginForm() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+        }
+
+        function showAdminPanel() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('adminPanel').classList.remove('hidden');
+            document.getElementById('adminUsername').textContent = currentUser.username;
+            loadWhitelistRequests();
+            if (currentUser.role === 'superadmin') {
+                loadAdmins();
+                loadAuditLogs();
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`${tab}Tab`).classList.remove('hidden');
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+        }
+
+        async function loadWhitelistRequests() {
+            try {
+                const response = await fetch('/api/whitelist/requests', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const requests = await response.json();
+                const container = document.getElementById('whitelistRequests');
+                container.innerHTML = requests.map(request => `
+                    <div class="glass rounded-lg p-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-medium">${request.username}</h3>
+                                <p class="text-sm text-gray-400">${request.discord_id}</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="approveRequest('${request.id}')" class="btn-primary px-4 py-2 rounded-lg text-sm">
+                                    Aprovar
+                                </button>
+                                <button onclick="rejectRequest('${request.id}')" class="px-4 py-2 rounded-lg text-sm bg-red-600 hover:bg-red-700">
+                                    Rejeitar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
             } catch (error) {
                 console.error('Erro ao carregar solicitações:', error);
             }
         }
 
-        // Atualizar estatísticas
-        function updateStats() {
-            document.getElementById('totalRequests').textContent = requests.length;
-            document.getElementById('pendingRequests').textContent = 
-                requests.filter(r => r.status === 'pendente').length;
-            document.getElementById('approvedRequests').textContent = 
-                requests.filter(r => r.status === 'aprovado').length;
-        }
-
-        // Renderizar solicitações
-        function renderRequests() {
-            const tbody = document.getElementById('requestsList');
-            tbody.innerHTML = '';
-
-            const statusFilter = document.getElementById('statusFilter').value;
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const sortBy = document.getElementById('sortBy').value;
-
-            let filteredRequests = requests;
-
-            // Aplicar filtros
-            if (statusFilter) {
-                filteredRequests = filteredRequests.filter(r => r.status === statusFilter);
-            }
-
-            if (searchTerm) {
-                filteredRequests = filteredRequests.filter(r => 
-                    r.nome.toLowerCase().includes(searchTerm) ||
-                    r.discordUsername.toLowerCase().includes(searchTerm) ||
-                    r.userId.includes(searchTerm)
-                );
-            }
-
-            // Ordenar
-            filteredRequests.sort((a, b) => {
-                if (sortBy === 'data') {
-                    return new Date(b.data) - new Date(a.data);
-                } else if (sortBy === 'nome') {
-                    return a.nome.localeCompare(b.nome);
-                } else if (sortBy === 'estado') {
-                    return a.estado.localeCompare(b.estado);
-                }
-                return 0;
-            });
-
-            // Renderizar
-            filteredRequests.forEach(request => {
-                        const tr = document.createElement('tr');
-                tr.className = 'border-b border-gray-700 hover:bg-gray-800 transition-colors';
-                        tr.innerHTML = `
-                    <td class="py-4">${request.nome}</td>
-                    <td class="py-4">${request.discordUsername}</td>
-                    <td class="py-4">${request.estado}</td>
-                    <td class="py-4">
-                        <span class="status-badge status-${request.status}">
-                            ${request.status === 'pendente' ? 'Pendente' : 
-                              request.status === 'aprovado' ? 'Aprovado' : 'Rejeitado'}
-                                </span>
-                            </td>
-                    <td class="py-4">${new Date(request.data).toLocaleString('pt-BR')}</td>
-                    <td class="py-4">
-                        <div class="flex gap-2">
-                            ${request.status === 'pendente' ? `
-                                <button class="btn-success px-3 py-1 rounded-lg" onclick="showApproveModal('${request.id}')">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                                <button class="btn-danger px-3 py-1 rounded-lg" onclick="showRejectModal('${request.id}')">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                                ` : ''}
-                            <button class="btn-primary px-3 py-1 rounded-lg" onclick="viewDetails('${request.id}')">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn-warning px-3 py-1 rounded-lg" onclick="resetCooldown('${request.userId}')">
-                                <i class="fas fa-redo"></i>
-                            </button>
-                        </div>
-                        </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // Mostrar modal de aprovação
-        function showApproveModal(requestId) {
-            currentRequest = requests.find(r => r.id === requestId);
-            document.getElementById('approveModal').classList.add('active');
-        }
-
-        // Mostrar modal de rejeição
-        function showRejectModal(requestId) {
-            currentRequest = requests.find(r => r.id === requestId);
-            document.getElementById('rejectModal').classList.add('active');
-        }
-
-        // Fechar modal
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-            currentRequest = null;
-        }
-
-        // Confirmar aprovação
-        async function confirmApprove() {
-            if (!currentRequest) return;
-
+        async function loadAdmins() {
             try {
-                const response = await fetch(`/api/whitelist/approve/${currentRequest.id}`, {
-                    method: 'POST'
-                });
-
-                if (response.ok) {
-                    await loadRequests();
-                    closeModal('approveModal');
-                } else {
-                    alert('Erro ao aprovar solicitação');
-                }
-            } catch (error) {
-                console.error('Erro ao aprovar solicitação:', error);
-                alert('Erro ao aprovar solicitação');
-            }
-        }
-
-        // Confirmar rejeição
-        async function confirmReject() {
-            if (!currentRequest) return;
-
-            const reason = document.getElementById('rejectReason').value;
-            if (!reason) {
-                alert('Por favor, informe o motivo da rejeição');
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/whitelist/reject/${currentRequest.id}`, {
-                    method: 'POST',
+                const response = await fetch('/api/admin/admins', {
                     headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ reason })
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
-
-                if (response.ok) {
-                    await loadRequests();
-                    closeModal('rejectModal');
-                    document.getElementById('rejectReason').value = '';
-                } else {
-                    alert('Erro ao rejeitar solicitação');
-                }
+                const admins = await response.json();
+                const container = document.getElementById('adminsList');
+                container.innerHTML = admins.map(admin => `
+                    <div class="glass rounded-lg p-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-medium">${admin.username}</h3>
+                                <p class="text-sm text-gray-400">${admin.role}</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="editAdminPermissions('${admin.username}')" class="btn-primary px-4 py-2 rounded-lg text-sm">
+                                    Permissões
+                                </button>
+                                <button onclick="deleteAdmin('${admin.username}')" class="px-4 py-2 rounded-lg text-sm bg-red-600 hover:bg-red-700">
+                                    Deletar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
             } catch (error) {
-                console.error('Erro ao rejeitar solicitação:', error);
-                alert('Erro ao rejeitar solicitação');
+                console.error('Erro ao carregar admins:', error);
             }
         }
 
-        // Visualizar detalhes
-        function viewDetails(requestId) {
-            const request = requests.find(r => r.id === requestId);
-            if (!request) return;
-
-            // Implementar visualização detalhada
-            alert(JSON.stringify(request, null, 2));
-        }
-
-        // Adicionar função para resetar cooldown
-        async function resetCooldown(userId) {
-            if (!confirm('Tem certeza que deseja resetar o cooldown deste usuário?')) {
-                return;
-            }
-
+        async function loadAuditLogs() {
             try {
-                const response = await fetch(`/api/whitelist/reset-cooldown/${userId}`, {
-                    method: 'POST'
+                const response = await fetch('/api/admin/audit-logs', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
-
-                if (response.ok) {
-                    alert('Cooldown resetado com sucesso!');
-                } else {
-                    const error = await response.json();
-                    alert(error.error || 'Erro ao resetar cooldown');
-                }
+                const logs = await response.json();
+                const container = document.getElementById('auditLogs');
+                container.innerHTML = logs.map(log => `
+                    <div class="glass rounded-lg p-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-medium">${log.action}</h3>
+                                <p class="text-sm text-gray-400">${log.username} - ${new Date(log.timestamp).toLocaleString()}</p>
+                            </div>
+                        </div>
+                        <pre class="mt-2 text-sm text-gray-400">${JSON.stringify(log.details, null, 2)}</pre>
+                    </div>
+                `).join('');
             } catch (error) {
-                console.error('Erro ao resetar cooldown:', error);
-                alert('Erro ao resetar cooldown');
+                console.error('Erro ao carregar logs:', error);
             }
         }
 
-        // Event listeners
-        document.getElementById('statusFilter').addEventListener('change', renderRequests);
-        document.getElementById('searchInput').addEventListener('input', renderRequests);
-        document.getElementById('sortBy').addEventListener('change', renderRequests);
-
-        // Carregar solicitações ao iniciar
-        loadRequests();
+        // Initialize
+        if (token && currentUser) {
+            showAdminPanel();
+        } else {
+            showLoginForm();
+        }
     </script>
 </body>
 </html>

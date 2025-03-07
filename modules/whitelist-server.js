@@ -7,6 +7,7 @@ const os = require('os');
 const jwt = require('jsonwebtoken');
 const uuid = require('uuid');
 const Logger = require('./logger');
+const fetch = require('node-fetch');
 
 class WhitelistServer {
     constructor(client) {
@@ -204,41 +205,32 @@ class WhitelistServer {
             this.db.forms[formId] = form;
             console.log(`✅ Formulário criado com ID ${formId}`);
             
-            // Enviar notificação para o canal de whitelist
-            const channel = this.client.channels.cache.get(process.env.LOG_WHITELIST);
-            if (channel) {
+            // Enviar notificação para o Discord
+            const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+            if (webhookUrl) {
                 const embed = new EmbedBuilder()
                     .setTitle('Nova Solicitação de Whitelist')
                     .setColor('#3b82f6')
                     .addFields(
-                        { name: 'Nome', value: formData.nome },
-                        { name: 'Idade', value: formData.idade },
-                        { name: 'Estado', value: formData.estado },
-                        { name: 'Como Conheceu', value: formData.comoConheceu },
-                        { name: 'Religião', value: formData.religiao }
+                        { name: 'Usuário', value: formData.nome, inline: true },
+                        { name: 'Discord', value: `<@${userId}>`, inline: true },
+                        { name: 'Estado', value: formData.estado, inline: true },
+                        { name: 'Idade', value: formData.idade, inline: true },
+                        { name: 'Experiência', value: formData.experiencia, inline: true },
+                        { name: 'Motivação', value: formData.motivacao }
                     )
                     .setTimestamp();
                     
-                const row = new ActionRowBuilder()
-                    .addComponents(
-                        new ButtonBuilder()
-                            .setCustomId(`approve_${formId}`)
-                            .setLabel('Aprovar')
-                            .setStyle(ButtonStyle.Success),
-                        new ButtonBuilder()
-                            .setCustomId(`reject_${formId}`)
-                            .setLabel('Rejeitar')
-                            .setStyle(ButtonStyle.Danger)
-                    );
-                    
-                channel.send({ embeds: [embed], components: [row] });
-                console.log('✅ Notificação enviada para o canal de whitelist');
+                await this.sendDiscordNotification(webhookUrl, embed);
             }
             
-            res.json({ success: true, formId });
+            res.json({
+                success: true,
+                message: 'Solicitação enviada com sucesso! Aguarde a análise da equipe.'
+            });
         } catch (error) {
             console.error('❌ Erro ao processar formulário:', error);
-            res.status(500).json({ error: 'Erro ao processar formulário' });
+            res.status(500).json({ error: 'Erro ao processar solicitação' });
         }
     }
 
@@ -263,24 +255,26 @@ class WhitelistServer {
                 console.log(`✅ Cargo de whitelist adicionado para ${member.user.tag}`);
             }
 
-            // Enviar notificação para o usuário
-            const user = await this.client.users.fetch(form.userId);
-            if (user) {
-                await user.send({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setTitle('🎉 Whitelist Aprovada!')
-                            .setDescription('Parabéns! Sua solicitação de whitelist foi aprovada.')
-                            .setColor('#2ecc71')
-                            .setTimestamp()
-                    ]
-                });
+            // Enviar notificação para o Discord
+            const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+            if (webhookUrl) {
+                const embed = new EmbedBuilder()
+                    .setTitle('Solicitação de Whitelist Aprovada')
+                    .setColor('#00ff00')
+                    .addFields(
+                        { name: 'Usuário', value: form.nome, inline: true },
+                        { name: 'Discord', value: `<@${form.userId}>`, inline: true },
+                        { name: 'Aprovado por', value: adminId, inline: true }
+                    )
+                    .setTimestamp();
+                    
+                await this.sendDiscordNotification(webhookUrl, embed);
             }
 
-            res.json({ success: true, message: 'Whitelist aprovada com sucesso!' });
+            res.json({ success: true, message: 'Solicitação aprovada com sucesso' });
         } catch (error) {
-            console.error('❌ Erro ao aprovar whitelist:', error);
-            res.status(500).json({ error: 'Erro ao aprovar whitelist' });
+            console.error('❌ Erro ao aprovar solicitação:', error);
+            res.status(500).json({ error: 'Erro ao aprovar solicitação' });
         }
     }
 
@@ -306,24 +300,27 @@ class WhitelistServer {
                 console.log(`✅ Cargo de whitelist removido de ${member.user.tag}`);
             }
 
-            // Enviar notificação para o usuário
-            const user = await this.client.users.fetch(form.userId);
-            if (user) {
-                await user.send({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setTitle('❌ Whitelist Rejeitada')
-                            .setDescription(`Sua solicitação de whitelist foi rejeitada.\nMotivo: ${reason}`)
-                            .setColor('#e74c3c')
-                            .setTimestamp()
-                    ]
-                });
+            // Enviar notificação para o Discord
+            const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+            if (webhookUrl) {
+                const embed = new EmbedBuilder()
+                    .setTitle('Solicitação de Whitelist Rejeitada')
+                    .setColor('#ff0000')
+                    .addFields(
+                        { name: 'Usuário', value: form.nome, inline: true },
+                        { name: 'Discord', value: `<@${form.userId}>`, inline: true },
+                        { name: 'Rejeitado por', value: adminId, inline: true },
+                        { name: 'Motivo', value: reason }
+                    )
+                    .setTimestamp();
+                    
+                await this.sendDiscordNotification(webhookUrl, embed);
             }
 
-            res.json({ success: true, message: 'Whitelist rejeitada com sucesso!' });
+            res.json({ success: true, message: 'Solicitação rejeitada com sucesso' });
         } catch (error) {
-            console.error('❌ Erro ao rejeitar whitelist:', error);
-            res.status(500).json({ error: 'Erro ao rejeitar whitelist' });
+            console.error('❌ Erro ao rejeitar solicitação:', error);
+            res.status(500).json({ error: 'Erro ao rejeitar solicitação' });
         }
     }
 
@@ -401,6 +398,22 @@ class WhitelistServer {
             req.user = user;
             next();
         });
+    }
+
+    async sendDiscordNotification(webhookUrl, embed) {
+        try {
+            await fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    embeds: [embed]
+                })
+            });
+        } catch (error) {
+            console.error('Erro ao enviar notificação para o Discord:', error);
+        }
     }
 }
 

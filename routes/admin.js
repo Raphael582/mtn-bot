@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
 const dataManager = require('../modules/dataManager');
 const Admin = require('../models/Admin');
 const AuditLog = require('../models/AuditLog');
 const auth = require('../middleware/auth');
+const adminManager = require('../modules/adminManager');
+const { adminAuth, checkPermission, isSuperAdmin } = require('../middleware/adminAuth');
 
 // Função auxiliar para registrar ações no log de auditoria
 async function logAction(admin, action, details) {
@@ -41,30 +42,10 @@ const validateAdminToken = (req, res, next) => {
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-
-        const admin = await dataManager.findAdmin(username);
-        if (!admin) {
-            return res.status(401).json({ error: 'Usuário ou senha inválidos' });
-        }
-
-        const isValidPassword = await bcrypt.compare(password, admin.password);
-        if (!isValidPassword) {
-            return res.status(401).json({ error: 'Usuário ou senha inválidos' });
-        }
-
-        const token = jwt.sign(
-            { id: admin.id, username: admin.username },
-            process.env.ADMIN_JWT_SECRET,
-            { expiresIn: '24h' }
-        );
-
-        // Atualizar último login
-        await dataManager.updateAdminLogin(admin.id);
-
-        res.json({ token });
+        const result = await adminManager.login(username, password);
+        res.json(result);
     } catch (error) {
-        console.error('Erro no login:', error);
-        res.status(500).json({ error: 'Erro ao fazer login' });
+        res.status(401).json({ error: error.message });
     }
 });
 
@@ -175,6 +156,62 @@ router.get('/audit-log', auth, async (req, res) => {
     } catch (error) {
         console.error('Erro ao obter log de auditoria:', error);
         res.status(500).json({ error: 'Erro ao obter log de auditoria' });
+    }
+});
+
+// Criar novo admin (apenas superadmin)
+router.post('/admins', adminAuth, isSuperAdmin, async (req, res) => {
+    try {
+        const { username, password, role } = req.body;
+        const admin = await adminManager.createAdmin(username, password, role, req.admin.username);
+        res.json(admin);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Listar admins (apenas superadmin)
+router.get('/admins', adminAuth, isSuperAdmin, async (req, res) => {
+    try {
+        const admins = await adminManager.getAdmins(req.admin.username, req.admin.role);
+        res.json(admins);
+    } catch (error) {
+        res.status(403).json({ error: error.message });
+    }
+});
+
+// Deletar admin (apenas superadmin)
+router.delete('/admins/:username', adminAuth, isSuperAdmin, async (req, res) => {
+    try {
+        const admin = await adminManager.deleteAdmin(req.params.username, req.admin.username);
+        res.json(admin);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Atualizar permissões (apenas superadmin)
+router.put('/admins/:username/permissions', adminAuth, isSuperAdmin, async (req, res) => {
+    try {
+        const { permissions } = req.body;
+        const admin = await adminManager.updateAdminPermissions(
+            req.params.username,
+            permissions,
+            req.admin.username
+        );
+        res.json(admin);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Obter logs de auditoria (apenas superadmin)
+router.get('/audit-logs', adminAuth, isSuperAdmin, async (req, res) => {
+    try {
+        const logs = await adminManager.getAuditLogs(req.admin.username, req.admin.role);
+        res.json(logs);
+    } catch (error) {
+        res.status(403).json({ error: error.message });
     }
 });
 

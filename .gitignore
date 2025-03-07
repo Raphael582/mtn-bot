@@ -57,3 +57,23 @@ coverage/
 # Arquivos de deploy
 deploy/
 update-bot.sh
+
+# Arquivos sensíveis
+data/admins.json
+data/whitelist.json
+data/audit_logs.json
+data/*.json
+!data/example.json
+
+# Arquivos de configuração sensíveis
+config/*.json
+!config/example.json
+
+# Arquivos de logs sensíveis
+logs/admin.log
+logs/whitelist.log
+logs/audit.log
+
+# Arquivos de backup de dados
+backups/
+*.backup.json
