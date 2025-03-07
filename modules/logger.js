@@ -253,30 +253,29 @@ if (config.logging.transports.includes('file')) {
     );
 }
 
-// Criar o logger
-const logger = winston.createLogger({
+// Criar logger do Winston
+const winstonLogger = winston.createLogger({
     level: config.logging.level,
     format: formats,
-    transports,
-    exitOnError: false
+    transports
 });
 
 // Funções auxiliares
 const log = {
     info: (message, meta = {}) => {
-        logger.info(message, meta);
+        winstonLogger.info(message, meta);
     },
     error: (message, meta = {}) => {
-        logger.error(message, meta);
+        winstonLogger.error(message, meta);
     },
     warn: (message, meta = {}) => {
-        logger.warn(message, meta);
+        winstonLogger.warn(message, meta);
     },
     debug: (message, meta = {}) => {
-        logger.debug(message, meta);
+        winstonLogger.debug(message, meta);
     },
     http: (message, meta = {}) => {
-        logger.http(message, meta);
+        winstonLogger.http(message, meta);
     }
 };
 
@@ -286,7 +285,7 @@ const httpLogger = (req, res, next) => {
 
     res.on('finish', () => {
         const duration = Date.now() - start;
-        logger.http(`${req.method} ${req.originalUrl}`, {
+        winstonLogger.http(`${req.method} ${req.originalUrl}`, {
             method: req.method,
             url: req.originalUrl,
             status: res.statusCode,
@@ -299,7 +298,8 @@ const httpLogger = (req, res, next) => {
     next();
 };
 
+// Exportar tanto a classe quanto a instância do Winston
 module.exports = {
-    log,
-    httpLogger
+    Logger,
+    winston: winstonLogger
 };

@@ -31,7 +31,7 @@ client.commands = new Collection();
 let chatFilter;
 
 // Carregar logger
-const Logger = require('./modules/logger');
+const { Logger } = require('./modules/logger');
 const logger = new Logger(client);
 
 // Função para inicializar o servidor de whitelist
