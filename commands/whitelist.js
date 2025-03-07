@@ -10,7 +10,10 @@ module.exports = {
     async execute(interaction) {
         try {
             // Verificar se o usuário já tem uma solicitação pendente
-            const existingRequest = await global.whitelistServer?.db?.forms?.find(f => f.userId === interaction.user.id && f.status === 'pendente');
+            const existingRequest = Object.values(global.whitelistServer?.db?.forms || {}).find(
+                f => f.userId === interaction.user.id && f.status === 'pendente'
+            );
+            
             if (existingRequest) {
                 return interaction.reply({
                     content: '❌ Você já possui uma solicitação de whitelist pendente. Aguarde a resposta da equipe.',
