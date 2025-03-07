@@ -284,6 +284,41 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             will-change: transform;
         }
+        .btn-next::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .btn-next:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(76, 175, 80, 0.5);
+        }
+        .btn-next:hover::before {
+            opacity: 1;
+        }
+        .btn-next:active {
+            transform: scale(0.95);
+        }
+        .btn-next:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-next span {
+            position: relative;
+            z-index: 1;
+            padding: 0 1.5rem;
+            line-height: 1.2;
+        }
     </style>
 </head>
 <body class="py-12 px-4">
@@ -291,7 +326,7 @@
     <div class="max-w-2xl mx-auto">
         <div class="text-center mb-8 animate__animated animate__fadeIn">
             <div class="flex items-center justify-center mb-4">
-                <img src="https://cdn.discordapp.com/icons/1336748568853090508/a_0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f.gif" alt="Metânia Logo" class="server-logo">
+                <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cc7c11&is=67cb2a91&hm=f369bad9613b8a02787f6ad9f3e8261c60338c910c1820f942628b0271970681&=&format=webp&width=914&height=930" alt="Metânia Logo" class="server-logo">
                 <h1 class="text-3xl font-bold">Formulário de Whitelist</h1>
             </div>
             <p class="text-gray-300">Preencha todas as informações necessárias</p>
@@ -469,9 +504,8 @@
                         <i class="fas fa-arrow-left mr-2"></i>
                         Voltar
                     </button>
-                    <button type="button" id="nextStep" class="btn-primary">
-                        Próximo
-                        <i class="fas fa-arrow-right ml-2"></i>
+                    <button type="button" id="nextStep" class="btn-next">
+                        <span>Próximo</span>
                     </button>
                 </div>
 
@@ -489,7 +523,7 @@
     </div>
 
     <div class="credits animate__animated animate__fadeIn">
-        <img src="https://cdn.discordapp.com/avatars/1336748568853090508/a_0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f.gif" alt="Mr.Dark">
+        <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cc7c11&is=67cb2a91&hm=f369bad9613b8a02787f6ad9f3e8261c60338c910c1820f942628b0271970681&=&format=webp&width=914&height=930" alt="Mr.Dark">
         <span>Desenvolvido por Mr.Dark para Metânia</span>
     </div>
 
