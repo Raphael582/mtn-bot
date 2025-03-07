@@ -12,6 +12,7 @@ class WhitelistServer {
             admins: {}
         };
         this.webhookClient = null;
+        this.server = null;
         this.setupWebhook();
         this.setupMiddleware();
         this.setupRoutes();
@@ -165,9 +166,15 @@ class WhitelistServer {
 
     async start() {
         try {
-            const port = process.env.WHITELIST_PORT || 5000;
-            this.app.listen(port, () => {
-                console.log(`✅ Servidor de whitelist rodando na porta ${port}`);
+            const port = process.env.WHITELIST_PORT || 3000;
+            return new Promise((resolve, reject) => {
+                this.server = this.app.listen(port, () => {
+                    console.log(`✅ Servidor de whitelist rodando na porta ${port}`);
+                    resolve();
+                }).on('error', (error) => {
+                    console.error('❌ Erro ao iniciar servidor de whitelist:', error);
+                    reject(error);
+                });
             });
         } catch (error) {
             console.error('❌ Erro ao iniciar servidor de whitelist:', error);
@@ -177,8 +184,19 @@ class WhitelistServer {
 
     async stop() {
         try {
-            // Implementar lógica de parada do servidor
-            console.log('✅ Servidor de whitelist parado com sucesso');
+            if (this.server) {
+                return new Promise((resolve, reject) => {
+                    this.server.close((error) => {
+                        if (error) {
+                            console.error('❌ Erro ao parar servidor de whitelist:', error);
+                            reject(error);
+                        } else {
+                            console.log('✅ Servidor de whitelist parado com sucesso');
+                            resolve();
+                        }
+                    });
+                });
+            }
         } catch (error) {
             console.error('❌ Erro ao parar servidor de whitelist:', error);
             throw error;

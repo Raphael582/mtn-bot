@@ -35,7 +35,7 @@ async function initWhitelistServer() {
             console.log('🌐 Iniciando servidor de whitelist...');
             whitelistServer = new WhitelistServer(client);
             await whitelistServer.start();
-            console.log(`✅ Servidor de whitelist iniciado na porta ${whitelistServer.options.port}`);
+            console.log(`✅ Servidor de whitelist iniciado na porta ${process.env.WHITELIST_PORT}`);
             
             // Criar diretório de frontend se não existir
             const frontendPath = path.join(__dirname, 'whitelist-frontend');
