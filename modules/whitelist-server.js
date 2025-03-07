@@ -16,7 +16,6 @@ class WhitelistServer {
         };
         this.webhookClient = null;
         this.server = null;
-        this.portFile = path.join(__dirname, '..', '.whitelist-port');
         
         // Verificar variáveis de ambiente
         console.log('📋 Configurações do servidor:');
@@ -193,39 +192,10 @@ class WhitelistServer {
         }
     }
 
-    async findAvailablePort(startPort, endPort) {
-        const net = require('net');
-        
-        return new Promise((resolve, reject) => {
-            const server = net.createServer();
-            
-            server.on('error', (err) => {
-                if (err.code === 'EADDRINUSE') {
-                    // Porta está em uso, tenta a próxima
-                    server.close();
-                    if (startPort < endPort) {
-                        this.findAvailablePort(startPort + 1, endPort)
-                            .then(resolve)
-                            .catch(reject);
-                    } else {
-                        reject(new Error('Nenhuma porta disponível encontrada'));
-                    }
-                } else {
-                    reject(err);
-                }
-            });
-
-            server.listen(startPort, () => {
-                const port = server.address().port;
-                server.close(() => resolve(port));
-            });
-        });
-    }
-
     async start() {
         try {
             const host = '0.0.0.0';
-            const port = 3000;
+            const port = 3001;
 
             console.log('🚀 Iniciando servidor:', { host, port });
             
