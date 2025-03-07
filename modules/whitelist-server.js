@@ -54,6 +54,15 @@ class WhitelistServer {
 
     setupMiddleware() {
         console.log('⚙️ Configurando middleware...');
+        
+        // Middleware para CORS
+        this.app.use((req, res, next) => {
+            res.header('Access-Control-Allow-Origin', '*');
+            res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+            res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+            next();
+        });
+
         this.app.use(express.json());
         
         // Verificar diretório de frontend
@@ -69,6 +78,13 @@ class WhitelistServer {
             console.log(`🌐 Requisição de ${ip}: ${req.method} ${req.url}`);
             next();
         });
+
+        // Middleware de erro
+        this.app.use((err, req, res, next) => {
+            console.error('❌ Erro no servidor:', err);
+            res.status(500).json({ error: 'Erro interno do servidor' });
+        });
+
         console.log('✅ Middleware configurado');
     }
 
