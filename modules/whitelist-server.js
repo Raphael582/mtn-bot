@@ -68,20 +68,28 @@ class WhitelistServer {
     async setupWebhook() {
         try {
             const webhookUrl = env.WHITELIST_WEBHOOK_URL;
-            if (webhookUrl) {
-                console.log('🔗 Configurando webhook...');
-                try {
-                    this.webhookClient = new WebhookClient({ 
-                        url: webhookUrl,
-                        channelId: env.LOG_WHITELIST
-                    });
-                    console.log('✅ Webhook configurado');
-                } catch (webhookError) {
-                    console.error('❌ Erro ao criar webhook:', webhookError);
-                    await this.logger.logError(webhookError, 'whitelist-webhook-creation');
-                }
-            } else {
+            console.log('🔍 Verificando URL do webhook:', webhookUrl ? 'URL presente' : 'URL ausente');
+            
+            if (!webhookUrl) {
                 console.log('⚠️ Webhook não configurado');
+                return;
+            }
+
+            // Validar formato da URL
+            if (!webhookUrl.startsWith('https://discord.com/api/webhooks/')) {
+                console.error('❌ URL do webhook inválida. Deve começar com https://discord.com/api/webhooks/');
+                return;
+            }
+
+            console.log('🔗 Configurando webhook...');
+            try {
+                this.webhookClient = new WebhookClient({ 
+                    url: webhookUrl
+                });
+                console.log('✅ Webhook configurado com sucesso');
+            } catch (webhookError) {
+                console.error('❌ Erro ao criar webhook:', webhookError);
+                await this.logger.logError(webhookError, 'whitelist-webhook-creation');
             }
         } catch (error) {
             console.error('❌ Erro ao configurar webhook:', error);
