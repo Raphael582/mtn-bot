@@ -56,3 +56,4 @@ coverage/
 
 # Arquivos de deploy
 deploy/
+update-bot.sh

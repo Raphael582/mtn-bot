@@ -117,48 +117,24 @@ class Logger {
                 fs.mkdirSync(logsDir, { recursive: true });
             }
 
-            const fileName = `${level.toLowerCase()}_${new Date().toISOString().split('T')[0]}.json`;
+            const date = new Date();
+            const fileName = `${level.toLowerCase()}_${date.getFullYear()}_${(date.getMonth() + 1).toString().padStart(2, '0')}.json`;
             const filePath = path.join(logsDir, fileName);
 
             let logs = [];
             if (fs.existsSync(filePath)) {
-                logs = JSON.parse(fs.readFileSync(filePath));
+                try {
+                    logs = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+                } catch (error) {
+                    console.error('Erro ao ler arquivo de logs:', error);
+                }
             }
 
             logs.push(data);
             fs.writeFileSync(filePath, JSON.stringify(logs, null, 2));
         } catch (error) {
-        // Salvar log em arquivo
-        this.saveToFile(level, {
-            title,
-            description,
-            fields,
-            options,
-            timestamp: new Date().toISOString()
-        });
-    }
-
-    saveToFile(level, data) {
-        const logsDir = path.join(__dirname, '..', 'logs');
-        if (!fs.existsSync(logsDir)) {
-            fs.mkdirSync(logsDir, { recursive: true });
+            console.error('Erro ao salvar log em arquivo:', error);
         }
-
-        const date = new Date();
-        const fileName = `${level.toLowerCase()}_${date.getFullYear()}_${(date.getMonth() + 1).toString().padStart(2, '0')}.json`;
-        const filePath = path.join(logsDir, fileName);
-
-        let logs = [];
-        if (fs.existsSync(filePath)) {
-            try {
-                logs = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-            } catch (error) {
-                console.error('Erro ao ler arquivo de logs:', error);
-            }
-        }
-
-        logs.push(data);
-        fs.writeFileSync(filePath, JSON.stringify(logs, null, 2));
     }
 
     async logFilter(message, reason) {
