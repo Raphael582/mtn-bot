@@ -387,7 +387,7 @@
                         </label>
                         <div class="relative">
                             <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <input type="text" name="nome" required
+                            <input type="text" id="nome" name="nome" required
                                 class="input-field w-full px-4 py-2 pl-10"
                                 placeholder="Digite seu nome completo">
                             <div class="error-message">Por favor, insira seu nome completo</div>
@@ -404,7 +404,7 @@
                         </label>
                         <div class="relative">
                             <i class="fas fa-birthday-cake absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <input type="number" name="idade" required min="10" max="100"
+                            <input type="number" id="idade" name="idade" required min="10" max="100"
                                 class="input-field w-full px-4 py-2 pl-10"
                                 placeholder="Digite sua idade">
                             <div class="error-message">Idade deve estar entre 10 e 100 anos</div>
@@ -421,10 +421,27 @@
                         </label>
                         <div class="relative">
                             <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <input type="text" name="comoConheceu" required
+                            <input type="text" id="comoConheceu" name="comoConheceu" required
                                 class="input-field w-full px-4 py-2 pl-10"
                                 placeholder="Como você conheceu o servidor?">
                             <div class="error-message">Por favor, digite como conheceu o servidor</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            Religião
+                            <span class="tooltip">
+                                <i class="fas fa-info-circle ml-1 text-gray-400"></i>
+                                <span class="tooltip-text">Sua religião atual</span>
+                            </span>
+                        </label>
+                        <div class="relative">
+                            <i class="fas fa-pray absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="religiao" name="religiao" required
+                                class="input-field w-full px-4 py-2 pl-10"
+                                placeholder="Digite sua religião">
+                            <div class="error-message">Por favor, insira sua religião</div>
                         </div>
                     </div>
                 </div>
@@ -440,7 +457,7 @@
                         </label>
                         <div class="relative">
                             <i class="fas fa-map-marker-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <select name="estado" required class="input-field w-full px-4 py-2 pl-10">
+                            <select id="estado" name="estado" required class="input-field w-full px-4 py-2 pl-10">
                                 <option value="">Selecione seu estado</option>
                                 <option value="AC">Acre</option>
                                 <option value="AL">Alagoas</option>
@@ -471,30 +488,6 @@
                                 <option value="TO">Tocantins</option>
                             </select>
                             <div class="error-message">Por favor, selecione seu estado</div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium mb-2">
-                            Habilidades/Interesses
-                            <span class="tooltip">
-                                <i class="fas fa-info-circle ml-1 text-gray-400"></i>
-                                <span class="tooltip-text">Selecione suas principais habilidades e interesses</span>
-                            </span>
-                        </label>
-                        <div class="relative">
-                            <i class="fas fa-tools absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <select name="habilidades" required multiple class="input-field w-full px-4 py-2 pl-10" size="4">
-                                <option value="tecnologia">💻 Tecnologia</option>
-                                <option value="hacking">🔒 Hacking</option>
-                                <option value="design">🎨 Design</option>
-                                <option value="politica">🏛️ Política</option>
-                                <option value="comunicacao">💬 Comunicação</option>
-                                <option value="marketing">📢 Marketing</option>
-                                <option value="gestao">📊 Gestão</option>
-                                <option value="desenvolvimento">⚙️ Desenvolvimento</option>
-                            </select>
-                            <div class="error-message">Selecione pelo menos uma habilidade</div>
                         </div>
                     </div>
                 </div>
@@ -536,20 +529,18 @@
                 </div>
 
                 <div class="flex justify-between mt-8">
-                    <button type="button" id="prevStep" class="btn-secondary hidden">
+                    <button type="button" id="prevStep" class="btn-next hidden">
                         <i class="fas fa-arrow-left mr-2"></i>
                         Voltar
                     </button>
                     <button type="button" id="nextStep" class="btn-next">
                         <span>Próximo</span>
                     </button>
-                </div>
-
-                <div class="flex flex-col space-y-4">
-                    <button type="submit" id="submitBtn" class="btn-primary w-full py-3 px-4 rounded-lg font-medium text-white flex items-center justify-center hidden">
-                        <i class="fas fa-paper-plane mr-2"></i>
-                        Enviar Solicitação
-                        <div class="loading-spinner"></div>
+                    <button type="submit" id="submitBtn" class="btn-next hidden">
+                        <span>
+                            <i class="fas fa-paper-plane mr-2"></i>
+                            Enviar Solicitação
+                        </span>
                     </button>
                 </div>
             </form>
@@ -673,7 +664,10 @@
             }
 
             // Função para enviar formulário
-            async function submitForm() {
+            async function submitForm(e) {
+                e.preventDefault();
+                console.log('Iniciando envio do formulário...');
+
                 try {
                     const formData = {
                         nome: document.getElementById('nome').value,
@@ -683,7 +677,8 @@
                         religiao: document.getElementById('religiao').value
                     };
 
-                    console.log('Enviando dados:', formData);
+                    console.log('Dados do formulário:', formData);
+                    console.log('Token:', window.formToken);
 
                     const response = await fetch('/api/whitelist/submit', {
                         method: 'POST',
@@ -694,15 +689,15 @@
                         body: JSON.stringify(formData)
                     });
 
+                    console.log('Resposta do servidor:', response);
                     const data = await response.json();
-                    console.log('Resposta do servidor:', data);
+                    console.log('Dados da resposta:', data);
 
                     if (response.ok) {
                         // Esconder o formulário
-                        document.getElementById('formContainer').classList.add('hidden');
+                        form.style.display = 'none';
                         
                         // Mostrar mensagem de sucesso
-                        const status = document.getElementById('status');
                         status.innerHTML = `
                             <div class="bg-green-500 bg-opacity-10 border border-green-500 rounded-lg p-6 text-center">
                                 <div class="text-green-500 text-4xl mb-4">✓</div>
@@ -719,7 +714,6 @@
                     }
                 } catch (error) {
                     console.error('Erro ao enviar formulário:', error);
-                    const status = document.getElementById('status');
                     status.innerHTML = `
                         <div class="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-6 text-center">
                             <div class="text-red-500 text-4xl mb-4">✕</div>
@@ -732,10 +726,7 @@
             }
 
             // Event listener para o formulário
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                submitForm();
-            });
+            form.addEventListener('submit', submitForm);
         });
     </script>
 </body>
