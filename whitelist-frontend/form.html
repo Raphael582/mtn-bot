@@ -163,52 +163,106 @@
         <div class="container p-6 mb-8 animate__animated animate__fadeInUp">
             <form id="whitelistForm" class="space-y-6">
                 <div>
-                    <label class="block text-sm font-medium mb-2">Nome do Discord</label>
-                    <div class="relative">
-                        <i class="fab fa-discord absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" name="discordName" required
-                            class="input-field w-full px-4 py-2 pl-10"
-                            placeholder="Seu nome no Discord">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-2">ID do Discord</label>
-                    <div class="relative">
-                        <i class="fas fa-id-card absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" name="discordId" required
-                            class="input-field w-full px-4 py-2 pl-10"
-                            placeholder="Seu ID do Discord">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-2">Nome do Personagem</label>
+                    <label class="block text-sm font-medium mb-2">Nome Completo</label>
                     <div class="relative">
                         <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" name="characterName" required
+                        <input type="text" name="nome" required
                             class="input-field w-full px-4 py-2 pl-10"
-                            placeholder="Nome do seu personagem">
+                            placeholder="Digite seu nome completo">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium mb-2">História do Personagem</label>
+                    <label class="block text-sm font-medium mb-2">Idade</label>
                     <div class="relative">
-                        <i class="fas fa-book absolute left-3 top-3 text-gray-400"></i>
-                        <textarea name="characterStory" required
-                            class="input-field w-full px-4 py-2 pl-10 min-h-[150px]"
-                            placeholder="Conte a história do seu personagem..."></textarea>
+                        <i class="fas fa-birthday-cake absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="number" name="idade" required min="10" max="100"
+                            class="input-field w-full px-4 py-2 pl-10"
+                            placeholder="Digite sua idade">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium mb-2">Experiência em RP</label>
+                    <label class="block text-sm font-medium mb-2">Religião</label>
                     <div class="relative">
-                        <i class="fas fa-star absolute left-3 top-3 text-gray-400"></i>
-                        <textarea name="rpExperience" required
+                        <i class="fas fa-pray absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" name="religiao" required
+                            class="input-field w-full px-4 py-2 pl-10"
+                            placeholder="Digite sua religião">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Estado</label>
+                    <div class="relative">
+                        <i class="fas fa-map-marker-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <select name="estado" required class="input-field w-full px-4 py-2 pl-10">
+                            <option value="">Selecione seu estado</option>
+                            <option value="AC">Acre</option>
+                            <option value="AL">Alagoas</option>
+                            <option value="AP">Amapá</option>
+                            <option value="AM">Amazonas</option>
+                            <option value="BA">Bahia</option>
+                            <option value="CE">Ceará</option>
+                            <option value="DF">Distrito Federal</option>
+                            <option value="ES">Espírito Santo</option>
+                            <option value="GO">Goiás</option>
+                            <option value="MA">Maranhão</option>
+                            <option value="MT">Mato Grosso</option>
+                            <option value="MS">Mato Grosso do Sul</option>
+                            <option value="MG">Minas Gerais</option>
+                            <option value="PA">Pará</option>
+                            <option value="PB">Paraíba</option>
+                            <option value="PR">Paraná</option>
+                            <option value="PE">Pernambuco</option>
+                            <option value="PI">Piauí</option>
+                            <option value="RJ">Rio de Janeiro</option>
+                            <option value="RN">Rio Grande do Norte</option>
+                            <option value="RS">Rio Grande do Sul</option>
+                            <option value="RO">Rondônia</option>
+                            <option value="RR">Roraima</option>
+                            <option value="SC">Santa Catarina</option>
+                            <option value="SP">São Paulo</option>
+                            <option value="SE">Sergipe</option>
+                            <option value="TO">Tocantins</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Habilidades/Interesses</label>
+                    <div class="relative">
+                        <i class="fas fa-tools absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <select name="habilidades" required multiple class="input-field w-full px-4 py-2 pl-10" size="4">
+                            <option value="tecnologia">💻 Tecnologia</option>
+                            <option value="hacking">🔒 Hacking</option>
+                            <option value="design">🎨 Design</option>
+                            <option value="politica">🏛️ Política</option>
+                            <option value="comunicacao">💬 Comunicação</option>
+                            <option value="marketing">📢 Marketing</option>
+                            <option value="gestao">📊 Gestão</option>
+                            <option value="desenvolvimento">⚙️ Desenvolvimento</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Por que você quer participar do servidor?</label>
+                    <div class="relative">
+                        <i class="fas fa-question-circle absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <textarea name="motivo" required
                             class="input-field w-full px-4 py-2 pl-10 min-h-[100px]"
-                            placeholder="Conte sua experiência com RP..."></textarea>
+                            placeholder="Explique seus motivos para querer participar"></textarea>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Com o que você pode contribuir?</label>
+                    <div class="relative">
+                        <i class="fas fa-hand-holding-heart absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <textarea name="contribuicao" required
+                            class="input-field w-full px-4 py-2 pl-10 min-h-[100px]"
+                            placeholder="Descreva como você pode contribuir com o servidor"></textarea>
                     </div>
                 </div>
 

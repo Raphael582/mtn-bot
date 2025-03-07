@@ -1,4 +1,4 @@
-const fs = require('fs').promises;
+const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
@@ -6,12 +6,36 @@ const DATA_FILE = path.join(__dirname, '../data/whitelist.json');
 
 class DataManager {
     constructor() {
+        this.dbPath = path.join(__dirname, '..', 'data', 'whitelist.json');
+        this.initializeDatabase();
         this.data = null;
+    }
+
+    initializeDatabase() {
+        // Criar diretório data se não existir
+        const dataDir = path.join(__dirname, '..', 'data');
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir);
+        }
+
+        // Criar arquivo whitelist.json se não existir
+        if (!fs.existsSync(this.dbPath)) {
+            fs.writeFileSync(this.dbPath, JSON.stringify({ requests: [] }, null, 2));
+        }
+    }
+
+    readDatabase() {
+        const data = fs.readFileSync(this.dbPath, 'utf8');
+        return JSON.parse(data);
+    }
+
+    writeDatabase(data) {
+        fs.writeFileSync(this.dbPath, JSON.stringify(data, null, 2));
     }
 
     async loadData() {
         try {
-            const fileContent = await fs.readFile(DATA_FILE, 'utf8');
+            const fileContent = await fs.promises.readFile(DATA_FILE, 'utf8');
             this.data = JSON.parse(fileContent);
         } catch (error) {
             if (error.code === 'ENOENT') {
@@ -37,7 +61,7 @@ class DataManager {
     }
 
     async saveData() {
-        await fs.writeFile(DATA_FILE, JSON.stringify(this.data, null, 4));
+        await fs.promises.writeFile(DATA_FILE, JSON.stringify(this.data, null, 4));
     }
 
     async findAdmin(username) {
@@ -92,31 +116,47 @@ class DataManager {
     }
 
     async addWhitelistRequest(request) {
-        await this.loadData();
-        request.id = (this.data.requests.length + 1).toString();
-        request.status = 'pending';
-        request.createdAt = new Date().toISOString();
-        this.data.requests.push(request);
-        await this.saveData();
+        const db = this.readDatabase();
+        db.requests.push({
+            id: Date.now().toString(),
+            ...request
+        });
+        this.writeDatabase(db);
+        return db.requests[db.requests.length - 1];
+    }
+
+    async updateWhitelistRequest(id, status, reason = null) {
+        const db = this.readDatabase();
+        const request = db.requests.find(r => r.id === id);
+        
+        if (!request) {
+            throw new Error('Solicitação não encontrada');
+        }
+
+        request.status = status;
+        request.updatedAt = new Date().toISOString();
+        
+        if (status === 'rejected' && reason) {
+            request.rejectionReason = reason;
+        }
+
+        this.writeDatabase(db);
         return request;
     }
 
-    async updateWhitelistRequest(requestId, status, reason = null) {
-        await this.loadData();
-        const request = this.data.requests.find(r => r.id === requestId);
-        if (request) {
-            request.status = status;
-            request.reason = reason;
-            request.updatedAt = new Date().toISOString();
-            await this.saveData();
-            return request;
-        }
-        throw new Error('Solicitação não encontrada');
+    async getPendingRequests() {
+        const db = this.readDatabase();
+        return db.requests.filter(r => r.status === 'pending');
     }
 
-    async getPendingRequests() {
-        await this.loadData();
-        return this.data.requests.filter(request => request.status === 'pending');
+    async getRequestById(id) {
+        const db = this.readDatabase();
+        return db.requests.find(r => r.id === id);
+    }
+
+    async getUserRequest(userId) {
+        const db = this.readDatabase();
+        return db.requests.find(r => r.userId === userId);
     }
 }
 

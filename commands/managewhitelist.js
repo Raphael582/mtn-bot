@@ -1,6 +1,7 @@
-const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder, StringSelectMenuBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const { estados, habilidades } = require('../config/whitelist-options');
 
 // Definição do comando - Usando um nome diferente para evitar conflito
 const data = new SlashCommandBuilder()
@@ -51,37 +52,77 @@ function writeWhitelistData(filePath, data) {
 async function execute(interaction, client) {
     try {
         const modal = new ModalBuilder()
-            .setCustomId('whitelist_modal_new')
+            .setCustomId('whitelistForm')
             .setTitle('📝 Formulário de Whitelist');
 
-        // SINCRONIZADO: Usando as mesmas perguntas do whitelist.js original
         const nomeInput = new TextInputBuilder()
-            .setCustomId('nome')
-            .setLabel('Qual é o seu nome?')
+            .setCustomId('nomeInput')
+            .setLabel('Qual é seu nome completo?')
             .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Digite seu nome completo')
             .setRequired(true)
-            .setPlaceholder('Digite seu nome ou apelido');
+            .setMinLength(2)
+            .setMaxLength(100);
 
         const idadeInput = new TextInputBuilder()
-            .setCustomId('idade')
-            .setLabel('Qual é a sua idade?')
+            .setCustomId('idadeInput')
+            .setLabel('Qual é sua idade?')
             .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Digite sua idade')
             .setRequired(true)
-            .setPlaceholder('Digite sua idade em números');
+            .setMinLength(1)
+            .setMaxLength(3);
+
+        const religiaoInput = new TextInputBuilder()
+            .setCustomId('religiaoInput')
+            .setLabel('Qual é sua religião?')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Digite sua religião')
+            .setRequired(true)
+            .setMinLength(2)
+            .setMaxLength(50);
 
         const motivoInput = new TextInputBuilder()
-            .setCustomId('motivo')
-            .setLabel('Por que você quer entrar?')
+            .setCustomId('motivoInput')
+            .setLabel('Por que você quer participar do servidor?')
             .setStyle(TextInputStyle.Paragraph)
+            .setPlaceholder('Explique seus motivos para querer participar')
             .setRequired(true)
-            .setPlaceholder('Descreva seus motivos para entrar no servidor');
+            .setMinLength(10)
+            .setMaxLength(1000);
 
-        // Action Rows
+        const contribuicaoInput = new TextInputBuilder()
+            .setCustomId('contribuicaoInput')
+            .setLabel('Com o que você pode contribuir?')
+            .setStyle(TextInputStyle.Paragraph)
+            .setPlaceholder('Descreva como você pode contribuir com o servidor')
+            .setRequired(true)
+            .setMinLength(10)
+            .setMaxLength(1000);
+
+        const estadoSelect = new StringSelectMenuBuilder()
+            .setCustomId('estadoSelect')
+            .setPlaceholder('Selecione seu estado')
+            .addOptions(estados)
+            .setRequired(true);
+
+        const habilidadesSelect = new StringSelectMenuBuilder()
+            .setCustomId('habilidadesSelect')
+            .setPlaceholder('Selecione suas habilidades/interesses')
+            .addOptions(habilidades)
+            .setRequired(true)
+            .setMinValues(1)
+            .setMaxValues(3);
+
         const firstActionRow = new ActionRowBuilder().addComponents(nomeInput);
         const secondActionRow = new ActionRowBuilder().addComponents(idadeInput);
-        const thirdActionRow = new ActionRowBuilder().addComponents(motivoInput);
+        const thirdActionRow = new ActionRowBuilder().addComponents(religiaoInput);
+        const fourthActionRow = new ActionRowBuilder().addComponents(motivoInput);
+        const fifthActionRow = new ActionRowBuilder().addComponents(contribuicaoInput);
+        const sixthActionRow = new ActionRowBuilder().addComponents(estadoSelect);
+        const seventhActionRow = new ActionRowBuilder().addComponents(habilidadesSelect);
 
-        modal.addComponents(firstActionRow, secondActionRow, thirdActionRow);
+        modal.addComponents(firstActionRow, secondActionRow, thirdActionRow, fourthActionRow, fifthActionRow, sixthActionRow, seventhActionRow);
 
         await interaction.showModal(modal);
         console.log(`✅ Modal de whitelist mostrado para ${interaction.user.tag}`);
@@ -122,16 +163,20 @@ async function handleModal(interaction, client) {
 
     try {
         // SINCRONIZADO: Extrair respostas usando os mesmos IDs do whitelist.js original
-        const nome = interaction.fields.getTextInputValue('nome');
-        const idade = interaction.fields.getTextInputValue('idade');
-        const motivo = interaction.fields.getTextInputValue('motivo');
+        const nome = interaction.fields.getTextInputValue('nomeInput');
+        const idade = interaction.fields.getTextInputValue('idadeInput');
+        const religiao = interaction.fields.getTextInputValue('religiaoInput');
+        const motivo = interaction.fields.getTextInputValue('motivoInput');
+        const contribuicao = interaction.fields.getTextInputValue('contribuicaoInput');
+        const estado = interaction.fields.getTextInputValue('estadoSelect');
+        const habilidades = interaction.fields.getTextInputValue('habilidadesSelect');
 
         const idUsuario = interaction.user.id;
         const nomeUsuarioDiscord = interaction.user.tag;
 
         // Validação básica dos dados
-        if (nome.length < 2 || nome.length > 50) {
-            return await interaction.editReply({ content: '❌ Nome inválido. Use entre 2 e 50 caracteres.', ephemeral: true });
+        if (nome.length < 2 || nome.length > 100) {
+            return await interaction.editReply({ content: '❌ Nome inválido. Use entre 2 e 100 caracteres.', ephemeral: true });
         }
         
         const idadeNum = parseInt(idade);
@@ -152,7 +197,11 @@ async function handleModal(interaction, client) {
             id_usuario: idUsuario,
             nome_usuario: nome,
             idade: idade,
+            religiao: religiao,
             motivo: motivo,
+            contribuicao: contribuicao,
+            estado: estado,
+            habilidades: habilidades,
             status: 'Pendente',
             data: new Date().toISOString(),
         };
@@ -183,12 +232,17 @@ async function handleModal(interaction, client) {
             .setColor('#3498db')
             .setTitle('Nova Solicitação de Whitelist')
             .setThumbnail('https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cbd351&is=67ca81d1&hm=2d1e12af5d853f0e88f8db96a6f4c74728e460faf6de2b8731eed8588739c11c&=&format=webp&width=914&height=930')
-            .setFooter({ text: `Solicitante: ${interaction.user.tag} (${interaction.user.id})` })
+            .setDescription('Uma nova solicitação de whitelist foi enviada!')
             .addFields(
-                { name: 'Nome', value: nome },
-                { name: 'Idade', value: idade },
-                { name: 'Motivo', value: motivo }
+                { name: 'Nome', value: nome, inline: true },
+                { name: 'Idade', value: idade, inline: true },
+                { name: 'Religião', value: religiao, inline: true },
+                { name: 'Estado', value: estado, inline: true },
+                { name: 'Habilidades', value: habilidades.join(', '), inline: true },
+                { name: 'Motivo', value: motivo },
+                { name: 'Contribuição', value: contribuicao }
             )
+            .setFooter({ text: `Solicitante: ${interaction.user.tag} (${interaction.user.id})` })
             .setTimestamp();
 
         try {

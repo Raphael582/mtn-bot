@@ -293,21 +293,24 @@
                         <div class="form-card container p-4 animate__animated animate__fadeIn">
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <h3 class="text-lg font-bold mb-2">${form.characterName}</h3>
-                                    <p class="text-gray-400 mb-2">Discord: ${form.discordName}</p>
-                                    <p class="text-gray-400 mb-4">ID: ${form.discordId}</p>
+                                    <h3 class="text-lg font-bold mb-2">${form.nome}</h3>
+                                    <p class="text-gray-400 mb-2">ID: ${form.userId}</p>
                                     <div class="space-y-2">
-                                        <p class="text-sm"><span class="font-medium">História:</span> ${form.characterStory}</p>
-                                        <p class="text-sm"><span class="font-medium">Experiência:</span> ${form.rpExperience}</p>
+                                        <p class="text-sm"><span class="font-medium">Idade:</span> ${form.idade}</p>
+                                        <p class="text-sm"><span class="font-medium">Religião:</span> ${form.religiao}</p>
+                                        <p class="text-sm"><span class="font-medium">Estado:</span> ${form.estado}</p>
+                                        <p class="text-sm"><span class="font-medium">Habilidades:</span> ${form.habilidades.join(', ')}</p>
+                                        <p class="text-sm"><span class="font-medium">Motivo:</span> ${form.motivo}</p>
+                                        <p class="text-sm"><span class="font-medium">Contribuição:</span> ${form.contribuicao}</p>
                                     </div>
                                 </div>
                                 <div class="flex space-x-2">
-                                    <button onclick="approveForm('${form._id}')"
+                                    <button onclick="approveForm('${form.id}')"
                                         class="btn-primary px-4 py-2 rounded-lg font-medium text-white flex items-center">
                                         <i class="fas fa-check mr-2"></i>
                                         Aprovar
                                     </button>
-                                    <button onclick="showRejectModal('${form._id}')"
+                                    <button onclick="showRejectModal('${form.id}')"
                                         class="px-4 py-2 rounded-lg font-medium text-white bg-red-600 hover:bg-red-700 flex items-center">
                                         <i class="fas fa-times mr-2"></i>
                                         Rejeitar
