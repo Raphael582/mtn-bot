@@ -8,7 +8,16 @@ const jwt = require('jsonwebtoken');
 const uuid = require('uuid');
 const Logger = require('./logger');
 const fetch = require('node-fetch');
-require('dotenv').config();
+
+// Carregar variáveis de ambiente
+require('./env');
+
+// Logs de debug para variáveis de ambiente
+console.log('\n🔍 Debug de variáveis de ambiente:');
+console.log('ADMIN_USERNAME:', process.env.ADMIN_USERNAME);
+console.log('ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD ? 'Configurada' : 'Não configurada');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'Configurado' : 'Não configurado');
+console.log('Todas as variáveis de ambiente:', Object.keys(process.env).join(', '));
 
 class WhitelistServer {
     constructor(client) {
@@ -185,7 +194,7 @@ class WhitelistServer {
                     username,
                     role: 'admin',
                     permissions: ['manage_admins', 'view_logs', 'manage_whitelist', 'audit']
-                }, process.env.JWT_SECRET, { expiresIn: '24h' });
+                }, process.env.ADMIN_JWT_SECRET, { expiresIn: '24h' });
                 
                 res.json({ 
                     token,
@@ -218,7 +227,7 @@ class WhitelistServer {
         }
 
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
             console.log(`✅ Token válido para usuário ${decoded.userId}`);
             req.user = decoded;
             next();
@@ -448,7 +457,7 @@ class WhitelistServer {
             return res.status(401).json({ error: 'Token não fornecido' });
         }
         
-        jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        jwt.verify(token, process.env.ADMIN_JWT_SECRET, (err, user) => {
             if (err) {
                 return res.status(403).json({ error: 'Token inválido' });
             }

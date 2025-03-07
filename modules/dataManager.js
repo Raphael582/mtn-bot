@@ -36,7 +36,7 @@ class DataManager {
                 const initialAdmin = {
                     id: "1",
                     username: process.env.ADMIN_USERNAME,
-                    password: process.env.ADMIN_PASSWORD_HASH,
+                    password: process.env.ADMIN_PASSWORD,
                     createdAt: new Date().toISOString(),
                     lastLogin: null
                 };

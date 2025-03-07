@@ -1,7 +1,10 @@
 const { Client, GatewayIntentBits, REST, Routes, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config();
+
+// Carregar variáveis de ambiente
+require('./modules/env');
+
 const express = require('express');
 const jwt = require('jsonwebtoken');
 
