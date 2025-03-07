@@ -12,15 +12,28 @@ module.exports = {
 
     async execute(interaction) {
         try {
+            console.log('📝 Comando whitelist executado');
+            console.log('🌐 URL do whitelist:', process.env.WHITELIST_URL);
+            
             // Verificar se é um subcomando
             const subcommand = interaction.options.getSubcommand(false);
+            console.log('📋 Subcomando:', subcommand || 'nenhum (formulário)');
 
             if (subcommand === 'status') {
                 try {
+                    console.log('🔍 Verificando status...');
                     const response = await fetch(`${process.env.WHITELIST_URL}/api/whitelist/forms`);
+                    console.log('📡 Resposta do servidor:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Erro na resposta do servidor: ${response.status}`);
+                    }
+                    
                     const forms = await response.json();
+                    console.log('📊 Total de formulários:', forms.length);
                     
                     const userForm = forms.find(f => f.nome === interaction.user.username);
+                    console.log('👤 Formulário do usuário:', userForm ? 'encontrado' : 'não encontrado');
                     
                     if (!userForm) {
                         return interaction.reply({
@@ -46,14 +59,15 @@ module.exports = {
 
                     return interaction.reply({ embeds: [statusEmbed], ephemeral: true });
                 } catch (error) {
-                    console.error('Erro ao verificar status:', error);
+                    console.error('❌ Erro ao verificar status:', error);
                     return interaction.reply({
-                        content: 'Ocorreu um erro ao verificar o status da sua solicitação.',
+                        content: 'Ocorreu um erro ao verificar o status da sua solicitação. Por favor, tente novamente mais tarde.',
                         ephemeral: true
                     });
                 }
             } else {
                 // Comportamento padrão: enviar formulário
+                console.log('📝 Enviando formulário...');
                 const formEmbed = new EmbedBuilder()
                     .setColor('#3498db')
                     .setTitle('📝 Formulário de Whitelist')
@@ -75,13 +89,15 @@ module.exports = {
                             .setEmoji('📝')
                     );
 
+                console.log('✅ Enviando mensagem com formulário');
                 return interaction.reply({
                     embeds: [formEmbed],
                     components: [row]
                 });
             }
         } catch (error) {
-            console.error('Erro no comando whitelist:', error);
+            console.error('❌ Erro no comando whitelist:', error);
+            console.error('Stack trace:', error.stack);
             return interaction.reply({
                 content: 'Ocorreu um erro ao executar este comando. Por favor, tente novamente.',
                 ephemeral: true

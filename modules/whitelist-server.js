@@ -5,6 +5,7 @@ const { WebhookClient } = require('discord.js');
 
 class WhitelistServer {
     constructor(client) {
+        console.log('🔧 Inicializando servidor de whitelist...');
         this.client = client;
         this.app = express();
         this.db = {
@@ -13,16 +14,28 @@ class WhitelistServer {
         };
         this.webhookClient = null;
         this.server = null;
+        
+        // Verificar variáveis de ambiente
+        console.log('📋 Verificando configurações:');
+        console.log('- Porta:', process.env.WHITELIST_PORT);
+        console.log('- URL:', process.env.WHITELIST_URL);
+        console.log('- Webhook:', process.env.WHITELIST_WEBHOOK_URL ? 'Configurado' : 'Não configurado');
+        
         this.setupWebhook();
         this.setupMiddleware();
         this.setupRoutes();
+        console.log('✅ Servidor de whitelist inicializado');
     }
 
     async setupWebhook() {
         try {
             const webhookUrl = process.env.WHITELIST_WEBHOOK_URL;
             if (webhookUrl) {
+                console.log('🔗 Configurando webhook...');
                 this.webhookClient = new WebhookClient({ url: webhookUrl });
+                console.log('✅ Webhook configurado');
+            } else {
+                console.log('⚠️ Webhook não configurado');
             }
         } catch (error) {
             console.error('❌ Erro ao configurar webhook:', error);
@@ -30,25 +43,37 @@ class WhitelistServer {
     }
 
     setupMiddleware() {
+        console.log('⚙️ Configurando middleware...');
         this.app.use(express.json());
-        this.app.use(express.static(path.join(__dirname, '..', 'whitelist-frontend')));
+        
+        // Verificar diretório de frontend
+        const frontendPath = path.join(__dirname, '..', 'whitelist-frontend');
+        console.log('📁 Diretório de frontend:', frontendPath);
+        
+        this.app.use(express.static(frontendPath));
         
         // Middleware para capturar IP
         this.app.use((req, res, next) => {
             const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
             req.clientIp = ip;
+            console.log(`🌐 Requisição de ${ip}: ${req.method} ${req.url}`);
             next();
         });
+        console.log('✅ Middleware configurado');
     }
 
     setupRoutes() {
+        console.log('🛣️ Configurando rotas...');
+        
         // Rota principal
         this.app.get('/', (req, res) => {
+            console.log('📄 Servindo página principal');
             res.sendFile(path.join(__dirname, '..', 'whitelist-frontend', 'index.html'));
         });
 
         // Rota do painel admin
         this.app.get('/admin', (req, res) => {
+            console.log('🔒 Servindo página de admin');
             res.sendFile(path.join(__dirname, '..', 'whitelist-frontend', 'admin.html'));
         });
 
@@ -57,6 +82,8 @@ class WhitelistServer {
         this.app.post('/api/whitelist/approve', this.handleWhitelistApprove.bind(this));
         this.app.post('/api/whitelist/reject', this.handleWhitelistReject.bind(this));
         this.app.get('/api/whitelist/forms', this.handleGetForms.bind(this));
+        
+        console.log('✅ Rotas configuradas');
     }
 
     async handleWhitelistSubmit(req, res) {
@@ -166,7 +193,9 @@ class WhitelistServer {
 
     async start() {
         try {
-            const port = process.env.WHITELIST_PORT || 3000;
+            const port = process.env.WHITELIST_PORT || 5000;
+            console.log('🚀 Iniciando servidor na porta:', port);
+            
             return new Promise((resolve, reject) => {
                 this.server = this.app.listen(port, () => {
                     console.log(`✅ Servidor de whitelist rodando na porta ${port}`);
@@ -185,6 +214,7 @@ class WhitelistServer {
     async stop() {
         try {
             if (this.server) {
+                console.log('🛑 Parando servidor...');
                 return new Promise((resolve, reject) => {
                     this.server.close((error) => {
                         if (error) {
