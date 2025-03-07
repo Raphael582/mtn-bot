@@ -68,7 +68,16 @@ class WhitelistServer {
     async setupWebhook() {
         try {
             const webhookUrl = env.WHITELIST_WEBHOOK_URL;
-            console.log('🔍 Verificando URL do webhook:', webhookUrl ? 'URL presente' : 'URL ausente');
+            console.log('🔍 Verificando URL do webhook:');
+            console.log('URL presente:', webhookUrl ? 'Sim' : 'Não');
+            
+            if (webhookUrl) {
+                // Mostrar apenas o início da URL para debug
+                const urlParts = webhookUrl.split('/');
+                console.log('Formato da URL:', urlParts[0] + '//' + urlParts[2] + '/' + urlParts[3]);
+                console.log('ID do Webhook:', urlParts[4]);
+                console.log('Token:', urlParts[5].substring(0, 5) + '...');
+            }
             
             if (!webhookUrl) {
                 console.log('⚠️ Webhook não configurado');
@@ -76,8 +85,11 @@ class WhitelistServer {
             }
 
             // Validar formato da URL
-            if (!webhookUrl.startsWith('https://discord.com/api/webhooks/')) {
-                console.error('❌ URL do webhook inválida. Deve começar com https://discord.com/api/webhooks/');
+            const webhookPattern = /^https:\/\/discord\.com\/api\/webhooks\/\d+\/[\w-]+$/;
+            if (!webhookPattern.test(webhookUrl)) {
+                console.error('❌ URL do webhook inválida. Formato esperado:');
+                console.error('https://discord.com/api/webhooks/ID/TOKEN');
+                console.error('URL atual:', webhookUrl);
                 return;
             }
 
@@ -87,6 +99,16 @@ class WhitelistServer {
                     url: webhookUrl
                 });
                 console.log('✅ Webhook configurado com sucesso');
+                
+                // Testar o webhook
+                const testEmbed = new EmbedBuilder()
+                    .setTitle('🔄 Teste de Webhook')
+                    .setDescription('Webhook configurado com sucesso!')
+                    .setColor('#00ff00')
+                    .setTimestamp();
+                
+                await this.webhookClient.send({ embeds: [testEmbed] });
+                console.log('✅ Teste de webhook enviado com sucesso');
             } catch (webhookError) {
                 console.error('❌ Erro ao criar webhook:', webhookError);
                 await this.logger.logError(webhookError, 'whitelist-webhook-creation');
