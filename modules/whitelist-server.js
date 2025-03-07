@@ -314,9 +314,9 @@ server {
                     
                     // Coletar todos os IPs disponíveis
                     Object.keys(networkInterfaces).forEach((interfaceName) => {
-                        networkInterfaces[interfaceName].forEach((interface) => {
-                            if (interface.family === 'IPv4' && !interface.internal) {
-                                addresses.push(interface.address);
+                        networkInterfaces[interfaceName].forEach((iface) => {
+                            if (iface.family === 'IPv4' && !iface.internal) {
+                                addresses.push(iface.address);
                             }
                         });
                     });
