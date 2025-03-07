@@ -642,11 +642,15 @@
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token');
             
-            console.log('Token recebido no formulário:', token); // Log para debug
-            console.log('URL completa:', window.location.href); // Log para debug
+            console.log('=== DEBUG FORM.HTML ===');
+            console.log('Token recebido no formulário:', token);
+            console.log('URL completa:', window.location.href);
+            console.log('Parâmetros da URL:', Object.fromEntries(urlParams.entries()));
+            console.log('Estado do formulário:', form.style.display);
 
             if (!token) {
-                console.log('Token não encontrado na URL'); // Log para debug
+                console.log('Token não encontrado na URL do formulário');
+                console.log('Ocultando formulário e exibindo mensagem de erro');
                 status.textContent = 'Token inválido ou não fornecido. Por favor, use o comando /whitelist no Discord.';
                 status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
                 status.classList.remove('hidden');
@@ -656,11 +660,12 @@
 
             // Decodificar o token para obter o ID do usuário
             try {
+                console.log('Tentando decodificar o token...');
                 const decodedToken = JSON.parse(atob(token.split('.')[1]));
                 const userId = decodedToken.userId;
                 const username = decodedToken.username;
                 
-                console.log('Token decodificado:', { userId, username }); // Log para debug
+                console.log('Token decodificado com sucesso:', { userId, username });
                 
                 // Adicionar o ID e nome do usuário ao formulário
                 const userIdInput = document.createElement('input');
@@ -680,8 +685,11 @@
                 welcomeMessage.className = 'text-center mb-6 text-green-400 animate__animated animate__fadeIn';
                 welcomeMessage.innerHTML = `<i class="fas fa-user-circle mr-2"></i>Bem-vindo(a), ${username}!`;
                 form.insertBefore(welcomeMessage, form.firstChild);
+
+                console.log('Formulário configurado com sucesso');
             } catch (error) {
-                console.error('Erro ao decodificar token:', error); // Log para debug
+                console.error('Erro ao decodificar token:', error);
+                console.log('Ocultando formulário e exibindo mensagem de erro');
                 status.textContent = 'Token inválido. Por favor, use o comando /whitelist no Discord.';
                 status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
                 status.classList.remove('hidden');
@@ -708,9 +716,16 @@
                     const result = await response.json();
                     
                     if (response.ok) {
-                        status.textContent = 'Solicitação enviada com sucesso! Aguarde a resposta da equipe.';
-                        status.className = 'text-green-500 bg-green-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                        status.innerHTML = `
+                            <div class="text-center">
+                                <i class="fas fa-check-circle text-4xl text-green-500 mb-4"></i>
+                                <p class="text-green-500 text-lg mb-2">Solicitação enviada com sucesso!</p>
+                                <p class="text-gray-300">Agradecemos sua participação. Aguarde a resposta da equipe.</p>
+                            </div>
+                        `;
+                        status.className = 'bg-green-500 bg-opacity-10 p-6 rounded-lg text-center animate__animated animate__fadeIn';
                         form.reset();
+                        form.style.display = 'none';
                     } else {
                         status.textContent = result.error || 'Erro ao enviar solicitação';
                         status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';

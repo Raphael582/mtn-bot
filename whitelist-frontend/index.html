@@ -432,10 +432,14 @@
             const token = urlParams.get('token');
             const error = urlParams.get('error');
             
-            console.log('Token na página inicial:', token); // Log para debug
+            console.log('=== DEBUG INDEX.HTML ===');
+            console.log('Token na página inicial:', token);
+            console.log('URL completa:', window.location.href);
+            console.log('Parâmetros da URL:', Object.fromEntries(urlParams.entries()));
             
             // Mostrar mensagens de erro se houver
             if (error) {
+                console.log('Erro detectado:', error);
                 const status = document.getElementById('status');
                 let message = '';
                 
@@ -456,9 +460,19 @@
             }
             
             if (token) {
-                console.log('Redirecionando para o formulário com token:', token); // Log para debug
+                console.log('Iniciando redirecionamento para o formulário...');
+                console.log('Token antes do redirecionamento:', token);
+                
+                // Obter o caminho base do site
+                const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+                const redirectUrl = `${basePath}/form.html?token=${encodeURIComponent(token)}`;
+                
+                console.log('URL de redirecionamento:', redirectUrl);
+                
                 // Redirecionar para o formulário com o token
-                window.location.replace(`form.html?token=${encodeURIComponent(token)}`);
+                window.location.replace(redirectUrl);
+            } else {
+                console.log('Nenhum token encontrado na URL da página inicial');
             }
 
             // Login Admin
