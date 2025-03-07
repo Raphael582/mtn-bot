@@ -46,7 +46,7 @@ class WhitelistServer {
             } else {
                 console.log('⚠️ Webhook não configurado');
             }
-        } catch (error) {
+            } catch (error) {
             console.error('❌ Erro ao configurar webhook:', error);
             await this.logger.logError(null, 'whitelist-webhook', error);
         }
@@ -62,7 +62,7 @@ class WhitelistServer {
             res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
             next();
         });
-
+        
         this.app.use(express.json());
         
         // Verificar diretório de frontend
@@ -104,7 +104,7 @@ class WhitelistServer {
                 console.log('❌ Token não fornecido');
                 return res.redirect('/');
             }
-
+            
             try {
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 console.log(`📄 Servindo formulário para usuário ${decoded.userId}`);
@@ -169,7 +169,7 @@ class WhitelistServer {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             req.user = decoded;
             next();
-        } catch (error) {
+                } catch (error) {
             console.error('❌ Token inválido:', error);
             return res.status(403).json({ error: 'Token inválido' });
         }
@@ -321,7 +321,7 @@ class WhitelistServer {
                             try {
                                 const response = await fetch(`http://localhost:${port}`);
                                 console.log('✅ Servidor respondendo corretamente');
-                            } catch (error) {
+                } catch (error) {
                                 console.error('❌ Erro ao testar servidor:', error);
                             }
 
@@ -356,11 +356,11 @@ class WhitelistServer {
                                     reject(new Error(`Não foi possível encontrar uma porta disponível após ${maxAttempts} tentativas`));
                                 }
                             } else {
-                                console.error('❌ Erro ao iniciar servidor de whitelist:', error);
-                                reject(error);
+                console.error('❌ Erro ao iniciar servidor de whitelist:', error);
+                reject(error);
                             }
-                        });
-                    });
+            });
+        });
                 } catch (error) {
                     if (attempts >= maxAttempts) {
                         throw error;
@@ -391,7 +391,7 @@ class WhitelistServer {
                     });
                 });
             }
-        } catch (error) {
+            } catch (error) {
             console.error('❌ Erro ao parar servidor de whitelist:', error);
             throw error;
         }
@@ -401,7 +401,7 @@ class WhitelistServer {
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1];
         
-        if (!token) {
+            if (!token) {
             return res.status(401).json({ error: 'Token não fornecido' });
         }
         

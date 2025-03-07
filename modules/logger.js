@@ -97,35 +97,35 @@ class Logger {
                 console.error(`❌ Não foi possível enviar log ${level}: Canal não encontrado`);
                 return;
             }
-
-            const embed = new EmbedBuilder()
-                .setColor(logLevel.color)
-                .setTitle(`${logLevel.emoji} ${title}`)
-                .setDescription(description)
-                .setTimestamp();
-
-            if (fields && fields.length > 0) {
+    
+    const embed = new EmbedBuilder()
+        .setColor(logLevel.color)
+        .setTitle(`${logLevel.emoji} ${title}`)
+        .setDescription(description)
+        .setTimestamp();
+    
+    if (fields && fields.length > 0) {
                 embed.addFields(fields);
             }
 
-            if (options.footer) {
-                embed.setFooter({ text: options.footer });
-            }
-
-            if (options.author) {
-                embed.setAuthor(options.author);
-            }
-
-            if (options.thumbnail) {
-                embed.setThumbnail(options.thumbnail);
-            }
-
+    if (options.footer) {
+        embed.setFooter({ text: options.footer });
+    }
+    
+    if (options.author) {
+        embed.setAuthor(options.author);
+    }
+    
+    if (options.thumbnail) {
+        embed.setThumbnail(options.thumbnail);
+    }
+    
             await channel.send({ embeds: [embed] });
             await this.saveToFile(level, {
-                title,
-                description,
-                fields,
-                options,
+            title,
+            description,
+            fields,
+            options,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {

@@ -16,6 +16,8 @@
             color: #ffffff;
             position: relative;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         body::before {
             content: '';
@@ -41,9 +43,7 @@
             min-height: 600px;
             position: relative;
             overflow: hidden;
-            transform: translateZ(0);
-            backface-visibility: hidden;
-            perspective: 1000px;
+            will-change: transform;
         }
         .container::before {
             content: '';
@@ -95,6 +95,32 @@
             height: auto;
             filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
             animation: float 3s ease-in-out infinite;
+        }
+        .server-logo {
+            max-width: 80px;
+            height: auto;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+            margin-right: 1rem;
+        }
+        .credits {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .credits img {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
         }
         @keyframes float {
             0% { transform: translateY(0px); }
@@ -223,52 +249,68 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            transform: translateZ(0);
-            backface-visibility: hidden;
-            perspective: 1000px;
+            will-change: transform;
         }
         .form-step {
-            display: none;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s ease;
             position: absolute;
             width: 100%;
             top: 0;
             left: 0;
-            transform: translateZ(0);
-            backface-visibility: hidden;
-            perspective: 1000px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+            will-change: transform, opacity;
         }
         .form-step.active {
-            display: block;
             opacity: 1;
-            transform: translateY(0) translateZ(0);
+            visibility: visible;
+            transform: translateY(0);
+            position: relative;
         }
         .btn-next {
-            background: #4CAF50;
-            color: white;
-            padding: 1.5rem;
-            border: none;
+            position: relative;
+            width: 150px;
+            height: 150px;
             border-radius: 50%;
-            cursor: pointer;
-            font-size: 1.2rem;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border: none;
+            color: white;
+            font-size: 1.4rem;
             font-weight: 600;
-            transition: all 0.3s ease;
-            width: 120px;
-            height: 120px;
+            cursor: pointer;
             margin: 2rem auto;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            line-height: 1.2;
+            padding: 0;
             box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+        }
+        .btn-next::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
         .btn-next:hover {
-            background: #45a049;
-            transform: translateY(-2px) scale(1.05);
+            transform: scale(1.05);
             box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+        .btn-next:hover::before {
+            opacity: 1;
+        }
+        .btn-next:active {
+            transform: scale(0.95);
         }
         .btn-next:disabled {
             background: #cccccc;
@@ -276,21 +318,37 @@
             transform: none;
             box-shadow: none;
         }
+        .btn-next span {
+            position: relative;
+            z-index: 1;
+            padding: 0 1rem;
+        }
+        @media (max-width: 640px) {
+            .btn-next {
+                width: 120px;
+                height: 120px;
+                font-size: 1.2rem;
+            }
+        }
     </style>
 </head>
 <body class="py-12 px-4">
     <div class="max-w-2xl mx-auto">
         <div class="text-center mb-8 animate__animated animate__fadeIn">
             <img src="https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png" alt="MTN Logo" class="logo mx-auto mb-4">
-            <h1 class="text-3xl font-bold mb-2">Bem-vindo ao Sistema de Whitelist</h1>
+            <div class="flex items-center justify-center mb-4">
+                <img src="https://cdn.discordapp.com/icons/1336748568853090508/a_0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f.gif" alt="Metânia Logo" class="server-logo">
+                <h1 class="text-3xl font-bold">Bem-vindo ao Sistema de Whitelist</h1>
+            </div>
             <p class="text-gray-300">Para acessar o formulário, você precisa usar o comando /whitelist no Discord</p>
         </div>
 
         <div class="container p-6 mb-8 animate__animated animate__fadeInUp">
             <div class="text-center">
-                <p class="text-gray-300 mb-6">
-                    Para solicitar sua whitelist, siga estes passos:
-                </p>
+                <div class="flex items-center justify-center mb-6">
+                    <img src="https://cdn.discordapp.com/icons/1336748568853090508/a_0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f.gif" alt="Metânia Logo" class="server-logo">
+                    <p class="text-gray-300">Para solicitar sua whitelist, siga estes passos:</p>
+                </div>
                 <ol class="text-left space-y-4 mb-8">
                     <li class="step-item flex items-start">
                         <span class="step-number">1</span>
@@ -315,7 +373,10 @@
         <!-- Seção de Login Admin -->
         <div class="container p-6 mb-8 admin-section animate__animated animate__fadeInUp">
             <div class="text-center">
-                <h2 class="text-2xl font-bold mb-4">Área Administrativa</h2>
+                <div class="flex items-center justify-center mb-4">
+                    <img src="https://cdn.discordapp.com/icons/1336748568853090508/a_0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f.gif" alt="Metânia Logo" class="server-logo">
+                    <h2 class="text-2xl font-bold">Área Administrativa</h2>
+                </div>
                 <form id="adminLoginForm" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-2">Usuário</label>
@@ -345,11 +406,16 @@
         <div id="status" class="hidden text-center p-4 rounded-lg status-message"></div>
     </div>
 
+    <div class="credits animate__animated animate__fadeIn">
+        <img src="https://cdn.discordapp.com/avatars/1336748568853090508/a_0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f.gif" alt="Mr.Dark">
+        <span>Desenvolvido por Mr.Dark para Metânia</span>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // Verificar se há um token na URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
+                const urlParams = new URLSearchParams(window.location.search);
+                const token = urlParams.get('token');
             const error = urlParams.get('error');
             
             // Mostrar mensagens de erro se houver
