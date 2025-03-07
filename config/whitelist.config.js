@@ -1,8 +1,15 @@
 module.exports = {
     // Configurações do servidor
     server: {
-        // Porta padrão do servidor
-        port: 3000,
+        // Configurações de porta
+        port: {
+            // Porta mínima para aleatorização
+            min: 3000,
+            // Porta máxima para aleatorização
+            max: 9999,
+            // Tentar usar porta específica (null para aleatória)
+            specific: null
+        },
         // URL base do servidor
         url: process.env.WHITELIST_URL || 'http://localhost',
         // Usar localhost ou IP da máquina
