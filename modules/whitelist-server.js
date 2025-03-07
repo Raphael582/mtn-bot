@@ -224,13 +224,41 @@ class WhitelistServer {
 
     async updateNginxConfig(port) {
         try {
+            console.log('🔄 Atualizando configuração do Nginx...');
+            
+            // Verificar se o diretório existe
+            try {
+                await fs.access('/etc/nginx/sites-available');
+            } catch (error) {
+                console.error('❌ Diretório /etc/nginx/sites-available não encontrado');
+                return;
+            }
+
+            // Criar arquivos de log
+            try {
+                await fs.writeFile('/var/log/nginx/whitelist-error.log', '');
+                await fs.writeFile('/var/log/nginx/whitelist-access.log', '');
+                console.log('✅ Arquivos de log criados');
+            } catch (error) {
+                console.error('❌ Erro ao criar arquivos de log:', error);
+                // Tentar criar com sudo
+                const { exec } = require('child_process');
+                exec('sudo touch /var/log/nginx/whitelist-error.log /var/log/nginx/whitelist-access.log', (error) => {
+                    if (error) {
+                        console.error('❌ Erro ao criar arquivos de log com sudo:', error);
+                        return;
+                    }
+                    console.log('✅ Arquivos de log criados com sudo');
+                });
+            }
+
             const nginxConfig = `
 server {
     listen 80;
-    server_name 56.124.64.115;
+    server_name whitelist.mtn-bot.com;
 
     location / {
-        proxy_pass http://localhost:${port};
+        proxy_pass http://127.0.0.1:${port};
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -244,6 +272,10 @@ server {
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
+
+        # Logs para debug
+        error_log /var/log/nginx/whitelist-error.log debug;
+        access_log /var/log/nginx/whitelist-access.log;
     }
 }`;
 
@@ -260,6 +292,8 @@ server {
             exec('sudo nginx -t', (error, stdout, stderr) => {
                 if (error) {
                     console.error('❌ Erro ao testar configuração do Nginx:', error);
+                    console.error('Saída:', stdout);
+                    console.error('Erro:', stderr);
                     return;
                 }
                 console.log('✅ Configuração do Nginx testada com sucesso');
@@ -268,9 +302,20 @@ server {
                 exec('sudo systemctl restart nginx', (error, stdout, stderr) => {
                     if (error) {
                         console.error('❌ Erro ao reiniciar Nginx:', error);
+                        console.error('Saída:', stdout);
+                        console.error('Erro:', stderr);
                         return;
                     }
                     console.log('✅ Nginx reiniciado com sucesso');
+                    
+                    // Verificar status do Nginx
+                    exec('sudo systemctl status nginx', (error, stdout, stderr) => {
+                        if (error) {
+                            console.error('❌ Erro ao verificar status do Nginx:', error);
+                            return;
+                        }
+                        console.log('📊 Status do Nginx:', stdout);
+                    });
                 });
             });
         } catch (error) {
@@ -284,7 +329,6 @@ server {
             let port;
 
             if (config.server.port.specific) {
-                // Tenta usar a porta específica
                 try {
                     port = await this.findAvailablePort(
                         config.server.port.specific,
@@ -298,7 +342,6 @@ server {
                     );
                 }
             } else {
-                // Usa porta aleatória
                 port = await this.findAvailablePort(
                     config.server.port.min,
                     config.server.port.max
@@ -309,10 +352,19 @@ server {
             
             return new Promise((resolve, reject) => {
                 this.server = this.app.listen(port, host, async () => {
+                    console.log(`✅ Servidor iniciado na porta ${port}`);
+                    
+                    // Testar se o servidor está respondendo
+                    try {
+                        const response = await fetch(`http://localhost:${port}`);
+                        console.log('✅ Servidor respondendo corretamente');
+                    } catch (error) {
+                        console.error('❌ Erro ao testar servidor:', error);
+                    }
+
                     const networkInterfaces = os.networkInterfaces();
                     const addresses = [];
                     
-                    // Coletar todos os IPs disponíveis
                     Object.keys(networkInterfaces).forEach((interfaceName) => {
                         networkInterfaces[interfaceName].forEach((iface) => {
                             if (iface.family === 'IPv4' && !iface.internal) {
