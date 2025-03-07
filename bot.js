@@ -150,7 +150,11 @@ async function registerCommands() {
 
 // Evento quando o bot estiver pronto
 client.once('ready', async () => {
-    console.log(`✅ Bot está online como ${client.user.tag}`);
+    console.log(`\n🤖 Bot está online como ${client.user.tag}`);
+    console.log('📋 Informações do bot:');
+    console.log(`- ID: ${client.user.id}`);
+    console.log(`- Servidores: ${client.guilds.cache.size}`);
+    console.log(`- Canais: ${client.channels.cache.size}`);
     
     // Registrar comandos
     await registerCommands();
@@ -161,6 +165,9 @@ client.once('ready', async () => {
         fs.mkdirSync(dbPath, { recursive: true });
         console.log('📁 Diretório de banco de dados criado');
     }
+    
+    // Aguardar um momento para garantir que o cache está atualizado
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
     // Iniciar servidor de whitelist
     await initWhitelistServer();

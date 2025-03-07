@@ -28,16 +28,22 @@ class Logger {
         console.log('GUILD_ID:', process.env.GUILD_ID);
         console.log('Servidores disponíveis:', this.client.guilds.cache.map(g => `${g.name} (${g.id})`).join(', '));
         
-        const guild = this.client.guilds.cache.get(process.env.GUILD_ID);
+        // Tentar buscar o servidor pelo ID fornecido
+        const guild = this.client.guilds.cache.get('1336748568853090508');
         if (!guild) {
             console.error('❌ Servidor não encontrado. Verifique se:');
-            console.error('1. O ID do servidor no .env está correto');
+            console.error('1. O ID do servidor está correto: 1336748568853090508');
             console.error('2. O bot está no servidor');
             console.error('3. O bot tem permissão para ver o servidor');
+            console.error('4. O bot está completamente inicializado');
             return;
         }
 
         console.log(`✅ Servidor encontrado: ${guild.name}`);
+        console.log(`📊 Informações do servidor:`);
+        console.log(`- Nome: ${guild.name}`);
+        console.log(`- ID: ${guild.id}`);
+        console.log(`- Canais disponíveis: ${guild.channels.cache.size}`);
 
         const logChannels = {
             LOG_ORACULO: 'logs-oraculo',
