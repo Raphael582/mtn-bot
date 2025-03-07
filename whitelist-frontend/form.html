@@ -642,103 +642,89 @@
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token');
             
+            // Logs para debug
             console.log('=== DEBUG FORM.HTML ===');
-            console.log('Token recebido no formulário:', token);
+            console.log('Token recebido:', token);
             console.log('URL completa:', window.location.href);
             console.log('Parâmetros da URL:', Object.fromEntries(urlParams.entries()));
 
-            // Armazenar o token globalmente
-            window.formToken = token;
-
+            // Verificar token
             if (!token) {
-                console.log('Token não encontrado na URL do formulário');
-                status.textContent = 'Token inválido ou não fornecido. Por favor, use o comando /whitelist no Discord.';
-                status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
-                status.classList.remove('hidden');
+                console.log('❌ Token não fornecido');
+                status.textContent = 'Token não fornecido. Por favor, use o comando /whitelist no Discord.';
                 form.style.display = 'none';
-                return;
-            }
-
-            // Decodificar o token para obter o ID do usuário
-            try {
-                console.log('Tentando decodificar o token...');
-                const decodedToken = JSON.parse(atob(token.split('.')[1]));
-                const userId = decodedToken.userId;
-                const username = decodedToken.username;
-                
-                console.log('Token decodificado com sucesso:', { userId, username });
-                
-                // Adicionar o ID e nome do usuário ao formulário
-                const userIdInput = document.createElement('input');
-                userIdInput.type = 'hidden';
-                userIdInput.name = 'userId';
-                userIdInput.value = userId;
-                form.appendChild(userIdInput);
-
-                const usernameInput = document.createElement('input');
-                usernameInput.type = 'hidden';
-                usernameInput.name = 'discordUsername';
-                usernameInput.value = username;
-                form.appendChild(usernameInput);
-
-                // Exibir mensagem de boas-vindas
-                const welcomeMessage = document.createElement('div');
-                welcomeMessage.className = 'text-center mb-6 text-green-400 animate__animated animate__fadeIn';
-                welcomeMessage.innerHTML = `<i class="fas fa-user-circle mr-2"></i>Bem-vindo(a), ${username}!`;
-                form.insertBefore(welcomeMessage, form.firstChild);
-
-                console.log('Formulário configurado com sucesso');
-            } catch (error) {
-                console.error('Erro ao decodificar token:', error);
-                status.textContent = 'Token inválido. Por favor, use o comando /whitelist no Discord.';
-                status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
-                status.classList.remove('hidden');
-                form.style.display = 'none';
-                return;
-            }
-
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const formData = new FormData(form);
-                const data = Object.fromEntries(formData.entries());
-                
+            } else {
                 try {
-                    console.log('Enviando formulário com token:', window.formToken);
+                    // Decodificar token
+                    const decodedToken = JSON.parse(atob(token.split('.')[1]));
+                    console.log('Token decodificado:', decodedToken);
+                    
+                    // Armazenar token globalmente
+                    window.formToken = token;
+                    
+                    // Mostrar formulário
+                    form.style.display = 'block';
+                    status.style.display = 'none';
+                } catch (error) {
+                    console.error('❌ Erro ao decodificar token:', error);
+                    status.textContent = 'Token inválido. Por favor, use o comando /whitelist no Discord.';
+                    form.style.display = 'none';
+                }
+            }
+
+            // Função para enviar formulário
+            async function submitForm() {
+                try {
+                    const formData = new FormData(form);
+                    const data = Object.fromEntries(formData.entries());
+                    
+                    console.log('Enviando formulário:', data);
+                    console.log('Token:', window.formToken);
+                    
                     const response = await fetch('/api/whitelist/submit', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${window.formToken}`
+                            'X-User-Token': window.formToken
                         },
                         body: JSON.stringify(data)
                     });
                     
                     const result = await response.json();
-                    console.log('Resposta do servidor:', result);
                     
                     if (response.ok) {
+                        // Sucesso
                         status.innerHTML = `
-                            <div class="text-center">
-                                <i class="fas fa-check-circle text-4xl text-green-500 mb-4"></i>
-                                <p class="text-green-500 text-lg mb-2">Solicitação enviada com sucesso!</p>
-                                <p class="text-gray-300">Agradecemos sua participação. Aguarde a resposta da equipe.</p>
+                            <div class="bg-green-500 text-white p-4 rounded-lg">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                Solicitação enviada com sucesso! Aguarde a resposta da equipe.
                             </div>
                         `;
-                        status.className = 'bg-green-500 bg-opacity-10 p-6 rounded-lg text-center animate__animated animate__fadeIn';
-                        form.reset();
                         form.style.display = 'none';
                     } else {
-                        status.textContent = result.error || 'Erro ao enviar solicitação';
-                        status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                        // Erro
+                        status.innerHTML = `
+                            <div class="bg-red-500 text-white p-4 rounded-lg">
+                                <i class="fas fa-exclamation-circle mr-2"></i>
+                                ${result.error || 'Erro ao enviar solicitação. Tente novamente.'}
+                            </div>
+                        `;
                     }
                 } catch (error) {
                     console.error('Erro ao enviar formulário:', error);
-                    status.textContent = 'Erro ao enviar solicitação. Tente novamente.';
-                    status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.innerHTML = `
+                        <div class="bg-red-500 text-white p-4 rounded-lg">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            Erro ao enviar solicitação. Tente novamente.
+                        </div>
+                    `;
                 }
-                
-                status.classList.remove('hidden');
+            }
+
+            // Event listener para o formulário
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                submitForm();
             });
         });
     </script>

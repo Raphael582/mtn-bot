@@ -46,7 +46,7 @@ class WhitelistServer {
             } else {
                 console.log('⚠️ Webhook não configurado');
             }
-            } catch (error) {
+        } catch (error) {
             console.error('❌ Erro ao configurar webhook:', error);
             await this.logger.logError(null, 'whitelist-webhook', error);
         }
@@ -59,7 +59,7 @@ class WhitelistServer {
         this.app.use((req, res, next) => {
             res.header('Access-Control-Allow-Origin', '*');
             res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-            res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+            res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-User-Token');
             next();
         });
         
@@ -98,11 +98,11 @@ class WhitelistServer {
         });
 
         // Rota para formulário com validação de token
-        this.app.get('/form', (req, res) => {
+        this.app.get('/form.html', (req, res) => {
             const token = req.query.token;
             if (!token) {
                 console.log('❌ Token não fornecido');
-                return res.redirect('/');
+                return res.redirect('/?error=no_token');
             }
             
             try {
@@ -110,7 +110,7 @@ class WhitelistServer {
                 console.log(`📄 Servindo formulário para usuário ${decoded.userId}`);
                 
                 // Verificar se já existe um formulário para este usuário
-                const existingForm = Object.values(this.db.forms).find(f => f.userId === decoded.userId);
+                const existingForm = Object.values(this.db.forms).find(f => f.userId === decoded.userId && f.status === 'pendente');
                 if (existingForm) {
                     console.log(`⚠️ Usuário ${decoded.userId} já possui um formulário pendente`);
                     return res.redirect('/?error=already_submitted');
@@ -124,7 +124,7 @@ class WhitelistServer {
         });
 
         // Rota do painel admin
-        this.app.get('/admin', (req, res) => {
+        this.app.get('/admin.html', (req, res) => {
             console.log('🔒 Servindo página de admin');
             res.sendFile(path.join(__dirname, '..', 'whitelist-frontend', 'admin.html'));
         });
@@ -162,14 +162,16 @@ class WhitelistServer {
     validateUserToken(req, res, next) {
         const token = req.headers['x-user-token'];
         if (!token) {
+            console.log('❌ Token não fornecido no header');
             return res.status(401).json({ error: 'Token não fornecido' });
         }
 
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            console.log(`✅ Token válido para usuário ${decoded.userId}`);
             req.user = decoded;
             next();
-                } catch (error) {
+        } catch (error) {
             console.error('❌ Token inválido:', error);
             return res.status(403).json({ error: 'Token inválido' });
         }
@@ -180,9 +182,12 @@ class WhitelistServer {
             const { ...formData } = req.body;
             const userId = req.user.userId;
             
+            console.log(`📝 Processando formulário para usuário ${userId}`);
+            
             // Verificar se já existe um formulário para este usuário
-            const existingForm = Object.values(this.db.forms).find(f => f.userId === userId);
+            const existingForm = Object.values(this.db.forms).find(f => f.userId === userId && f.status === 'pendente');
             if (existingForm) {
+                console.log(`⚠️ Usuário ${userId} já possui um formulário pendente`);
                 return res.status(400).json({ error: 'Você já enviou uma solicitação' });
             }
             
@@ -197,6 +202,7 @@ class WhitelistServer {
             };
             
             this.db.forms[formId] = form;
+            console.log(`✅ Formulário criado com ID ${formId}`);
             
             // Enviar notificação para o canal de whitelist
             const channel = this.client.channels.cache.get(process.env.LOG_WHITELIST);
@@ -226,6 +232,7 @@ class WhitelistServer {
                     );
                     
                 channel.send({ embeds: [embed], components: [row] });
+                console.log('✅ Notificação enviada para o canal de whitelist');
             }
             
             res.json({ success: true, formId });
@@ -241,12 +248,34 @@ class WhitelistServer {
             const form = this.db.forms[formId];
 
             if (!form) {
+                console.log(`❌ Formulário ${formId} não encontrado`);
                 return res.status(404).json({ error: 'Formulário não encontrado' });
             }
 
             form.status = 'aprovado';
             form.dataAprovacao = new Date().toISOString();
             form.aprovadoPor = adminId;
+
+            // Adicionar cargo de whitelist ao usuário
+            const member = await this.client.guilds.cache.first()?.members.fetch(form.userId);
+            if (member) {
+                await member.roles.add(process.env.WHITELIST_ROLE_ID);
+                console.log(`✅ Cargo de whitelist adicionado para ${member.user.tag}`);
+            }
+
+            // Enviar notificação para o usuário
+            const user = await this.client.users.fetch(form.userId);
+            if (user) {
+                await user.send({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setTitle('🎉 Whitelist Aprovada!')
+                            .setDescription('Parabéns! Sua solicitação de whitelist foi aprovada.')
+                            .setColor('#2ecc71')
+                            .setTimestamp()
+                    ]
+                });
+            }
 
             res.json({ success: true, message: 'Whitelist aprovada com sucesso!' });
         } catch (error) {
@@ -257,17 +286,39 @@ class WhitelistServer {
 
     async handleWhitelistReject(req, res) {
         try {
-            const { formId, adminId, motivo } = req.body;
+            const { formId, adminId, reason } = req.body;
             const form = this.db.forms[formId];
 
             if (!form) {
+                console.log(`❌ Formulário ${formId} não encontrado`);
                 return res.status(404).json({ error: 'Formulário não encontrado' });
             }
 
             form.status = 'rejeitado';
             form.dataRejeicao = new Date().toISOString();
             form.rejeitadoPor = adminId;
-            form.motivoRejeicao = motivo;
+            form.motivoRejeicao = reason;
+
+            // Remover cargo de whitelist do usuário se existir
+            const member = await this.client.guilds.cache.first()?.members.fetch(form.userId);
+            if (member) {
+                await member.roles.remove(process.env.WHITELIST_ROLE_ID);
+                console.log(`✅ Cargo de whitelist removido de ${member.user.tag}`);
+            }
+
+            // Enviar notificação para o usuário
+            const user = await this.client.users.fetch(form.userId);
+            if (user) {
+                await user.send({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setTitle('❌ Whitelist Rejeitada')
+                            .setDescription(`Sua solicitação de whitelist foi rejeitada.\nMotivo: ${reason}`)
+                            .setColor('#e74c3c')
+                            .setTimestamp()
+                    ]
+                });
+            }
 
             res.json({ success: true, message: 'Whitelist rejeitada com sucesso!' });
         } catch (error) {
@@ -290,85 +341,21 @@ class WhitelistServer {
         try {
             const { userId } = req.params;
             const form = Object.values(this.db.forms).find(f => f.userId === userId);
-            
-            if (form) {
-                res.json({ exists: true, form });
-            } else {
-                res.json({ exists: false });
-            }
+            res.json(form);
         } catch (error) {
             console.error('❌ Erro ao buscar formulário do usuário:', error);
-            res.status(500).json({ error: 'Erro ao buscar formulário' });
+            res.status(500).json({ error: 'Erro ao buscar formulário do usuário' });
         }
     }
 
     async start() {
         try {
-            const host = '0.0.0.0';
-            let port = 3001;
-            let maxAttempts = 5;
-            let attempts = 0;
-
-            console.log('🚀 Iniciando servidor:', { host, port });
-            
-            while (attempts < maxAttempts) {
-                try {
-                    return new Promise((resolve, reject) => {
-                        this.server = this.app.listen(port, host, async () => {
-                            console.log(`✅ Servidor iniciado na porta ${port}`);
-                            
-                            // Testar se o servidor está respondendo
-                            try {
-                                const response = await fetch(`http://localhost:${port}`);
-                                console.log('✅ Servidor respondendo corretamente');
-                } catch (error) {
-                                console.error('❌ Erro ao testar servidor:', error);
-                            }
-
-                            const networkInterfaces = os.networkInterfaces();
-                            const addresses = [];
-                            
-                            Object.keys(networkInterfaces).forEach((interfaceName) => {
-                                networkInterfaces[interfaceName].forEach((iface) => {
-                                    if (iface.family === 'IPv4' && !iface.internal) {
-                                        addresses.push(iface.address);
-                                    }
-                                });
-                            });
-
-                            console.log('\n🌐 Servidor de whitelist rodando em:');
-                            console.log(`   http://localhost:${port}`);
-                            addresses.forEach(ip => {
-                                console.log(`   http://${ip}:${port}`);
-                            });
-                            console.log('\n💡 Dica: Use Ctrl+C para parar o servidor\n');
-                            
-                            resolve();
-                        }).on('error', (error) => {
-                            if (error.code === 'EADDRINUSE') {
-                                console.log(`⚠️ Porta ${port} em uso, tentando próxima porta...`);
-                                this.server.close();
-                                port++;
-                                attempts++;
-                                if (attempts < maxAttempts) {
-                                    this.start();
-                                } else {
-                                    reject(new Error(`Não foi possível encontrar uma porta disponível após ${maxAttempts} tentativas`));
-                                }
-                            } else {
-                console.error('❌ Erro ao iniciar servidor de whitelist:', error);
-                reject(error);
-                            }
+            this.server = this.app.listen(process.env.WHITELIST_PORT, () => {
+                console.log('\n🌐 Servidor de whitelist rodando em:');
+                console.log(`- Local: http://localhost:${process.env.WHITELIST_PORT}`);
+                console.log(`- IP: http://${this.getLocalIP()}:${process.env.WHITELIST_PORT}`);
+                console.log(`- URL: ${config.server.url}`);
             });
-        });
-                } catch (error) {
-                    if (attempts >= maxAttempts) {
-                        throw error;
-                    }
-                    attempts++;
-                    port++;
-                }
-            }
         } catch (error) {
             console.error('❌ Erro ao iniciar servidor de whitelist:', error);
             throw error;
@@ -378,30 +365,32 @@ class WhitelistServer {
     async stop() {
         try {
             if (this.server) {
-                console.log('🛑 Parando servidor...');
-                return new Promise((resolve, reject) => {
-                    this.server.close((error) => {
-                        if (error) {
-                            console.error('❌ Erro ao parar servidor de whitelist:', error);
-                            reject(error);
-                        } else {
-                            console.log('✅ Servidor de whitelist parado com sucesso');
-                            resolve();
-                        }
-                    });
-                });
+                await new Promise((resolve) => this.server.close(resolve));
+                console.log('✅ Servidor de whitelist parado com sucesso');
             }
-            } catch (error) {
+        } catch (error) {
             console.error('❌ Erro ao parar servidor de whitelist:', error);
             throw error;
         }
+    }
+
+    getLocalIP() {
+        const interfaces = os.networkInterfaces();
+        for (const name of Object.keys(interfaces)) {
+            for (const interface of interfaces[name]) {
+                if (interface.family === 'IPv4' && !interface.internal) {
+                    return interface.address;
+                }
+            }
+        }
+        return 'localhost';
     }
 
     authenticateToken(req, res, next) {
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1];
         
-            if (!token) {
+        if (!token) {
             return res.status(401).json({ error: 'Token não fornecido' });
         }
         

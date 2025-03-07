@@ -9,15 +9,25 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            // Gerar token JWT
+            // Verificar se o usuário já tem uma solicitação pendente
+            const existingRequest = await global.whitelistServer?.db?.forms?.find(f => f.userId === interaction.user.id && f.status === 'pendente');
+            if (existingRequest) {
+                return interaction.reply({
+                    content: '❌ Você já possui uma solicitação de whitelist pendente. Aguarde a resposta da equipe.',
+                    ephemeral: true
+                });
+            }
+
+            // Gerar token JWT com mais informações
             const token = jwt.sign({ 
                 userId: interaction.user.id,
-                username: interaction.user.tag
+                username: interaction.user.tag,
+                timestamp: Date.now()
             }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-            // Construir URL do formulário
-            const formUrl = `${config.server.url}/form?token=${token}`;
-            const adminUrl = `${config.server.url}/admin`;
+            // Construir URL do formulário com o token
+            const formUrl = `${config.server.url}/form.html?token=${encodeURIComponent(token)}`;
+            const adminUrl = `${config.server.url}/admin.html`;
 
             // Criar embed informativo
             const embed = new EmbedBuilder()
