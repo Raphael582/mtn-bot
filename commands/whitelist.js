@@ -1,114 +1,78 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
-const path = require('path');
-const fs = require('fs');
-
-// Referência para o servidor de whitelist
-let whitelistServer = null;
+const { SlashCommandBuilder } = require('@discordjs/builders');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = {
-    // Função para executar o comando de whitelist
-    async execute(interaction, client) {
-        // Verificar se o servidor web está rodando
-        if (global.whitelistServer) {
-            whitelistServer = global.whitelistServer;
-        } else {
-            const WhitelistServer = require('../modules/whitelist-server');
-            
+    data: new SlashCommandBuilder()
+        .setName('whitelist')
+        .setDescription('Gerencia o sistema de whitelist')
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('status')
+                .setDescription('Verifica o status da sua solicitação de whitelist'))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('form')
+                .setDescription('Gera um link para o formulário de whitelist')),
+
+    async execute(interaction) {
+        const subcommand = interaction.options.getSubcommand();
+
+        if (subcommand === 'status') {
             try {
-                whitelistServer = new WhitelistServer(client);
-                await whitelistServer.start();
-                global.whitelistServer = whitelistServer;
+                const response = await fetch(`${process.env.WHITELIST_URL}/api/whitelist/forms`);
+                const forms = await response.json();
+                
+                const userForm = forms.find(f => f.nome === interaction.user.username);
+                
+                if (!userForm) {
+                    return interaction.reply({
+                        content: 'Você ainda não enviou uma solicitação de whitelist.',
+                        ephemeral: true
+                    });
+                }
+
+                const statusEmbed = new EmbedBuilder()
+                    .setColor('#3498db')
+                    .setTitle('📝 Status da Whitelist')
+                    .setDescription(`Status da sua solicitação: **${userForm.status.toUpperCase()}**`)
+                    .addFields(
+                        { name: 'Data de Envio', value: new Date(userForm.dataEnvio).toLocaleDateString('pt-BR'), inline: true },
+                        { name: 'Estado', value: userForm.estado, inline: true },
+                        { name: 'Idade', value: userForm.idade, inline: true }
+                    )
+                    .setTimestamp();
+
+                if (userForm.status === 'rejeitado') {
+                    statusEmbed.addFields({ name: 'Motivo da Rejeição', value: userForm.motivoRejeicao });
+                }
+
+                return interaction.reply({ embeds: [statusEmbed], ephemeral: true });
             } catch (error) {
-                console.error('❌ Erro ao iniciar servidor de whitelist:', error);
-                return await interaction.reply({
-                    content: 'Erro ao iniciar o sistema de whitelist. Por favor, tente novamente mais tarde ou contate um administrador.',
+                console.error('Erro ao verificar status:', error);
+                return interaction.reply({
+                    content: 'Ocorreu um erro ao verificar o status da sua solicitação.',
                     ephemeral: true
                 });
             }
-        }
-
-        try {
-            // Verificar se o usuário já submeteu um formulário que está pendente
-            const formsDb = whitelistServer?.db?.forms || {};
-            
-            // Verificar se o usuário já tem uma solicitação pendente
-            const temPendente = Object.values(formsDb).some(form => 
-                form.discordId === interaction.user.id && 
-                form.status === 'pendente'
-            );
-            
-            if (temPendente) {
-                return await interaction.reply({
-                    content: 'Você já possui uma solicitação de whitelist pendente. Por favor, aguarde a análise da equipe.',
-                    ephemeral: true
-                });
-            }
-            
-            // Verificar se o usuário já foi aprovado
-            const temAprovado = Object.values(formsDb).some(form => 
-                form.discordId === interaction.user.id && 
-                form.status === 'aprovado'
-            );
-            
-            if (temAprovado) {
-                return await interaction.reply({
-                    content: 'Você já possui whitelist aprovada neste servidor!',
-                    ephemeral: true
-                });
-            }
-
-            // URL direta para o sistema web - usando a URL base sem o caminho de autenticação
-            const whitelistUrl = `http://56.124.64.115/`;
-
-            // Criar embed com o link
-            const embed = new EmbedBuilder()
+        } else if (subcommand === 'form') {
+            const formEmbed = new EmbedBuilder()
                 .setColor('#3498db')
-                .setTitle('📝 Sistema de Whitelist Metânia')
-                .setDescription(`Olá ${interaction.user.username}! Clique no botão abaixo para acessar o formulário de whitelist.`)
-                .addFields(
-                    { name: '📋 Instruções', value: '1. Clique no botão para acessar o sistema\n2. Crie uma conta no site\n3. Preencha todas as informações corretamente\n4. Envie o formulário e aguarde a aprovação' },
-                    { name: '💡 Dica', value: 'Você pode informar seu ID do Discord ao se cadastrar para receber notificações quando sua whitelist for aprovada. Seu ID é: **' + interaction.user.id + '**' }
-                )
-                .setImage('https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67c93051&is=67c7ded1&hm=a337ccc36d99cb5360371bfa81955bc8b14ddb78ed722cec120421d3460a8d34&=&format=webp&width=651&height=663')
-                .setFooter({ text: 'Desenvolvido para Metânia por Mr.Dark' })
+                .setTitle('📝 Formulário de Whitelist')
+                .setDescription('Clique no botão abaixo para acessar o formulário de whitelist.')
                 .setTimestamp();
 
-            // Botão para o link
-            const button = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setLabel('Abrir Sistema de Whitelist')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL(whitelistUrl)
-                    .setEmoji('📝'),
-            );
+            const row = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setLabel('Acessar Formulário')
+                        .setStyle(ButtonStyle.Link)
+                        .setURL(process.env.WHITELIST_URL)
+                );
 
-            // Responder com o link
-            await interaction.reply({
-                embeds: [embed],
-                components: [button],
-                ephemeral: true
-            });
-
-        } catch (error) {
-            console.error('❌ Erro ao gerar link de whitelist:', error);
-            await interaction.reply({
-                content: 'Ocorreu um erro ao gerar seu link de whitelist. Por favor, tente novamente mais tarde.',
-                ephemeral: true
+            return interaction.reply({
+                embeds: [formEmbed],
+                components: [row]
             });
         }
-    },
-
-    // Estas funções são mantidas para compatibilidade com o sistema antigo
-    async handleButton(interaction, client) {
-        // Redirecionar para o novo sistema baseado em web
-        await this.execute(interaction, client);
-    },
-
-    async handleModal(interaction, client) {
-        // Esta função não é mais necessária no novo sistema
-        await interaction.reply({
-            content: 'O sistema de whitelist foi atualizado. Por favor, use o comando /whitelist para acessar o novo sistema.',
-            ephemeral: true
-        });
     }
 };

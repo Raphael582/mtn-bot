@@ -66,109 +66,109 @@
             <p class="text-gray-400 mt-2">Preencha o formulário abaixo para solicitar acesso ao servidor</p>
         </header>
 
-        <!-- Área principal (alternar entre telas) -->
+        <!-- Área principal -->
         <main>
-            <!-- Tela de login com Discord -->
-            <div id="login-screen" class="bg-dark-800 rounded-lg shadow-md p-8 mb-8 text-center">
-                <h2 class="text-2xl font-semibold text-gray-100 mb-6">Login com Discord</h2>
-                <p class="text-gray-400 mb-8">Para solicitar whitelist, é necessário fazer login com sua conta do Discord.</p>
+            <!-- Formulário de whitelist -->
+            <div class="bg-dark-800 rounded-lg shadow-md p-8 mb-8">
+                <h2 class="text-2xl font-semibold text-gray-100 mb-6">Formulário de Whitelist</h2>
                 
-                <button id="discord-login-btn" class="flex items-center justify-center mx-auto px-6 py-3 bg-discord-500 text-white rounded-md hover:bg-discord-600 transition-colors duration-300">
-                    <svg class="w-6 h-6 mr-2" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.440769 45.4204 0.525289C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.525289C25.5141 0.443589 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.308 23.0133 30.1626 26.2532 30.1066 30.1693C30.1066 34.1136 27.28 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9 23.0133 53.7545 26.2532 53.6986 30.1693C53.6986 34.1136 50.9 37.3253 47.3178 37.3253Z" fill="#ffffff"/>
-                    </svg>
-                    Login com Discord
-                </button>
-            </div>
+                <form id="whitelist-form" class="space-y-6">
+                    <!-- Campos do formulário -->
+                    <div class="space-y-6">
+                        <!-- Nome -->
+                        <div>
+                            <label for="nome" class="block text-sm font-medium text-gray-300">Nome Completo</label>
+                            <input type="text" id="nome" name="nome" required
+                                class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
 
-            <!-- Tela de formulário de whitelist -->
-            <div id="form-screen" class="hidden">
-                <div class="bg-dark-800 rounded-lg shadow-md p-8 mb-8">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-semibold text-gray-100">Formulário de Whitelist</h2>
-                        
-                        <!-- Informações do usuário logado -->
-                        <div id="user-info" class="flex items-center space-x-2">
-                            <img id="user-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full">
-                            <span id="user-username" class="text-gray-300"></span>
+                        <!-- Idade -->
+                        <div>
+                            <label for="idade" class="block text-sm font-medium text-gray-300">Idade</label>
+                            <input type="number" id="idade" name="idade" min="18" required
+                                class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+
+                        <!-- Estado -->
+                        <div>
+                            <label for="estado" class="block text-sm font-medium text-gray-300">Estado</label>
+                            <select id="estado" name="estado" required
+                                class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">Selecione um estado</option>
+                                <option value="AC">Acre</option>
+                                <option value="AL">Alagoas</option>
+                                <option value="AP">Amapá</option>
+                                <option value="AM">Amazonas</option>
+                                <option value="BA">Bahia</option>
+                                <option value="CE">Ceará</option>
+                                <option value="DF">Distrito Federal</option>
+                                <option value="ES">Espírito Santo</option>
+                                <option value="GO">Goiás</option>
+                                <option value="MA">Maranhão</option>
+                                <option value="MT">Mato Grosso</option>
+                                <option value="MS">Mato Grosso do Sul</option>
+                                <option value="MG">Minas Gerais</option>
+                                <option value="PA">Pará</option>
+                                <option value="PB">Paraíba</option>
+                                <option value="PR">Paraná</option>
+                                <option value="PE">Pernambuco</option>
+                                <option value="PI">Piauí</option>
+                                <option value="RJ">Rio de Janeiro</option>
+                                <option value="RN">Rio Grande do Norte</option>
+                                <option value="RS">Rio Grande do Sul</option>
+                                <option value="RO">Rondônia</option>
+                                <option value="RR">Roraima</option>
+                                <option value="SC">Santa Catarina</option>
+                                <option value="SP">São Paulo</option>
+                                <option value="SE">Sergipe</option>
+                                <option value="TO">Tocantins</option>
+                            </select>
+                        </div>
+
+                        <!-- Como Conheceu -->
+                        <div>
+                            <label for="comoConheceu" class="block text-sm font-medium text-gray-300">Como Conheceu o Servidor?</label>
+                            <input type="text" id="comoConheceu" name="comoConheceu" required
+                                class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+
+                        <!-- Religião -->
+                        <div>
+                            <label for="religiao" class="block text-sm font-medium text-gray-300">Religião</label>
+                            <input type="text" id="religiao" name="religiao" required
+                                class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
                     </div>
                     
-                    <form id="whitelist-form" class="space-y-6">
-                        <!-- Campos do formulário serão injetados aqui dinamicamente via JavaScript -->
-                        <div id="form-fields" class="space-y-6">
-                            <!-- Campos serão adicionados aqui -->
-                        </div>
-                        
-                        <!-- Botões -->
-                        <div class="flex justify-end space-x-4 pt-4 border-t border-gray-700">
-                            <button type="button" id="reset-button" class="px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 transition">
-                                Limpar
-                            </button>
-                            <button type="submit" id="submit-button" class="px-6 py-2 bg-discord-500 text-white rounded hover:bg-discord-600 transition flex items-center">
-                                <span>Enviar</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                    <path fill-rule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                
-                <!-- Informações adicionais -->
-                <div class="bg-blue-900 border-l-4 border-blue-500 p-4 rounded">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-blue-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    <!-- Botões -->
+                    <div class="flex justify-end space-x-4 pt-4 border-t border-gray-700">
+                        <button type="button" id="reset-button" class="px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 transition">
+                            Limpar
+                        </button>
+                        <button type="submit" id="submit-button" class="px-6 py-2 bg-discord-500 text-white rounded hover:bg-discord-600 transition flex items-center">
+                            <span>Enviar</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                <path fill-rule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" />
                             </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm text-blue-200">
-                                Todas as informações fornecidas serão revisadas pela equipe de administração. Preencha com sinceridade e aguarde a aprovação.
-                            </p>
-                        </div>
+                        </button>
                     </div>
-                </div>
+                </form>
             </div>
-
-            <!-- Tela de processamento do envio -->
-            <div id="submitting-screen" class="hidden bg-dark-800 rounded-lg shadow-md p-8 mb-8">
-                <div class="flex flex-col items-center justify-center py-6">
-                    <div class="loader w-16 h-16 border-4 border-gray-600 rounded-full mb-4"></div>
-                    <h2 class="text-xl font-semibold text-gray-100 mb-2">Enviando formulário...</h2>
-                    <p class="text-gray-400 text-center">Por favor, aguarde enquanto processamos sua solicitação.</p>
-                </div>
-            </div>
-
-            <!-- Tela de sucesso -->
-            <div id="success-screen" class="hidden bg-dark-800 rounded-lg shadow-md p-8 mb-8">
-                <div class="flex flex-col items-center justify-center py-6">
-                    <div class="bg-green-900 p-3 rounded-full mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            
+            <!-- Informações adicionais -->
+            <div class="bg-blue-900 border-l-4 border-blue-500 p-4 rounded">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-blue-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                         </svg>
                     </div>
-                    <h2 class="text-xl font-semibold text-gray-100 mb-2">Formulário Enviado com Sucesso!</h2>
-                    <p class="text-gray-400 text-center mb-6">Sua solicitação de whitelist foi recebida e está em análise.</p>
-                    <p class="text-gray-400 text-center">Você receberá uma notificação no Discord quando sua solicitação for aprovada ou rejeitada.</p>
-                </div>
-            </div>
-
-            <!-- Tela de erro -->
-            <div id="error-screen" class="hidden bg-dark-800 rounded-lg shadow-md p-8 mb-8">
-                <div class="flex flex-col items-center justify-center py-6">
-                    <div class="bg-red-900 p-3 rounded-full mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                    <div class="ml-3">
+                        <p class="text-sm text-blue-200">
+                            Todas as informações fornecidas serão revisadas pela equipe de administração. Preencha com sinceridade e aguarde a aprovação.
+                        </p>
                     </div>
-                    <h2 class="text-xl font-semibold text-gray-100 mb-2">Erro ao Enviar Formulário</h2>
-                    <p id="error-message" class="text-gray-400 text-center mb-6">Ocorreu um erro ao processar sua solicitação.</p>
-                    <button id="retry-button" class="px-6 py-2 bg-discord-500 text-white rounded hover:bg-discord-600 transition">
-                        Tentar Novamente
-                    </button>
                 </div>
             </div>
         </main>
@@ -182,248 +182,60 @@
 
     <!-- Scripts -->
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Elementos de interface
-            const screens = {
-                login: document.getElementById('login-screen'),
-                form: document.getElementById('form-screen'),
-                submitting: document.getElementById('submitting-screen'),
-                success: document.getElementById('success-screen'),
-                error: document.getElementById('error-screen')
-            };
-            
+        document.addEventListener('DOMContentLoaded', () => {
             const formElement = document.getElementById('whitelist-form');
-            const formFields = document.getElementById('form-fields');
             const resetButton = document.getElementById('reset-button');
             const submitButton = document.getElementById('submit-button');
-            const retryButton = document.getElementById('retry-button');
-            const errorMessage = document.getElementById('error-message');
-            const discordLoginBtn = document.getElementById('discord-login-btn');
-            const userAvatar = document.getElementById('user-avatar');
-            const userUsername = document.getElementById('user-username');
             
-            // Token de autenticação
-            let authToken = null;
-            let userData = null;
-            
-            // Função para mostrar uma tela específica
-            function showScreen(screenName) {
-                Object.keys(screens).forEach(key => {
-                    screens[key].classList.add('hidden');
-                });
-                screens[screenName].classList.remove('hidden');
-            }
-            
-            // Checar se há token na URL (redirecionamento de autenticação)
-            function checkUrlToken() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const token = urlParams.get('token');
-                
-                if (token) {
-                    authToken = token;
-                    localStorage.setItem('auth_token', token);
-                    
-                    // Limpar a URL
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    
-                    return true;
-                }
-                
-                // Verificar se há token no localStorage
-                const storedToken = localStorage.getItem('auth_token');
-                if (storedToken) {
-                    authToken = storedToken;
-                    return true;
-                }
-                
-                return false;
-            }
-            
-            // Verificar status de autenticação
-            async function checkAuthStatus() {
-                try {
-                    const response = await fetch('/api/auth/status', {
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`
-                        }
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.authenticated) {
-                        userData = data.user;
-                        return true;
-                    } else {
-                        authToken = null;
-                        localStorage.removeItem('auth_token');
-                        return false;
-                    }
-                } catch (error) {
-                    console.error('Erro ao verificar autenticação:', error);
-                    authToken = null;
-                    localStorage.removeItem('auth_token');
-                    return false;
-                }
-            }
-            
-            // Carregar dados do usuário
-            function loadUserData() {
-                if (userData) {
-                    // Avatar do Discord
-                    if (userData.avatar) {
-                        userAvatar.src = `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`;
-                    } else {
-                        // Avatar padrão do Discord
-                        userAvatar.src = 'https://cdn.discordapp.com/embed/avatars/0.png';
-                    }
-                    
-                    userUsername.textContent = userData.username;
-                }
-            }
-            
-            // Botão de login com Discord
-            discordLoginBtn.addEventListener('click', () => {
-                window.location.href = '/auth/discord?returnUrl=' + encodeURIComponent(window.location.pathname);
-            });
-            
-            // Carregar configuração do formulário
-            async function loadFormConfig() {
-                try {
-                    const configResponse = await fetch('/api/config');
-                    const config = await configResponse.json();
-                    
-                    // Limpar campos existentes
-                    formFields.innerHTML = '';
-                    
-                    // Construir o formulário dinamicamente
-                    if (config.formFields && config.formFields.length > 0) {
-                        config.formFields.forEach(field => {
-                            const fieldContainer = document.createElement('div');
-                            
-                            // Label
-                            const label = document.createElement('label');
-                            label.setAttribute('for', field.id);
-                            label.className = 'block text-sm font-medium text-gray-300 mb-1';
-                            label.textContent = field.label + (field.required ? ' *' : '');
-                            
-                            // Input ou Textarea
-                            let input;
-                            if (field.type === 'textarea') {
-                                input = document.createElement('textarea');
-                                input.className = 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-discord-500 focus:border-discord-500';
-                                input.rows = 4;
-                            } else {
-                                input = document.createElement('input');
-                                input.type = field.type || 'text';
-                                input.className = 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-discord-500 focus:border-discord-500';
-                            }
-                            
-                            // Atributos comuns
-                            input.id = field.id;
-                            input.name = field.id;
-                            if (field.required) input.required = true;
-                            if (field.placeholder) input.placeholder = field.placeholder;
-                            if (field.min !== undefined) input.min = field.min;
-                            if (field.max !== undefined) input.max = field.max;
-                            
-                            // Mensagem de validação
-                            const validationMessage = document.createElement('p');
-                            validationMessage.className = 'mt-1 text-sm text-red-400 hidden';
-                            validationMessage.id = `${field.id}-error`;
-                            
-                            // Adicionar todos os elementos ao container
-                            fieldContainer.appendChild(label);
-                            fieldContainer.appendChild(input);
-                            fieldContainer.appendChild(validationMessage);
-                            
-                            // Adicionar o container ao formulário
-                            formFields.appendChild(fieldContainer);
-                        });
-                        
-                        return true;
-                    }
-                    
-                    return false;
-                } catch (error) {
-                    console.error('Erro ao carregar configuração do formulário:', error);
-                    return false;
-                }
-            }
-            
-            // Inicialização
-            async function init() {
-                // Verificar token na URL ou localStorage
-                const hasToken = checkUrlToken();
-                
-                if (hasToken) {
-                    // Verificar status de autenticação
-                    const isAuthenticated = await checkAuthStatus();
-                    
-                    if (isAuthenticated) {
-                        // Carregar dados do usuário
-                        loadUserData();
-                        
-                        // Carregar configuração do formulário
-                        const formLoaded = await loadFormConfig();
-                        
-                        if (formLoaded) {
-                            showScreen('form');
-                        } else {
-                            errorMessage.textContent = 'Erro ao carregar o formulário.';
-                            showScreen('error');
-                        }
-                    } else {
-                        showScreen('login');
-                    }
-                } else {
-                    showScreen('login');
-                }
-            }
-            
-            // 5. Configurar eventos do formulário
+            // Configurar formulário
             formElement.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                // Validar o formulário (validação básica do HTML)
-                if (!formElement.checkValidity()) {
-                    formElement.reportValidity();
+                // Validar idade mínima
+                const idade = parseInt(document.getElementById('idade').value);
+                if (idade < 18) {
+                    alert('Você precisa ter pelo menos 18 anos para solicitar whitelist.');
                     return;
                 }
                 
                 // Coletar dados do formulário
-                const formData = {};
-                const inputs = formElement.querySelectorAll('input, textarea, select');
+                const formData = {
+                    nome: document.getElementById('nome').value,
+                    idade: idade,
+                    estado: document.getElementById('estado').value,
+                    comoConheceu: document.getElementById('comoConheceu').value,
+                    religiao: document.getElementById('religiao').value
+                };
                 
-                inputs.forEach(input => {
-                    formData[input.name] = input.value;
-                });
-                
-                // Mostrar tela de envio
-                showScreen('submitting');
+                // Desabilitar botão de envio
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span>Enviando...</span>';
                 
                 try {
-                    // Enviar dados
-                    const submitResponse = await fetch('/api/submit', {
+                    const response = await fetch('/api/whitelist/submit', {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${authToken}`,
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify(formData)
                     });
                     
-                    const submitResult = await submitResponse.json();
+                    const result = await response.json();
                     
-                    if (!submitResponse.ok) {
-                        throw new Error(submitResult.error || 'Erro ao enviar formulário');
+                    if (!response.ok) {
+                        throw new Error(result.error || 'Erro ao enviar formulário');
                     }
                     
-                    // Mostrar tela de sucesso
-                    showScreen('success');
+                    // Mostrar mensagem de sucesso
+                    alert('Formulário enviado com sucesso! Aguarde a análise da equipe.');
+                    formElement.reset();
                 } catch (error) {
-                    // Mostrar tela de erro
-                    errorMessage.textContent = error.message || 'Ocorreu um erro ao processar sua solicitação.';
-                    showScreen('error');
+                    console.error('Erro ao enviar formulário:', error);
+                    alert(error.message || 'Ocorreu um erro ao processar sua solicitação.');
+                } finally {
+                    // Reabilitar botão de envio
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<span>Enviar</span><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>';
                 }
             });
             
@@ -431,656 +243,6 @@
             resetButton.addEventListener('click', () => {
                 formElement.reset();
             });
-            
-            // Botão de tentar novamente
-            retryButton.addEventListener('click', () => {
-                showScreen('form');
-            });
-            
-            // Iniciar
-            init();
-        });
-    </script>
-</body>
-</html>">Link Inválido ou Expirado</h2>
-                    <p class="text-gray-400 text-center mb-6">O link que você está tentando acessar é inválido ou expirou.</p>
-                    <p class="text-gray-400 text-center">Por favor, retorne ao Discord e use o comando <span class="font-mono bg-gray-800 px-2 py-1 rounded">/whitelist</span> para gerar um novo link.</p>
-                </div>
-            </div>
-
-            <!-- Formulário de whitelist -->
-            <div id="form-screen" class="hidden">
-                <div class="bg-dark-800 rounded-lg shadow-md p-8 mb-8">
-                    <h2 class="text-2xl font-semibold text-gray-100 mb-6">Formulário de Whitelist</h2>
-                    
-                    <form id="whitelist-form" class="space-y-6">
-                        <!-- Campos do formulário serão injetados aqui dinamicamente via JavaScript -->
-                        <div id="form-fields" class="space-y-6">
-                            <!-- Campos serão adicionados aqui -->
-                        </div>
-                        
-                        <!-- Botões -->
-                        <div class="flex justify-end space-x-4 pt-4 border-t border-gray-700">
-                            <button type="button" id="reset-button" class="px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 transition">
-                                Limpar
-                            </button>
-                            <button type="submit" id="submit-button" class="px-6 py-2 bg-discord-500 text-white rounded hover:bg-discord-600 transition flex items-center">
-                                <span>Enviar</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                    <path fill-rule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                
-                <!-- Informações adicionais -->
-                <div class="bg-blue-900 border-l-4 border-blue-500 p-4 rounded">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-blue-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm text-blue-200">
-                                Todas as informações fornecidas serão revisadas pela equipe de administração. Preencha com sinceridade e aguarde a aprovação.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tela de processamento do envio -->
-            <div id="submitting-screen" class="hidden bg-dark-800 rounded-lg shadow-md p-8 mb-8">
-                <div class="flex flex-col items-center justify-center py-6">
-                    <div class="loader w-16 h-16 border-4 border-gray-600 rounded-full mb-4"></div>
-                    <h2 class="text-xl font-semibold text-gray-100 mb-2">Enviando formulário...</h2>
-                    <p class="text-gray-400 text-center">Por favor, aguarde enquanto processamos sua solicitação.</p>
-                </div>
-            </div>
-
-            <!-- Tela de sucesso -->
-            <div id="success-screen" class="hidden bg-dark-800 rounded-lg shadow-md p-8 mb-8">
-                <div class="flex flex-col items-center justify-center py-6">
-                    <div class="bg-green-900 p-3 rounded-full mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                    </div>
-                    <h2 class="text-xl font-semibold text-gray-100 mb-2">Formulário Enviado com Sucesso!</h2>
-                    <p class="text-gray-400 text-center mb-6">Sua solicitação de whitelist foi recebida e está em análise.</p>
-                    <p class="text-gray-400 text-center">Você receberá uma notificação no Discord quando sua solicitação for aprovada ou rejeitada.</p>
-                </div>
-            </div>
-
-            <!-- Tela de erro -->
-            <div id="error-screen" class="hidden bg-dark-800 rounded-lg shadow-md p-8 mb-8">
-                <div class="flex flex-col items-center justify-center py-6">
-                    <div class="bg-red-900 p-3 rounded-full mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </div>
-                    <h2 class="text-xl font-semibold text-gray-100 mb-2">Erro ao Enviar Formulário</h2>
-                    <p id="error-message" class="text-gray-400 text-center mb-6">Ocorreu um erro ao processar sua solicitação.</p>
-                    <button id="retry-button" class="px-6 py-2 bg-discord-500 text-white rounded hover:bg-discord-600 transition">
-                        Tentar Novamente
-                    </button>
-                </div>
-            </div>
-        </main>
-
-        <!-- Rodapé -->
-        <footer class="text-center text-gray-500 text-sm mt-8">
-            <p>&copy; 2025 Metânia - Sistema de Whitelist</p>
-            <p class="mt-1">Desenvolvido para Metânia por Mr.Dark</p>
-        </footer>
-    </div>
-
-    <!-- Scripts -->
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Extrair token da URL
-            const pathParts = window.location.pathname.split('/');
-            const token = pathParts[pathParts.length - 1];
-            
-            // Elementos de interface
-            const screens = {
-                loading: document.getElementById('loading-screen'),
-                invalidLink: document.getElementById('invalid-link-screen'),
-                form: document.getElementById('form-screen'),
-                submitting: document.getElementById('submitting-screen'),
-                success: document.getElementById('success-screen'),
-                error: document.getElementById('error-screen')
-            };
-            
-            const formElement = document.getElementById('whitelist-form');
-            const formFields = document.getElementById('form-fields');
-            const resetButton = document.getElementById('reset-button');
-            const submitButton = document.getElementById('submit-button');
-            const retryButton = document.getElementById('retry-button');
-            const errorMessage = document.getElementById('error-message');
-            
-            // Função para mostrar uma tela específica
-            function showScreen(screenName) {
-                Object.keys(screens).forEach(key => {
-                    screens[key].classList.add('hidden');
-                });
-                screens[screenName].classList.remove('hidden');
-            }
-            
-            // Inicialmente mostra a tela de carregamento
-            showScreen('loading');
-            
-            try {
-                // 1. Validar o token
-                const response = await fetch(`/api/validate-link/${token}`);
-                const data = await response.json();
-                
-                if (!response.ok || !data.valid) {
-                    showScreen('invalidLink');
-                    return;
-                }
-                
-                // 2. Token válido, carregar configuração do formulário
-                const configResponse = await fetch('/api/config');
-                const config = await configResponse.json();
-                
-                // 3. Construir o formulário dinamicamente
-                if (config.formFields && config.formFields.length > 0) {
-                    config.formFields.forEach(field => {
-                        const fieldContainer = document.createElement('div');
-                        
-                        // Label
-                        const label = document.createElement('label');
-                        label.setAttribute('for', field.id);
-                        label.className = 'block text-sm font-medium text-gray-300 mb-1';
-                        label.textContent = field.label + (field.required ? ' *' : '');
-                        
-                        // Input ou Textarea
-                        let input;
-                        if (field.type === 'textarea') {
-                            input = document.createElement('textarea');
-                            input.className = 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-discord-500 focus:border-discord-500';
-                            input.rows = 4;
-                        } else {
-                            input = document.createElement('input');
-                            input.type = field.type || 'text';
-                            input.className = 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-discord-500 focus:border-discord-500';
-                        }
-                        
-                        // Atributos comuns
-                        input.id = field.id;
-                        input.name = field.id;
-                        if (field.required) input.required = true;
-                        if (field.placeholder) input.placeholder = field.placeholder;
-                        if (field.min !== undefined) input.min = field.min;
-                        if (field.max !== undefined) input.max = field.max;
-                        
-                        // Mensagem de validação
-                        const validationMessage = document.createElement('p');
-                        validationMessage.className = 'mt-1 text-sm text-red-400 hidden';
-                        validationMessage.id = `${field.id}-error`;
-                        
-                        // Adicionar todos os elementos ao container
-                        fieldContainer.appendChild(label);
-                        fieldContainer.appendChild(input);
-                        fieldContainer.appendChild(validationMessage);
-                        
-                        // Adicionar o container ao formulário
-                        formFields.appendChild(fieldContainer);
-                    });
-                } else {
-                    throw new Error('Configuração do formulário não disponível');
-                }
-                
-                // 4. Mostrar o formulário
-                showScreen('form');
-                
-                // 5. Configurar eventos do formulário
-                formElement.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    
-                    // Validar o formulário (validação básica do HTML)
-                    if (!formElement.checkValidity()) {
-                        formElement.reportValidity();
-                        return;
-                    }
-                    
-                    // Coletar dados do formulário
-                    const formData = {};
-                    config.formFields.forEach(field => {
-                        const inputElement = document.getElementById(field.id);
-                        formData[field.id] = inputElement.value;
-                    });
-                    
-                    // Mostrar tela de envio
-                    showScreen('submitting');
-                    
-                    try {
-                        // Enviar dados
-                        const submitResponse = await fetch(`/api/submit/${token}`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(formData)
-                        });
-                        
-                        const submitResult = await submitResponse.json();
-                        
-                        if (!submitResponse.ok) {
-                            throw new Error(submitResult.error || 'Erro ao enviar formulário');
-                        }
-                        
-                        // Mostrar tela de sucesso
-                        showScreen('success');
-                    } catch (error) {
-                        // Mostrar tela de erro
-                        errorMessage.textContent = error.message || 'Ocorreu um erro ao processar sua solicitação.';
-                        showScreen('error');
-                    }
-                });
-                
-                // Botão de limpar formulário
-                resetButton.addEventListener('click', () => {
-                    formElement.reset();
-                });
-                
-                // Botão de tentar novamente
-                retryButton.addEventListener('click', () => {
-                    showScreen('form');
-                });
-                
-            } catch (error) {
-                console.error('Erro:', error);
-                errorMessage.textContent = error.message || 'Ocorreu um erro ao processar sua solicitação.';
-                showScreen('error');
-            }
-        });
-    </script>
-</body>
-</html> justify-center py-6">
-                    <div class="bg-red-900 p-3 rounded-full mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </div>
-                    <h2 class="text-xl font-semibold text-gray-100 mb-2">Erro ao Enviar Formulário</h2>
-                    <p id="error-message" class="text-gray-400 text-center mb-6">Ocorreu um erro ao processar sua solicitação.</p>
-                    <button id="retry-button" class="px-6 py-2 bg-discord-500 text-white rounded hover:bg-discord-600 transition">
-                        Tentar Novamente
-                    </button>
-                </div>
-            </div>
-        </main>
-
-        <!-- Rodapé -->
-        <footer class="text-center text-gray-500 text-sm mt-8">
-            <p>&copy; 2025 Metânia - Sistema de Whitelist</p>
-            <p class="mt-1">Desenvolvido para Metânia por Mr.Dark</p>
-        </footer>
-    </div>
-
-    <!-- Scripts -->
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Extrair token da URL
-            const pathParts = window.location.pathname.split('/');
-            const token = pathParts[pathParts.length - 1];
-            
-            // Elementos de interface
-            const screens = {
-                loading: document.getElementById('loading-screen'),
-                invalidLink: document.getElementById('invalid-link-screen'),
-                form: document.getElementById('form-screen'),
-                submitting: document.getElementById('submitting-screen'),
-                success: document.getElementById('success-screen'),
-                error: document.getElementById('error-screen')
-            };
-            
-            const formElement = document.getElementById('whitelist-form');
-            const formFields = document.getElementById('form-fields');
-            const resetButton = document.getElementById('reset-button');
-            const submitButton = document.getElementById('submit-button');
-            const retryButton = document.getElementById('retry-button');
-            const errorMessage = document.getElementById('error-message');
-            
-            // Função para mostrar uma tela específica
-            function showScreen(screenName) {
-                Object.keys(screens).forEach(key => {
-                    screens[key].classList.add('hidden');
-                });
-                screens[screenName].classList.remove('hidden');
-            }
-            
-            // Inicialmente mostra a tela de carregamento
-            showScreen('loading');
-            
-            try {
-                // 1. Validar o token
-                const response = await fetch(`/api/validate-link/${token}`);
-                const data = await response.json();
-                
-                if (!response.ok || !data.valid) {
-                    showScreen('invalidLink');
-                    return;
-                }
-                
-                // 2. Token válido, carregar configuração do formulário
-                const configResponse = await fetch('/api/config');
-                const config = await configResponse.json();
-                
-                // 3. Construir o formulário dinamicamente
-                if (config.formFields && config.formFields.length > 0) {
-                    config.formFields.forEach(field => {
-                        const fieldContainer = document.createElement('div');
-                        
-                        // Label
-                        const label = document.createElement('label');
-                        label.setAttribute('for', field.id);
-                        label.className = 'block text-sm font-medium text-gray-300 mb-1';
-                        label.textContent = field.label + (field.required ? ' *' : '');
-                        
-                        // Input ou Textarea
-                        let input;
-                        if (field.type === 'textarea') {
-                            input = document.createElement('textarea');
-                            input.className = 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-discord-500 focus:border-discord-500';
-                            input.rows = 4;
-                        } else {
-                            input = document.createElement('input');
-                            input.type = field.type || 'text';
-                            input.className = 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-discord-500 focus:border-discord-500';
-                        }
-                        
-                        // Atributos comuns
-                        input.id = field.id;
-                        input.name = field.id;
-                        if (field.required) input.required = true;
-                        if (field.placeholder) input.placeholder = field.placeholder;
-                        if (field.min !== undefined) input.min = field.min;
-                        if (field.max !== undefined) input.max = field.max;
-                        
-                        // Mensagem de validação
-                        const validationMessage = document.createElement('p');
-                        validationMessage.className = 'mt-1 text-sm text-red-400 hidden';
-                        validationMessage.id = `${field.id}-error`;
-                        
-                        // Adicionar todos os elementos ao container
-                        fieldContainer.appendChild(label);
-                        fieldContainer.appendChild(input);
-                        fieldContainer.appendChild(validationMessage);
-                        
-                        // Adicionar o container ao formulário
-                        formFields.appendChild(fieldContainer);
-                    });
-                } else {
-                    throw new Error('Configuração do formulário não disponível');
-                }
-                
-                // 4. Mostrar o formulário
-                showScreen('form');
-                
-                // 5. Configurar eventos do formulário
-                formElement.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    
-                    // Validar o formulário (validação básica do HTML)
-                    if (!formElement.checkValidity()) {
-                        formElement.reportValidity();
-                        return;
-                    }
-                    
-                    // Coletar dados do formulário
-                    const formData = {};
-                    config.formFields.forEach(field => {
-                        const inputElement = document.getElementById(field.id);
-                        formData[field.id] = inputElement.value;
-                    });
-                    
-                    // Mostrar tela de envio
-                    showScreen('submitting');
-                    
-                    try {
-                        // Enviar dados
-                        const submitResponse = await fetch(`/api/submit/${token}`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(formData)
-                        });
-                        
-                        const submitResult = await submitResponse.json();
-                        
-                        if (!submitResponse.ok) {
-                            throw new Error(submitResult.error || 'Erro ao enviar formulário');
-                        }
-                        
-                        // Mostrar tela de sucesso
-                        showScreen('success');
-                    } catch (error) {
-                        // Mostrar tela de erro
-                        errorMessage.textContent = error.message || 'Ocorreu um erro ao processar sua solicitação.';
-                        showScreen('error');
-                    }
-                });
-                
-                // Botão de limpar formulário
-                resetButton.addEventListener('click', () => {
-                    formElement.reset();
-                });
-                
-                // Botão de tentar novamente
-                retryButton.addEventListener('click', () => {
-                    showScreen('form');
-                });
-                
-            } catch (error) {
-                console.error('Erro:', error);
-                errorMessage.textContent = error.message || 'Ocorreu um erro ao processar sua solicitação.';
-                showScreen('error');
-            }
-        });
-    </script>
-</body>
-</html> class="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                    </div>
-                    <h2 class="text-xl font-semibold text-gray-700 mb-2">Formulário Enviado com Sucesso!</h2>
-                    <p class="text-gray-600 text-center mb-6">Sua solicitação de whitelist foi recebida e está em análise.</p>
-                    <p class="text-gray-600 text-center">Você receberá uma notificação no Discord quando sua solicitação for aprovada ou rejeitada.</p>
-                </div>
-            </div>
-
-            <!-- Tela de erro -->
-            <div id="error-screen" class="hidden bg-white rounded-lg shadow-md p-8 mb-8">
-                <div class="flex flex-col items-center justify-center py-6">
-                    <div class="bg-red-100 p-3 rounded-full mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </div>
-                    <h2 class="text-xl font-semibold text-gray-700 mb-2">Erro ao Enviar Formulário</h2>
-                    <p id="error-message" class="text-gray-600 text-center mb-6">Ocorreu um erro ao processar sua solicitação.</p>
-                    <button id="retry-button" class="px-6 py-2 bg-discord-500 text-white rounded hover:bg-discord-600 transition">
-                        Tentar Novamente
-                    </button>
-                </div>
-            </div>
-        </main>
-
-        <!-- Rodapé -->
-        <footer class="text-center text-gray-500 text-sm mt-8">
-            <p>&copy; 2025 Sistema de Whitelist</p>
-            <p class="mt-1">Desenvolvido para controle de acesso ao servidor Discord</p>
-        </footer>
-    </div>
-
-    <!-- Scripts -->
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Extrair token da URL
-            const pathParts = window.location.pathname.split('/');
-            const token = pathParts[pathParts.length - 1];
-            
-            // Elementos de interface
-            const screens = {
-                loading: document.getElementById('loading-screen'),
-                invalidLink: document.getElementById('invalid-link-screen'),
-                form: document.getElementById('form-screen'),
-                submitting: document.getElementById('submitting-screen'),
-                success: document.getElementById('success-screen'),
-                error: document.getElementById('error-screen')
-            };
-            
-            const formElement = document.getElementById('whitelist-form');
-            const formFields = document.getElementById('form-fields');
-            const resetButton = document.getElementById('reset-button');
-            const submitButton = document.getElementById('submit-button');
-            const retryButton = document.getElementById('retry-button');
-            const errorMessage = document.getElementById('error-message');
-            
-            // Função para mostrar uma tela específica
-            function showScreen(screenName) {
-                Object.keys(screens).forEach(key => {
-                    screens[key].classList.add('hidden');
-                });
-                screens[screenName].classList.remove('hidden');
-            }
-            
-            // Inicialmente mostra a tela de carregamento
-            showScreen('loading');
-            
-            try {
-                // 1. Validar o token
-                const response = await fetch(`/api/validate-link/${token}`);
-                const data = await response.json();
-                
-                if (!response.ok || !data.valid) {
-                    showScreen('invalidLink');
-                    return;
-                }
-                
-                // 2. Token válido, carregar configuração do formulário
-                const configResponse = await fetch('/api/config');
-                const config = await configResponse.json();
-                
-                // 3. Construir o formulário dinamicamente
-                if (config.formFields && config.formFields.length > 0) {
-                    config.formFields.forEach(field => {
-                        const fieldContainer = document.createElement('div');
-                        
-                        // Label
-                        const label = document.createElement('label');
-                        label.setAttribute('for', field.id);
-                        label.className = 'block text-sm font-medium text-gray-700 mb-1';
-                        label.textContent = field.label + (field.required ? ' *' : '');
-                        
-                        // Input ou Textarea
-                        let input;
-                        if (field.type === 'textarea') {
-                            input = document.createElement('textarea');
-                            input.className = 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-discord-500 focus:border-discord-500';
-                            input.rows = 4;
-                        } else {
-                            input = document.createElement('input');
-                            input.type = field.type || 'text';
-                            input.className = 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-discord-500 focus:border-discord-500';
-                        }
-                        
-                        // Atributos comuns
-                        input.id = field.id;
-                        input.name = field.id;
-                        if (field.required) input.required = true;
-                        if (field.placeholder) input.placeholder = field.placeholder;
-                        if (field.min !== undefined) input.min = field.min;
-                        if (field.max !== undefined) input.max = field.max;
-                        
-                        // Mensagem de validação
-                        const validationMessage = document.createElement('p');
-                        validationMessage.className = 'mt-1 text-sm text-red-600 hidden';
-                        validationMessage.id = `${field.id}-error`;
-                        
-                        // Adicionar todos os elementos ao container
-                        fieldContainer.appendChild(label);
-                        fieldContainer.appendChild(input);
-                        fieldContainer.appendChild(validationMessage);
-                        
-                        // Adicionar o container ao formulário
-                        formFields.appendChild(fieldContainer);
-                    });
-                } else {
-                    throw new Error('Configuração do formulário não disponível');
-                }
-                
-                // 4. Mostrar o formulário
-                showScreen('form');
-                
-                // 5. Configurar eventos do formulário
-                formElement.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    
-                    // Validar o formulário (validação básica do HTML)
-                    if (!formElement.checkValidity()) {
-                        formElement.reportValidity();
-                        return;
-                    }
-                    
-                    // Coletar dados do formulário
-                    const formData = {};
-                    config.formFields.forEach(field => {
-                        const inputElement = document.getElementById(field.id);
-                        formData[field.id] = inputElement.value;
-                    });
-                    
-                    // Mostrar tela de envio
-                    showScreen('submitting');
-                    
-                    try {
-                        // Enviar dados
-                        const submitResponse = await fetch(`/api/submit/${token}`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(formData)
-                        });
-                        
-                        const submitResult = await submitResponse.json();
-                        
-                        if (!submitResponse.ok) {
-                            throw new Error(submitResult.error || 'Erro ao enviar formulário');
-                        }
-                        
-                        // Mostrar tela de sucesso
-                        showScreen('success');
-                    } catch (error) {
-                        // Mostrar tela de erro
-                        errorMessage.textContent = error.message || 'Ocorreu um erro ao processar sua solicitação.';
-                        showScreen('error');
-                    }
-                });
-                
-                // Botão de limpar formulário
-                resetButton.addEventListener('click', () => {
-                    formElement.reset();
-                });
-                
-                // Botão de tentar novamente
-                retryButton.addEventListener('click', () => {
-                    showScreen('form');
-                });
-                
-            } catch (error) {
-                console.error('Erro:', error);
-                errorMessage.textContent = error.message || 'Ocorreu um erro ao processar sua solicitação.';
-                showScreen('error');
-            }
         });
     </script>
 </body>
