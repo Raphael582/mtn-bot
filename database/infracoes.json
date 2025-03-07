@@ -1,0 +1,25 @@
+{
+    "1336767858499260449": {
+        "infracoesLeves": 1,
+        "infracoesMedidas": 0,
+        "infracoesGraves": 0,
+        "infracoesExtremas": 0,
+        "advertencias": 0,
+        "silenciamentos": 0,
+        "ultimaInfracao": {
+            "tipo": "leve",
+            "motivo": ". Apoio explícito ao comunismo.",
+            "data": "2025-02-27T17:46:03.858Z",
+            "canal": "chat"
+        },
+        "historico": [
+            {
+                "tipo": "leve",
+                "motivo": ". Apoio explícito ao comunismo.",
+                "data": "2025-02-27T17:46:03.858Z",
+                "canal": "chat"
+            }
+        ],
+        "username": "dark01mtn"
+    }
+}

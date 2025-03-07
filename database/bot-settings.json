@@ -1,0 +1,12 @@
+{
+  "chatFilter": {
+    "enabled": true
+  },
+  "autoModeration": {
+    "enabled": true
+  },
+  "whitelistSystem": {
+    "enabled": true,
+    "requireApproval": true
+  }
+}

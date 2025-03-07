@@ -3,1077 +3,260 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Admin - Metânia</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        metania: {
-                            500: '#0f1122',
-                            600: '#0a0c17',
-                            700: '#06080e'
-                        },
-                        dark: {
-                            800: '#1e2039',
-                            900: '#0f1122'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <title>Painel Admin - Whitelist MTN</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        
         body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #0f1122;
-            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        .logo {
+            max-width: 200px;
+            height: auto;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+        }
+        .form-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .form-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .status-pendente {
+            background: rgba(234, 179, 8, 0.1);
+            color: #eab308;
+        }
+        .status-aprovado {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+        .status-rejeitado {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
         }
     </style>
 </head>
-<body class="bg-dark-900 min-h-screen text-gray-100">
-    <div class="min-h-screen flex flex-col">
-        <!-- Header -->
-        <header class="bg-dark-800 shadow-lg">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-                <h1 class="text-xl font-bold">Painel Administrativo - Metânia</h1>
-                
-                <div id="userInfo" class="hidden">
-                    <span id="username" class="mr-2"></span>
-                    <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 text-white font-medium py-1 px-3 rounded text-sm">
+<body class="py-12 px-4">
+    <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-8">
+            <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cbd351&is=67ca81d1&hm=2d1e12af5d853f0e88f8db96a6f4c74728e460faf6de2b8731eed8588739c11c&=&format=webp&width=914&height=930" alt="MTN Logo" class="logo mx-auto mb-4">
+            <h1 class="text-3xl font-bold mb-2">Painel Administrativo</h1>
+            <p class="text-gray-300">Gerencie as solicitações de whitelist</p>
+        </div>
+
+        <div class="container p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Solicitações de Whitelist</h2>
+                <div class="flex space-x-4">
+                    <button id="refreshBtn" class="btn-primary px-4 py-2 rounded-lg">
+                        Atualizar
+                    </button>
+                    <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg">
                         Sair
                     </button>
                 </div>
             </div>
-        </header>
-        
-        <!-- Main content -->
-        <div class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Login form -->
-            <div id="loginContainer" class="max-w-md mx-auto bg-dark-800 p-8 rounded-lg shadow-md">
-                <h2 class="text-xl font-bold mb-6 text-center">Login Administrativo</h2>
-                
-                <form id="loginForm" class="space-y-4">
-                    <div>
-                        <label for="adminUsername" class="block text-sm font-medium text-gray-300">Usuário</label>
-                        <input type="text" id="adminUsername" name="username" required class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                    </div>
-                    
-                    <div>
-                        <label for="adminPassword" class="block text-sm font-medium text-gray-300">Senha</label>
-                        <input type="password" id="adminPassword" name="password" required class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                    </div>
-                    
-                    <div>
-                        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none">
-                            Entrar
-                        </button>
-                    </div>
-                    
-                    <div id="loginError" class="text-red-500 text-sm hidden"></div>
-                </form>
-            </div>
-            
-            <!-- Admin dashboard -->
-            <div id="adminDashboard" class="hidden">
-                <!-- Tabs -->
-                <div class="border-b border-gray-700 mb-6">
-                    <nav class="flex -mb-px">
-                        <button data-tab="dashboard" class="admin-tab py-4 px-6 font-medium text-sm leading-5 rounded-t-md focus:outline-none">
-                            Dashboard
-                        </button>
-                        <button data-tab="whitelist" class="admin-tab py-4 px-6 font-medium text-sm leading-5 rounded-t-md focus:outline-none">
-                            Whitelist
-                        </button>
-                        <button data-tab="settings" class="admin-tab py-4 px-6 font-medium text-sm leading-5 rounded-t-md focus:outline-none">
-                            Configurações
-                        </button>
-                        <button data-tab="logs" class="admin-tab py-4 px-6 font-medium text-sm leading-5 rounded-t-md focus:outline-none">
-                            Logs
-                        </button>
-                    </nav>
-                </div>
-                
-                <!-- Tab content -->
-                <div id="tabContent">
-                    <!-- Dashboard tab -->
-                    <div id="dashboardTab" class="tab-content">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div class="bg-dark-800 p-6 rounded-lg shadow">
-                                <h3 class="text-lg font-medium text-gray-200 mb-2">Total de Solicitações</h3>
-                                <p id="totalForms" class="text-3xl font-bold">-</p>
-                            </div>
-                            
-                            <div class="bg-dark-800 p-6 rounded-lg shadow">
-                                <h3 class="text-lg font-medium text-gray-200 mb-2">Pendentes</h3>
-                                <p id="pendingForms" class="text-3xl font-bold text-yellow-500">-</p>
-                            </div>
-                            
-                            <div class="bg-dark-800 p-6 rounded-lg shadow">
-                                <h3 class="text-lg font-medium text-gray-200 mb-2">Aprovadas</h3>
-                                <p id="approvedForms" class="text-3xl font-bold text-green-500">-</p>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-dark-800 p-6 rounded-lg shadow mb-8">
-                            <h3 class="text-lg font-medium text-gray-200 mb-4">Atividade Recente</h3>
-                            <div id="recentActivity" class="space-y-2">
-                                <p class="text-gray-400">Carregando...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Whitelist tab -->
-                    <div id="whitelistTab" class="tab-content hidden">
-                        <div class="bg-dark-800 p-6 rounded-lg shadow mb-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-medium text-gray-200">Solicitações de Whitelist</h3>
-                                
-                                <div class="flex space-x-2">
-                                    <select id="statusFilter" class="bg-gray-700 border border-gray-600 rounded px-3 py-1 text-sm">
-                                        <option value="all">Todos</option>
-                                        <option value="pendente">Pendentes</option>
-                                        <option value="aprovado">Aprovados</option>
-                                        <option value="rejeitado">Rejeitados</option>
-                                    </select>
-                                    
-                                    <button id="refreshForms" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm">
-                                        Atualizar
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full divide-y divide-gray-700">
-                                    <thead>
-                                        <tr>
-                                            <th class="px-6 py-3 bg-gray-800 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                                Usuário
-                                            </th>
-                                            <th class="px-6 py-3 bg-gray-800 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                                Data
-                                            </th>
-                                            <th class="px-6 py-3 bg-gray-800 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                                Status
-                                            </th>
-                                            <th class="px-6 py-3 bg-gray-800 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                                Ações
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="whitelistTable" class="bg-dark-800 divide-y divide-gray-700">
-                                        <tr>
-                                            <td colspan="4" class="px-6 py-4 text-center text-gray-400">
-                                                Carregando solicitações...
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Settings tab -->
-                    <div id="settingsTab" class="tab-content hidden">
-                        <div class="bg-dark-800 p-6 rounded-lg shadow mb-6">
-                            <h3 class="text-lg font-medium text-gray-200 mb-4">Configurações do Sistema</h3>
-                            
-                            <form id="settingsForm" class="space-y-4">
-                                <div>
-                                    <h4 class="font-medium mb-2">Filtro de Chat</h4>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" id="chatFilterEnabled" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-600 rounded bg-gray-700">
-                                        <span class="ml-2 text-sm text-gray-300">Ativar filtro de chat</span>
-                                    </label>
-                                </div>
-                                
-                                <div>
-                                    <h4 class="font-medium mb-2">Auto-Moderação</h4>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" id="autoModerationEnabled" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-600 rounded bg-gray-700">
-                                        <span class="ml-2 text-sm text-gray-300">Ativar auto-moderação</span>
-                                    </label>
-                                </div>
-                                
-                                <div>
-                                    <h4 class="font-medium mb-2">Sistema de Whitelist</h4>
-                                    <label class="flex items-center mb-2">
-                                        <input type="checkbox" id="whitelistEnabled" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-600 rounded bg-gray-700">
-                                        <span class="ml-2 text-sm text-gray-300">Ativar sistema de whitelist</span>
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" id="requireApproval" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-600 rounded bg-gray-700">
-                                        <span class="ml-2 text-sm text-gray-300">Exigir aprovação manual</span>
-                                    </label>
-                                </div>
-                                
-                                <div>
-                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded">
-                                        Salvar Configurações
-                                    </button>
-                                </div>
-                                
-                                <div id="settingsMessage" class="hidden p-4 rounded-md">
-                                    <!-- Mensagem após salvar -->
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    
-                    <!-- Logs tab -->
-                    <div id="logsTab" class="tab-content hidden">
-                        <div class="bg-dark-800 p-6 rounded-lg shadow mb-6">
-                            <h3 class="text-lg font-medium text-gray-200 mb-4">Logs de Atividade</h3>
-                            
-                            <div class="space-y-4">
-                                <div class="flex justify-between items-center">
-                                    <h4 class="font-medium">Ações Admin</h4>
-                                    <button id="refreshLogs" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm">
-                                        Atualizar
-                                    </button>
-                                </div>
-                                
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-gray-700">
-                                        <thead>
-                                            <tr>
-                                                <th class="px-6 py-3 bg-gray-800 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                                    Data/Hora
-                                                </th>
-                                                <th class="px-6 py-3 bg-gray-800 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                                    Usuário
-                                                </th>
-                                                <th class="px-6 py-3 bg-gray-800 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                                    Ação
-                                                </th>
-                                                <th class="px-6 py-3 bg-gray-800 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                                    Detalhes
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="logsTable" class="bg-dark-800 divide-y divide-gray-700">
-                                            <tr>
-                                                <td colspan="4" class="px-6 py-4 text-center text-gray-400">
-                                                    Carregando logs...
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Footer -->
-        <footer class="bg-dark-800 py-4">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
-                <p>Sistema de Whitelist Metânia - Desenvolvido por Mr.Dark</p>
-            </div>
-        </footer>
-    </div>
-    
-    <!-- Form details modal -->
-    <div id="formModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden">
-        <div class="bg-dark-800 p-6 rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-start mb-4">
-                <h3 id="modalTitle" class="text-lg font-medium text-gray-200">Detalhes da Solicitação</h3>
-                <button id="closeModal" class="text-gray-400 hover:text-white">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            
-            <div id="formDetails" class="space-y-4">
-                <!-- Form details will be inserted here -->
-            </div>
-            
-            <div id="formActions" class="mt-6 space-y-4">
-                <div id="reviewForm" class="space-y-4">
-                    <h4 class="font-medium">Avaliar Solicitação</h4>
-                    <textarea id="feedbackText" rows="3" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Feedback opcional"></textarea>
-                    
-                    <div class="flex space-x-4">
-                        <button id="approveForm" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded flex-1">
-                            Aprovar
-                        </button>
-                        <button id="rejectForm" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded flex-1">
-                            Rejeitar
-                        </button>
-                    </div>
-                </div>
-                
-                <div id="reviewMessage" class="hidden p-4 rounded-md">
-                    <!-- Mensagem após revisão -->
-                </div>
+
+            <div id="formsList" class="space-y-4">
+                <!-- Os formulários serão inseridos aqui via JavaScript -->
             </div>
         </div>
     </div>
 
+    <!-- Modal de Rejeição -->
+    <div id="rejectModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+        <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold mb-4">Rejeitar Solicitação</h3>
+            <form id="rejectForm" class="space-y-4">
+                <input type="hidden" id="rejectFormId" name="formId">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Motivo da Rejeição</label>
+                    <textarea name="motivo" required
+                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                        rows="4"></textarea>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancelRejectBtn"
+                        class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg">
+                        Rejeitar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // Guardar estado
-        let currentTab = 'dashboard';
-        let currentFormId = null;
-        let formsData = [];
-        
-        // Elementos DOM
-        const loginContainer = document.getElementById('loginContainer');
-        const adminDashboard = document.getElementById('adminDashboard');
-        const userInfo = document.getElementById('userInfo');
-        
-        // Função para verificar autenticação
-        async function checkAuth() {
-            const token = localStorage.getItem('adminToken');
-            
-            if (!token) {
-                // Não está logado
-                loginContainer.classList.remove('hidden');
-                adminDashboard.classList.add('hidden');
-                userInfo.classList.add('hidden');
-                return false;
-            }
-            
-            try {
-                const response = await fetch('/api/auth/status', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (!data.authenticated) {
-                    // Token inválido
-                    localStorage.removeItem('adminToken');
-                    loginContainer.classList.remove('hidden');
-                    adminDashboard.classList.add('hidden');
-                    userInfo.classList.add('hidden');
-                    return false;
-                }
-                
-                // Está autenticado
-                loginContainer.classList.add('hidden');
-                adminDashboard.classList.remove('hidden');
-                userInfo.classList.remove('hidden');
-                
-                // Mostrar nome de usuário
-                document.getElementById('username').textContent = data.user.username;
-                
-                return true;
-            } catch (error) {
-                console.error('Erro ao verificar autenticação:', error);
-                return false;
-            }
-        }
-        
-        // Função para fazer login
-        async function login(username, password) {
-            try {
-                const response = await fetch('/api/admin/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ username, password })
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.error || 'Erro ao fazer login');
-                }
-                
-                // Salvar token
-                localStorage.setItem('adminToken', data.token);
-                
-                // Verificar autenticação
-                await checkAuth();
-                
-                // Carregar dashboard
-                await loadDashboard();
-                
-                return true;
-            } catch (error) {
-                throw error;
-            }
-        }
-        
-        // Função para carregar dashboard
-        async function loadDashboard() {
-            const token = localStorage.getItem('adminToken');
-            
-            if (!token) return;
-            
-            try {
-                const response = await fetch('/api/admin/dashboard', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Erro ao carregar dashboard');
-                }
-                
-                const data = await response.json();
-                
-                // Atualizar contadores
-                document.getElementById('totalForms').textContent = data.countByStatus.total;
-                document.getElementById('pendingForms').textContent = data.countByStatus.pendente;
-                document.getElementById('approvedForms').textContent = data.countByStatus.aprovado;
-                
-                // Atualizar atividade recente
-                const recentActivityEl = document.getElementById('recentActivity');
-                
-                if (data.recentActivity && data.recentActivity.length > 0) {
-                    recentActivityEl.innerHTML = '';
-                    
-                    data.recentActivity.forEach(activity => {
-                        const activityDate = new Date(activity.timestamp).toLocaleString('pt-BR');
-                        const actionText = formatAction(activity.action);
-                        
-                        const activityItem = document.createElement('div');
-                        activityItem.className = 'py-2 border-b border-gray-700 last:border-0';
-                        activityItem.innerHTML = `
-                            <p class="text-sm">
-                                <span class="font-medium">${activity.username}</span>
-                                <span class="text-gray-400">${actionText}</span>
-                                <span class="text-xs text-gray-500 block mt-1">${activityDate}</span>
-                            </p>
-                        `;
-                        
-                        recentActivityEl.appendChild(activityItem);
-                    });
-                } else {
-                    recentActivityEl.innerHTML = '<p class="text-gray-400">Nenhuma atividade recente</p>';
-                }
-                
-                // Carregar configurações
-                if (data.botSettings) {
-                    document.getElementById('chatFilterEnabled').checked = data.botSettings.chatFilter?.enabled || false;
-                    document.getElementById('autoModerationEnabled').checked = data.botSettings.autoModeration?.enabled || false;
-                    document.getElementById('whitelistEnabled').checked = data.botSettings.whitelistSystem?.enabled || false;
-                    document.getElementById('requireApproval').checked = data.botSettings.whitelistSystem?.requireApproval || false;
-                }
-                
-            } catch (error) {
-                console.error('Erro ao carregar dashboard:', error);
-            }
-        }
-        
-        // Função para carregar formulários de whitelist
-        async function loadForms(statusFilter = 'all') {
-            const token = localStorage.getItem('adminToken');
-            
-            if (!token) return;
-            
-            try {
-                const response = await fetch('/api/admin/forms', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Erro ao carregar formulários');
-                }
-                
-                const data = await response.json();
-                formsData = data;
-                
-                // Filtrar por status
-                const filteredData = statusFilter === 'all' 
-                    ? data 
-                    : data.filter(form => form.status === statusFilter);
-                
-                // Atualizar tabela
-                const tableEl = document.getElementById('whitelistTable');
-                
-                if (filteredData.length > 0) {
-                    tableEl.innerHTML = '';
-                    
-                    filteredData.forEach(form => {
-                        const formDate = new Date(form.createdAt).toLocaleString('pt-BR');
-                        
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div>
-                                        <div class="text-sm font-medium text-gray-200">${form.username}</div>
-                                        <div class="text-sm text-gray-400">${form.discordId ? `Discord ID: ${form.discordId}` : 'Sem Discord ID'}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                ${formDate}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(form.status)}">
-                                    ${form.status.toUpperCase()}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button class="text-indigo-400 hover:text-indigo-300 mr-2 view-form" data-id="${form.id}">Ver</button>
-                                ${form.status === 'pendente' ? `
-                                <button class="text-green-400 hover:text-green-300 mr-2 approve-form" data-id="${form.id}">Aprovar</button>
-                                <button class="text-red-400 hover:text-red-300 reject-form" data-id="${form.id}">Rejeitar</button>
-                                ` : ''}
-                            </td>
-                        `;
-                        
-                        tableEl.appendChild(tr);
-                    });
-                    
-                    // Adicionar event listeners para botões
-                    document.querySelectorAll('.view-form').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            const formId = btn.getAttribute('data-id');
-                            openFormModal(formId);
-                        });
-                    });
-                    
-                    document.querySelectorAll('.approve-form').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            const formId = btn.getAttribute('data-id');
-                            openFormModal(formId, 'approve');
-                        });
-                    });
-                    
-                    document.querySelectorAll('.reject-form').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            const formId = btn.getAttribute('data-id');
-                            openFormModal(formId, 'reject');
-                        });
-                    });
-                } else {
-                    tableEl.innerHTML = `
-                        <tr>
-                            <td colspan="4" class="px-6 py-4 text-center text-gray-400">
-                                Nenhuma solicitação encontrada
-                            </td>
-                        </tr>
-                    `;
-                }
-                
-            } catch (error) {
-                console.error('Erro ao carregar formulários:', error);
-                document.getElementById('whitelistTable').innerHTML = `
-                    <tr>
-                        <td colspan="4" class="px-6 py-4 text-center text-red-400">
-                            Erro ao carregar solicitações: ${error.message}
-                        </td>
-                    </tr>
-                `;
-            }
-        }
-        
-        // Função para carregar logs
-        async function loadLogs() {
-            const token = localStorage.getItem('adminToken');
-            
-            if (!token) return;
-            
-            try {
-                const response = await fetch('/api/admin/activity-logs', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Erro ao carregar logs');
-                }
-                
-                const logs = await response.json();
-                
-                // Atualizar tabela
-                const tableEl = document.getElementById('logsTable');
-                
-                if (logs.length > 0) {
-                    tableEl.innerHTML = '';
-                    
-                    logs.forEach(log => {
-                        const logDate = new Date(log.timestamp).toLocaleString('pt-BR');
-                        const actionText = formatAction(log.action);
-                        
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                ${logDate}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                ${log.username}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                ${actionText}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                ${formatLogDetails(log.details) || '-'}
-                            </td>
-                        `;
-                        
-                        tableEl.appendChild(tr);
-                    });
-                } else {
-                    tableEl.innerHTML = `
-                        <tr>
-                            <td colspan="4" class="px-6 py-4 text-center text-gray-400">
-                                Nenhum log encontrado
-                            </td>
-                        </tr>
-                    `;
-                }
-                
-            } catch (error) {
-                console.error('Erro ao carregar logs:', error);
-                document.getElementById('logsTable').innerHTML = `
-                    <tr>
-                        <td colspan="4" class="px-6 py-4 text-center text-red-400">
-                            Erro ao carregar logs: ${error.message}
-                        </td>
-                    </tr>
-                `;
-            }
-        }
-        
-        // Função para abrir modal de formulário
-        async function openFormModal(formId, action = null) {
-            currentFormId = formId;
-            
-            const token = localStorage.getItem('adminToken');
-            
-            if (!token) return;
-            
-            try {
-                // Buscar formulário específico
-                const response = await fetch(`/api/admin/forms/${formId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Erro ao carregar detalhes do formulário');
-                }
-                
-                const form = await response.json();
-                
-                // Atualizar título do modal
-                document.getElementById('modalTitle').textContent = `Solicitação de ${form.username}`;
-                
-                // Preencher detalhes
-                const detailsEl = document.getElementById('formDetails');
-                detailsEl.innerHTML = '';
-                
-                // Informações básicas
-                const basicInfo = document.createElement('div');
-                basicInfo.className = 'bg-dark-900 p-4 rounded-md';
-                basicInfo.innerHTML = `
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <p class="text-sm text-gray-400">Usuário</p>
-                            <p class="font-medium">${form.username}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-400">Status</p>
-                            <p>
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(form.status)}">
-                                    ${form.status.toUpperCase()}
-                                </span>
-                            </p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-400">Discord ID</p>
-                            <p class="font-medium">${form.discordId || 'Não informado'}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-400">Enviado em</p>
-                            <p class="font-medium">${new Date(form.createdAt).toLocaleString('pt-BR')}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-400">IP</p>
-                            <p class="font-medium">${form.clientIp || 'Desconhecido'}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-400">Revisado por</p>
-                            <p class="font-medium">${form.reviewedBy || 'Não revisado'}</p>
-                        </div>
-                    </div>
-                `;
-                
-                detailsEl.appendChild(basicInfo);
-                
-                // Dados do formulário
-                if (form.data) {
-                    const formDataEl = document.createElement('div');
-                    formDataEl.className = 'mt-4';
-                    formDataEl.innerHTML = '<h4 class="font-medium mb-2">Respostas do Formulário</h4>';
-                    
-                    const formDataContent = document.createElement('div');
-                    formDataContent.className = 'bg-dark-900 p-4 rounded-md space-y-3';
-                    
-                    // Iterar pelas respostas
-                    for (const [key, value] of Object.entries(form.data)) {
-                        const field = document.createElement('div');
-                        field.innerHTML = `
-                            <p class="text-sm text-gray-400">${formatFieldName(key)}</p>
-                            <p class="font-medium break-words">${value}</p>
-                        `;
-                        
-                        formDataContent.appendChild(field);
-                    }
-                    
-                    formDataEl.appendChild(formDataContent);
-                    detailsEl.appendChild(formDataEl);
-                }
-                
-                // Feedback (se tiver)
-                if (form.feedback) {
-                    const feedbackEl = document.createElement('div');
-                    feedbackEl.className = 'mt-4';
-                    feedbackEl.innerHTML = `
-                        <h4 class="font-medium mb-2">Feedback</h4>
-                        <div class="bg-dark-900 p-4 rounded-md">
-                            <p>${form.feedback}</p>
-                        </div>
-                    `;
-                    
-                    detailsEl.appendChild(feedbackEl);
-                }
-                
-                // Controlar visibilidade dos botões de ação
-                const reviewForm = document.getElementById('reviewForm');
-                const reviewMessage = document.getElementById('reviewMessage');
-                
-                reviewMessage.classList.add('hidden');
-                
-                if (form.status === 'pendente') {
-                    reviewForm.classList.remove('hidden');
-                    
-                    // Se tiver ação específica, focar no campo de feedback
-                    if (action) {
-                        document.getElementById('feedbackText').focus();
-                    }
-                } else {
-                    reviewForm.classList.add('hidden');
-                    
-                    // Mostrar mensagem de status
-                    reviewMessage.innerHTML = `
-                        <div class="bg-gray-800 text-white p-4 rounded-md">
-                            <p>Esta solicitação já foi ${form.status === 'aprovado' ? 'aprovada' : 'rejeitada'} por <strong>${form.reviewedBy}</strong> em ${new Date(form.reviewedAt).toLocaleString('pt-BR')}.</p>
-                        </div>
-                    `;
-                    reviewMessage.classList.remove('hidden');
-                }
-                
-                // Mostrar modal
-                document.getElementById('formModal').classList.remove('hidden');
-                
-            } catch (error) {
-                console.error('Erro ao abrir modal:', error);
-                alert(`Erro ao carregar detalhes: ${error.message}`);
-            }
-        }
-        
-        // Função para revisar formulário
-        async function reviewForm(formId, status, feedback) {
-            const token = localStorage.getItem('adminToken');
-            
-            if (!token) return;
-            
-            try {
-                const response = await fetch(`/api/admin/forms/${formId}/review`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ status, feedback })
-                });
-                
-                if (!response.ok) {
-                    const data = await response.json();
-                    throw new Error(data.error || 'Erro ao processar solicitação');
-                }
-                
-                // Atualizar UI
-                document.getElementById('reviewForm').classList.add('hidden');
-                
-                const message = document.getElementById('reviewMessage');
-                message.innerHTML = `
-                    <div class="bg-green-800 text-white p-4 rounded-md">
-                        <p>Solicitação ${status === 'aprovado' ? 'aprovada' : 'rejeitada'} com sucesso!</p>
-                    </div>
-                `;
-                message.classList.remove('hidden');
-                
-                // Recarregar formulários após um delay
-                setTimeout(() => {
-                    loadForms(document.getElementById('statusFilter').value);
-                    loadDashboard();
-                }, 1500);
-                
-                return true;
-            } catch (error) {
-                console.error('Erro ao revisar formulário:', error);
-                
-                const message = document.getElementById('reviewMessage');
-                message.innerHTML = `
-                    <div class="bg-red-800 text-white p-4 rounded-md">
-                        <p>Erro ao processar solicitação: ${error.message}</p>
-                    </div>
-                `;
-                message.classList.remove('hidden');
-                
-                return false;
-            }
-        }
-        
-        // Função para salvar configurações
-        async function saveSettings(settings) {
-            const token = localStorage.getItem('adminToken');
-            
-            if (!token) return;
-            
-            try {
-                const response = await fetch('/api/admin/bot-settings', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ settings })
-                });
-                
-                if (!response.ok) {
-                    const data = await response.json();
-                    throw new Error(data.error || 'Erro ao salvar configurações');
-                }
-                
-                return true;
-            } catch (error) {
-                console.error('Erro ao salvar configurações:', error);
-                throw error;
-            }
-        }
-        
-        // Funções auxiliares
-        function getStatusClass(status) {
-            switch (status) {
-                case 'pendente':
-                    return 'bg-yellow-600 bg-opacity-25 text-yellow-400';
-                case 'aprovado':
-                    return 'bg-green-600 bg-opacity-25 text-green-400';
-                case 'rejeitado':
-                    return 'bg-red-600 bg-opacity-25 text-red-400';
-                default:
-                    return 'bg-gray-600 bg-opacity-25 text-gray-400';
-            }
-        }
-        
-        function formatAction(action) {
-            switch (action) {
-                case 'login':
-                    return 'fez login';
-                case 'formulario_aprovado':
-                    return 'aprovou uma solicitação';
-                case 'formulario_rejeitado':
-                    return 'rejeitou uma solicitação';
-                case 'atualizar_config_bot':
-                    return 'atualizou configurações';
-                default:
-                    return action;
-            }
-        }
-        
-        function formatLogDetails(details) {
-            if (!details) return '';
-            
-            const parts = [];
-            
-            if (details.formId) {
-                parts.push(`Formulário: ${details.formId.substring(0, 8)}`);
-            }
-            
-            if (details.userId) {
-                parts.push(`Usuário: ${details.userId}`);
-            }
-            
-            if (details.ip) {
-                parts.push(`IP: ${details.ip}`);
-            }
-            
-            return parts.join(', ');
-        }
-        
-        function formatFieldName(key) {
-            // Formatar nome do campo para exibição
-            const formatted = key
-                .replace(/([A-Z])/g, ' $1')
-                .replace(/_/g, ' ')
-                .replace(/^./, str => str.toUpperCase());
-                
-            return formatted;
-        }
-        
-        // Inicialização de eventos
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
+            const formsList = document.getElementById('formsList');
+            const refreshBtn = document.getElementById('refreshBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const rejectModal = document.getElementById('rejectModal');
+            const rejectForm = document.getElementById('rejectForm');
+            const cancelRejectBtn = document.getElementById('cancelRejectBtn');
+
             // Verificar autenticação
-            const isAuth = await checkAuth();
-            
-            if (isAuth) {
-                // Carregar dados iniciais
-                await loadDashboard();
-                await loadForms();
-            }
-            
-            // Login form
-            document.getElementById('loginForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const username = document.getElementById('adminUsername').value;
-                const password = document.getElementById('adminPassword').value;
-                const errorEl = document.getElementById('loginError');
-                
-                try {
-                    errorEl.classList.add('hidden');
-                    await login(username, password);
-                } catch (error) {
-                    errorEl.textContent = error.message;
-                    errorEl.classList.remove('hidden');
-                }
-            });
-            
-            // Logout button
-            document.getElementById('logoutBtn').addEventListener('click', () => {
-                localStorage.removeItem('adminToken');
-                window.location.reload();
-            });
-            
-            // Tab switching
-            document.querySelectorAll('.admin-tab').forEach(tab => {
-                tab.addEventListener('click', async () => {
-                    const tabName = tab.getAttribute('data-tab');
-                    
-                    // Atualizar classes dos botões
-                    document.querySelectorAll('.admin-tab').forEach(t => {
-                        t.classList.remove('text-indigo-500', 'border-indigo-500');
-                        t.classList.add('text-gray-400', 'border-transparent');
-                    });
-                    
-                    tab.classList.remove('text-gray-400', 'border-transparent');
-                    tab.classList.add('text-indigo-500', 'border-indigo-500');
-                    
-                    // Esconder todas as abas
-                    document.querySelectorAll('.tab-content').forEach(content => {
-                        content.classList.add('hidden');
-                    });
-                    
-                    // Mostrar aba selecionada
-                    document.getElementById(`${tabName}Tab`).classList.remove('hidden');
-                    
-                    // Ações específicas por aba
-                    if (tabName === 'whitelist' && currentTab !== 'whitelist') {
-                        await loadForms();
-                    } else if (tabName === 'logs' && currentTab !== 'logs') {
-                        await loadLogs();
+            fetch('/api/admin/check-auth')
+                .then(response => {
+                    if (!response.ok) {
+                        window.location.href = '/';
                     }
-                    
-                    currentTab = tabName;
+                })
+                .catch(() => {
+                    window.location.href = '/';
                 });
-            });
-            
-            // Definir aba inicial
-            document.querySelector(`[data-tab="dashboard"]`).click();
-            
-            // Filtro de status
-            document.getElementById('statusFilter').addEventListener('change', async (e) => {
-                const status = e.target.value;
-                await loadForms(status);
-            });
-            
-            // Botão de atualizar formulários
-            document.getElementById('refreshForms').addEventListener('click', async () => {
-                const status = document.getElementById('statusFilter').value;
-                await loadForms(status);
-            });
-            
-            // Botão de atualizar logs
-            document.getElementById('refreshLogs').addEventListener('click', async () => {
-                await loadLogs();
-            });
-            
-            // Modal de formulário
-            document.getElementById('closeModal').addEventListener('click', () => {
-                document.getElementById('formModal').classList.add('hidden');
-                currentFormId = null;
-            });
-            
-            // Botões de aprovar/rejeitar
-            document.getElementById('approveForm').addEventListener('click', async () => {
-                if (!currentFormId) return;
-                
-                const feedback = document.getElementById('feedbackText').value;
-                await reviewForm(currentFormId, 'aprovado', feedback);
-            });
-            
-            document.getElementById('rejectForm').addEventListener('click', async () => {
-                if (!currentFormId) return;
-                
-                const feedback = document.getElementById('feedbackText').value;
-                await reviewForm(currentFormId, 'rejeitado', feedback);
-            });
-            
-            // Formulário de configurações
-            document.getElementById('settingsForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const settings = {
-                    chatFilter: {
-                        enabled: document.getElementById('chatFilterEnabled').checked
-                    },
-                    autoModeration: {
-                        enabled: document.getElementById('autoModerationEnabled').checked
-                    },
-                    whitelistSystem: {
-                        enabled: document.getElementById('whitelistEnabled').checked,
-                        requireApproval: document.getElementById('requireApproval').checked
-                    }
-                };
-                
-                const messageEl = document.getElementById('settingsMessage');
-                
+
+            // Carregar formulários
+            async function loadForms() {
                 try {
-                    await saveSettings(settings);
+                    const response = await fetch('/api/whitelist/forms');
+                    const forms = await response.json();
                     
-                    messageEl.innerHTML = `
-                        <div class="bg-green-800 text-white p-4 rounded-md">
-                            <p>Configurações salvas com sucesso!</p>
+                    formsList.innerHTML = forms.map(form => `
+                        <div class="form-card p-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-lg font-semibold">${form.nome}</h3>
+                                    <p class="text-gray-400">ID Discord: ${form.userId}</p>
+                                </div>
+                                <span class="status-badge status-${form.status}">
+                                    ${form.status.toUpperCase()}
+                                </span>
+                            </div>
+                            <div class="mt-4 grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-gray-400">Idade</p>
+                                    <p>${form.idade}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-400">Estado</p>
+                                    <p>${form.estado}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-400">Como Conheceu</p>
+                                    <p>${form.comoConheceu}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-400">Religião</p>
+                                    <p>${form.religiao}</p>
+                                </div>
+                            </div>
+                            ${form.status === 'pendente' ? `
+                                <div class="mt-4 flex justify-end space-x-4">
+                                    <button onclick="approveForm('${form.id}')"
+                                        class="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg">
+                                        Aprovar
+                                    </button>
+                                    <button onclick="showRejectModal('${form.id}')"
+                                        class="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg">
+                                        Rejeitar
+                                    </button>
+                                </div>
+                            ` : ''}
                         </div>
-                    `;
-                    messageEl.classList.remove('hidden');
-                    
-                    // Esconder mensagem após alguns segundos
-                    setTimeout(() => {
-                        messageEl.classList.add('hidden');
-                    }, 3000);
-                    
+                    `).join('');
                 } catch (error) {
-                    messageEl.innerHTML = `
-                        <div class="bg-red-800 text-white p-4 rounded-md">
-                            <p>Erro ao salvar configurações: ${error.message}</p>
-                        </div>
-                    `;
-                    messageEl.classList.remove('hidden');
+                    console.error('Erro ao carregar formulários:', error);
+                }
+            }
+
+            // Funções globais para os botões
+            window.approveForm = async (formId) => {
+                try {
+                    const response = await fetch('/api/whitelist/approve', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ formId })
+                    });
+                    
+                    if (response.ok) {
+                        loadForms();
+                    }
+                } catch (error) {
+                    console.error('Erro ao aprovar formulário:', error);
+                }
+            };
+
+            window.showRejectModal = (formId) => {
+                document.getElementById('rejectFormId').value = formId;
+                rejectModal.classList.remove('hidden');
+                rejectModal.classList.add('flex');
+            };
+
+            // Event Listeners
+            refreshBtn.addEventListener('click', loadForms);
+            
+            logoutBtn.addEventListener('click', async () => {
+                try {
+                    await fetch('/api/admin/logout', { method: 'POST' });
+                    window.location.href = '/';
+                } catch (error) {
+                    console.error('Erro ao fazer logout:', error);
                 }
             });
+
+            rejectForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(rejectForm);
+                const data = Object.fromEntries(formData.entries());
+                
+                try {
+                    const response = await fetch('/api/whitelist/reject', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    if (response.ok) {
+                        rejectModal.classList.remove('flex');
+                        rejectModal.classList.add('hidden');
+                        loadForms();
+                    }
+                } catch (error) {
+                    console.error('Erro ao rejeitar formulário:', error);
+                }
+            });
+
+            cancelRejectBtn.addEventListener('click', () => {
+                rejectModal.classList.remove('flex');
+                rejectModal.classList.add('hidden');
+            });
+
+            // Carregar formulários inicialmente
+            loadForms();
         });
     </script>
 </body>

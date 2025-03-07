@@ -2,6 +2,8 @@ const { Client, GatewayIntentBits, REST, Routes, Collection } = require('discord
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
+const express = require('express');
+const jwt = require('jsonwebtoken');
 
 // Importar o servidor de whitelist
 const WhitelistServer = require('./modules/whitelist-server');
@@ -269,3 +271,101 @@ process.on('SIGINT', async () => {
 });
 
 client.login(token);
+
+// Rotas de autenticação
+const app = express();
+
+// Middleware de autenticação
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) {
+        return res.status(401).json({ error: 'Token não fornecido' });
+    }
+    
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Token inválido' });
+        }
+        req.user = user;
+        next();
+    });
+}
+
+// Rotas de autenticação
+app.post('/api/admin/login', (req, res) => {
+    const { username, password } = req.body;
+    
+    if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
+        const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        res.json({ token });
+    } else {
+        res.status(401).json({ error: 'Credenciais inválidas' });
+    }
+});
+
+app.post('/api/admin/logout', (req, res) => {
+    res.json({ success: true });
+});
+
+app.get('/api/admin/check-auth', authenticateToken, (req, res) => {
+    res.json({ authenticated: true });
+});
+
+// Rotas de gerenciamento de formulários
+app.get('/api/whitelist/forms', authenticateToken, (req, res) => {
+    const forms = Object.values(whitelistServer.db.forms);
+    res.json(forms);
+});
+
+app.post('/api/whitelist/approve', authenticateToken, async (req, res) => {
+    const { formId } = req.body;
+    
+    if (!whitelistServer.db.forms[formId]) {
+        return res.status(404).json({ error: 'Formulário não encontrado' });
+    }
+    
+    const form = whitelistServer.db.forms[formId];
+    form.status = 'aprovado';
+    form.reviewedBy = req.user.username;
+    form.reviewedAt = new Date().toISOString();
+    
+    // Enviar notificação para o usuário no Discord
+    try {
+        const user = await client.users.fetch(form.userId);
+        await user.send(`🎉 Sua solicitação de whitelist foi aprovada! Você já pode acessar o servidor.`);
+    } catch (error) {
+        console.error('Erro ao enviar notificação:', error);
+    }
+    
+    res.json({ success: true });
+});
+
+app.post('/api/whitelist/reject', authenticateToken, async (req, res) => {
+    const { formId, motivo } = req.body;
+    
+    if (!whitelistServer.db.forms[formId]) {
+        return res.status(404).json({ error: 'Formulário não encontrado' });
+    }
+    
+    const form = whitelistServer.db.forms[formId];
+    form.status = 'rejeitado';
+    form.reviewedBy = req.user.username;
+    form.reviewedAt = new Date().toISOString();
+    form.feedback = motivo;
+    
+    // Enviar notificação para o usuário no Discord
+    try {
+        const user = await client.users.fetch(form.userId);
+        await user.send(`❌ Sua solicitação de whitelist foi rejeitada.\nMotivo: ${motivo}`);
+    } catch (error) {
+        console.error('Erro ao enviar notificação:', error);
+    }
+    
+    res.json({ success: true });
+});
+
+app.listen(process.env.PORT, () => {
+    console.log(`🚀 Servidor de autenticação iniciado na porta ${process.env.PORT}`);
+});

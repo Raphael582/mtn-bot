@@ -1,9 +1,11 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
-const { WebhookClient } = require('discord.js');
+const { WebhookClient, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const config = require('../config/whitelist.config');
 const os = require('os');
+const jwt = require('jsonwebtoken');
+const uuid = require('uuid');
 
 class WhitelistServer {
     constructor(client) {
@@ -34,7 +36,10 @@ class WhitelistServer {
             const webhookUrl = process.env.WHITELIST_WEBHOOK_URL;
             if (webhookUrl) {
                 console.log('🔗 Configurando webhook...');
-                this.webhookClient = new WebhookClient({ url: webhookUrl });
+                this.webhookClient = new WebhookClient({ 
+                    url: webhookUrl,
+                    channelId: '1336768867690745946'
+                });
                 console.log('✅ Webhook configurado');
             } else {
                 console.log('⚠️ Webhook não configurado');
@@ -93,67 +98,82 @@ class WhitelistServer {
         this.app.get('/api/whitelist/forms', this.handleGetForms.bind(this));
         this.app.get('/api/whitelist/user/:userId', this.handleGetUserForm.bind(this));
         
+        // Rotas de autenticação
+        this.app.post('/api/admin/login', (req, res) => {
+            const { username, password } = req.body;
+            
+            if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
+                const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '24h' });
+                res.json({ token });
+            } else {
+                res.status(401).json({ error: 'Credenciais inválidas' });
+            }
+        });
+
+        this.app.post('/api/admin/logout', (req, res) => {
+            res.json({ success: true });
+        });
+
+        this.app.get('/api/admin/check-auth', this.authenticateToken.bind(this), (req, res) => {
+            res.json({ authenticated: true });
+        });
+        
         console.log('✅ Rotas configuradas');
     }
 
     async handleWhitelistSubmit(req, res) {
         try {
-            const form = req.body;
-            const formsDb = this.db.forms;
-            const clientIp = req.clientIp;
-
-            // Validar campos obrigatórios
-            const camposObrigatorios = ['nome', 'idade', 'comoConheceu', 'estado', 'religiao', 'userId'];
-            const camposFaltantes = camposObrigatorios.filter(campo => !form[campo]);
+            const { userId, ...formData } = req.body;
             
-            if (camposFaltantes.length > 0) {
-                return res.status(400).json({ 
-                    error: 'Campos obrigatórios não preenchidos',
-                    campos: camposFaltantes
-                });
-            }
-
             // Verificar se já existe um formulário para este usuário
-            const existingForm = Object.values(formsDb).find(f => f.userId === form.userId);
+            const existingForm = Object.values(this.db.forms).find(f => f.userId === userId);
             if (existingForm) {
-                return res.status(400).json({ 
-                    error: 'Você já enviou um formulário anteriormente',
-                    formId: existingForm.id
-                });
+                return res.status(400).json({ error: 'Você já enviou uma solicitação' });
             }
-
-            // Salvar formulário
-            const formId = Date.now().toString();
-            formsDb[formId] = {
-                ...form,
+            
+            // Criar novo formulário
+            const formId = uuid.v4();
+            const form = {
                 id: formId,
+                userId,
+                ...formData,
                 status: 'pendente',
-                dataEnvio: new Date().toISOString(),
-                ip: clientIp
+                createdAt: new Date().toISOString()
             };
-
-            // Notificar via webhook
-            if (this.webhookClient) {
-                await this.webhookClient.send({
-                    embeds: [{
-                        title: '📝 Nova Solicitação de Whitelist',
-                        description: `Usuário **${form.nome}** enviou um formulário de whitelist pelo site.`,
-                        color: 0x3498db,
-                        fields: [
-                            { name: 'Nome', value: form.nome, inline: true },
-                            { name: 'Idade', value: form.idade, inline: true },
-                            { name: 'Estado', value: form.estado, inline: true },
-                            { name: 'Como Conheceu', value: form.comoConheceu, inline: true },
-                            { name: 'Religião', value: form.religiao, inline: true },
-                            { name: 'IP', value: clientIp, inline: true },
-                            { name: 'ID Discord', value: form.userId, inline: true }
-                        ],
-                        timestamp: new Date()
-                    }]
-                });
+            
+            this.db.forms[formId] = form;
+            
+            // Enviar notificação para o canal de whitelist
+            const channel = this.client.channels.cache.get('1336768867690745946');
+            if (channel) {
+                const embed = new EmbedBuilder()
+                    .setTitle('Nova Solicitação de Whitelist')
+                    .setColor('#3b82f6')
+                    .addFields(
+                        { name: 'Nome', value: formData.nome },
+                        { name: 'Idade', value: formData.idade },
+                        { name: 'Estado', value: formData.estado },
+                        { name: 'Como Conheceu', value: formData.comoConheceu },
+                        { name: 'Religião', value: formData.religiao }
+                    )
+                    .setTimestamp();
+                    
+                const row = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`approve_${formId}`)
+                            .setLabel('Aprovar')
+                            .setStyle(ButtonStyle.Success),
+                        new ButtonBuilder()
+                            .setCustomId(`reject_${formId}`)
+                            .setLabel('Rejeitar')
+                            .setStyle(ButtonStyle.Danger)
+                    );
+                    
+                channel.send({ embeds: [embed], components: [row] });
             }
-
-            res.json({ success: true, message: 'Formulário enviado com sucesso!' });
+            
+            res.json({ success: true, formId });
         } catch (error) {
             console.error('❌ Erro ao processar formulário:', error);
             res.status(500).json({ error: 'Erro ao processar formulário' });
@@ -213,14 +233,14 @@ class WhitelistServer {
 
     async handleGetUserForm(req, res) {
         try {
-            const userId = req.params.userId;
+            const { userId } = req.params;
             const form = Object.values(this.db.forms).find(f => f.userId === userId);
             
-            if (!form) {
-                return res.status(404).json({ error: 'Formulário não encontrado' });
+            if (form) {
+                res.json({ exists: true, form });
+            } else {
+                res.json({ exists: false });
             }
-
-            res.json(form);
         } catch (error) {
             console.error('❌ Erro ao buscar formulário do usuário:', error);
             res.status(500).json({ error: 'Erro ao buscar formulário' });
@@ -296,6 +316,23 @@ class WhitelistServer {
             console.error('❌ Erro ao parar servidor de whitelist:', error);
             throw error;
         }
+    }
+
+    authenticateToken(req, res, next) {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        
+        if (!token) {
+            return res.status(401).json({ error: 'Token não fornecido' });
+        }
+        
+        jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+            if (err) {
+                return res.status(403).json({ error: 'Token inválido' });
+            }
+            req.user = user;
+            next();
+        });
     }
 }
 

@@ -32,6 +32,18 @@
             height: auto;
             filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
         }
+        .input-field {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
     </style>
 </head>
 <body class="py-12 px-4">
@@ -68,6 +80,29 @@
             </div>
         </div>
 
+        <!-- Seção de Login Admin -->
+        <div class="container p-6 mb-8">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold mb-4">Área Administrativa</h2>
+                <form id="adminLoginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Usuário</label>
+                        <input type="text" name="username" required
+                            class="input-field w-full px-4 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Senha</label>
+                        <input type="password" name="password" required
+                            class="input-field w-full px-4 py-2">
+                    </div>
+                    <button type="submit"
+                        class="btn-primary w-full py-3 px-4 rounded-lg font-medium text-white">
+                        Entrar
+                    </button>
+                </form>
+            </div>
+        </div>
+
         <div id="status" class="hidden text-center p-4 rounded-lg"></div>
     </div>
 
@@ -81,6 +116,41 @@
                 // Redirecionar para o formulário personalizado
                 window.location.href = `/form/${userId}`;
             }
+
+            // Login Admin
+            const adminForm = document.getElementById('adminLoginForm');
+            const status = document.getElementById('status');
+
+            adminForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(adminForm);
+                const data = Object.fromEntries(formData.entries());
+                
+                try {
+                    const response = await fetch('/api/admin/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        window.location.href = '/admin';
+                    } else {
+                        status.textContent = result.error || 'Erro ao fazer login';
+                        status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center';
+                        status.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    status.textContent = 'Erro ao fazer login. Tente novamente.';
+                    status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center';
+                    status.classList.remove('hidden');
+                }
+            });
         });
     </script>
 </body>

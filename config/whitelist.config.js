@@ -37,5 +37,48 @@ module.exports = {
         webhookEnabled: true,
         // Tempo de espera para notificações em ms
         webhookTimeout: 5000
+    },
+    
+    // Configurações do servidor
+    port: process.env.PORT || 3001,
+    host: process.env.HOST || '0.0.0.0',
+    
+    // Configurações do banco de dados
+    db: {
+        forms: {},
+        userLinks: {}
+    },
+    
+    // Configurações do Discord
+    discord: {
+        // Canais de log
+        logs: {
+            oraculo: process.env.LOG_ORACULO,
+            filtro: process.env.LOG_FILTRO,
+            chat: process.env.LOG_CHAT,
+            punicoes: process.env.LOG_PUNICOES
+        },
+        // Canal de whitelist
+        channelId: process.env.LOG_WHITELIST,
+        webhookUrl: process.env.DISCORD_WEBHOOK_URL
+    },
+    
+    // Configurações de autenticação
+    auth: {
+        adminUsername: process.env.ADMIN_USERNAME || 'admin',
+        adminPassword: process.env.ADMIN_PASSWORD,
+        jwtSecret: process.env.JWT_SECRET,
+        tokenExpiration: '24h'
+    },
+    
+    // Configurações do formulário
+    form: {
+        minAge: 18,
+        requiredFields: ['nome', 'idade', 'estado', 'comoConheceu', 'religiao'],
+        status: {
+            pending: 'pendente',
+            approved: 'aprovado',
+            rejected: 'rejeitado'
+        }
     }
 }; 

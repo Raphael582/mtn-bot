@@ -1,0 +1,8 @@
+{
+  "admin": {
+    "username": "admin",
+    "passwordHash": "$2b$10$btdADVu.mQJ6LyIdpXZCGuvjmPnDyNLt/ngkUcOhchJPcSdTw0G3C",
+    "role": "admin",
+    "createdAt": "2025-02-28T14:13:56.976Z"
+  }
+}

@@ -1,0 +1,9 @@
+{
+    "enabled": true,
+    "logChannelName": "logs-filtro",
+    "whitelistedRoles": [],
+    "whitelistedChannels": [],
+    "whitelistedUsers": [],
+    "deleteMessage": true,
+    "notifyUser": true
+}
