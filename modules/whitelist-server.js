@@ -70,17 +70,22 @@ class WhitelistServer {
             const webhookUrl = env.WHITELIST_WEBHOOK_URL;
             if (webhookUrl) {
                 console.log('🔗 Configurando webhook...');
-                this.webhookClient = new WebhookClient({ 
-                    url: webhookUrl,
-                    channelId: env.LOG_WHITELIST
-                });
-                console.log('✅ Webhook configurado');
+                try {
+                    this.webhookClient = new WebhookClient({ 
+                        url: webhookUrl,
+                        channelId: env.LOG_WHITELIST
+                    });
+                    console.log('✅ Webhook configurado');
+                } catch (webhookError) {
+                    console.error('❌ Erro ao criar webhook:', webhookError);
+                    await this.logger.logError(webhookError, 'whitelist-webhook-creation');
+                }
             } else {
                 console.log('⚠️ Webhook não configurado');
             }
         } catch (error) {
             console.error('❌ Erro ao configurar webhook:', error);
-            await this.logger.logError(null, 'whitelist-webhook', error);
+            await this.logger.logError(error, 'whitelist-webhook-setup');
         }
     }
 

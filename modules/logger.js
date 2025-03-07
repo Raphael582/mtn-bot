@@ -207,11 +207,14 @@ class Logger {
     }
 
     async logError(error, context) {
+        const errorMessage = error ? error.message : 'Erro desconhecido';
+        const errorStack = error ? error.stack : 'Stack trace não disponível';
+        
         await this.log('ERROR', 'Erro no Sistema',
             `Um erro ocorreu no sistema: ${context}`,
             [
-                { name: 'Mensagem', value: error.message },
-                { name: 'Stack', value: `\`\`\`\n${error.stack}\n\`\`\`` }
+                { name: 'Mensagem', value: errorMessage },
+                { name: 'Stack', value: `\`\`\`\n${errorStack}\n\`\`\`` }
             ]
         );
     }
