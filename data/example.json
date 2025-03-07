@@ -1,0 +1,14 @@
+{
+    "admins": [
+        {
+            "username": "admin",
+            "password": "sua_senha_aqui",
+            "role": "admin",
+            "created_at": "2024-03-07T00:00:00Z",
+            "last_login": null,
+            "permissions": ["view_logs", "manage_whitelist"],
+            "created_by": "system"
+        }
+    ],
+    "audit_logs": []
+} 
