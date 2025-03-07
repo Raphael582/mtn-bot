@@ -55,7 +55,8 @@ class WhitelistServer {
         
         // Verificar variáveis de ambiente
         console.log('📋 Configurações do servidor:');
-        console.log('- URL:', config.server.url);
+        console.log('- Porta:', config.port);
+        console.log('- Host:', config.host);
         console.log('- Webhook:', env.WHITELIST_WEBHOOK_URL ? '✅ Configurado' : '❌ Não configurado');
         
         this.setupWebhook();
@@ -440,7 +441,7 @@ class WhitelistServer {
 
     async start() {
         try {
-            const port = env.PORT || 3000;
+            const port = config.port || env.PORT || 3000;
             console.log('🚀 Iniciando servidor na porta:', port);
             console.log('📋 Variáveis de ambiente:');
             console.log('- ADMIN_USERNAME:', env.ADMIN_USERNAME);
@@ -451,7 +452,6 @@ class WhitelistServer {
                 console.log('\n🌐 Servidor de whitelist rodando em:');
                 console.log(`- Local: http://localhost:${port}`);
                 console.log(`- IP: http://${this.getLocalIP()}:${port}`);
-                console.log(`- URL: ${config.server.url}`);
             });
         } catch (error) {
             console.error('❌ Erro ao iniciar servidor de whitelist:', error);

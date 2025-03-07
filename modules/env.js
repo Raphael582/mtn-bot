@@ -36,11 +36,12 @@ const defaultConfig = {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 
     // Configurações do Servidor de Whitelist
-    WHITELIST_URL: process.env.WHITELIST_URL,
+    WHITELIST_URL: process.env.WHITELIST_URL || 'http://localhost:3000',
     PORT: process.env.PORT || 3000,
+    HOST: process.env.HOST || 'localhost',
 
     // Autenticação Admin
-    ADMIN_USERNAME: process.env.ADMIN_USERNAME,
+    ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin',
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
     JWT_SECRET: process.env.JWT_SECRET,
     ADMIN_JWT_SECRET: process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET,
@@ -51,20 +52,17 @@ const defaultConfig = {
     LOG_CHAT: process.env.LOG_CHAT,
     LOG_PUNICOES: process.env.LOG_PUNICOES,
     LOG_WHITELIST: process.env.LOG_WHITELIST,
+    LOG_ADMIN: process.env.LOG_ADMIN,
+
+    // Webhook
+    WHITELIST_WEBHOOK_URL: process.env.WHITELIST_WEBHOOK_URL,
+    DISCORD_WEBHOOK_URL: process.env.DISCORD_WEBHOOK_URL,
 
     // Cargos
-    ROLE_ACESS: process.env.ROLE_ACESS,
-    WHITELIST_ROLE_ID: process.env.WHITELIST_ROLE_ID,
-
-    // Configurações de Segurança
-    NODE_ENV: process.env.NODE_ENV || 'development',
-    CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000'
+    WHITELIST_ROLE_ID: process.env.WHITELIST_ROLE_ID
 };
 
-// Mesclar configurações do .env com as padrão
-const config = { ...defaultConfig, ...process.env };
-
-// Validar configurações obrigatórias
+// Validar variáveis obrigatórias
 const requiredVars = [
     'TOKEN',
     'CLIENT_ID',
@@ -72,38 +70,18 @@ const requiredVars = [
     'ADMIN_USERNAME',
     'ADMIN_PASSWORD',
     'JWT_SECRET',
-    'ADMIN_JWT_SECRET',
-    'LOG_ORACULO',
-    'LOG_FILTRO',
-    'LOG_CHAT',
-    'LOG_PUNICOES',
-    'LOG_WHITELIST'
+    'ADMIN_JWT_SECRET'
 ];
 
-console.log('\n🔍 Verificando variáveis obrigatórias:');
-for (const varName of requiredVars) {
-    if (!config[varName]) {
-        console.error(`❌ Variável ${varName} não está configurada`);
-        console.error(`Valor atual: ${config[varName]}`);
-        console.error(`Valor do process.env: ${process.env[varName]}`);
-        throw new Error(`Variável ${varName} não está configurada`);
-    }
-    console.log(`✅ ${varName}: ${config[varName]}`);
+const missingVars = requiredVars.filter(varName => !defaultConfig[varName]);
+
+if (missingVars.length > 0) {
+    console.error('\n❌ Variáveis de ambiente obrigatórias não configuradas:');
+    missingVars.forEach(varName => {
+        console.error(`- ${varName}`);
+    });
+    throw new Error('Variáveis de ambiente obrigatórias não configuradas');
 }
 
-console.log('\n✅ Arquivo .env carregado com sucesso');
-console.log('\n📋 Configurações carregadas:');
-console.log('- TOKEN:', config.TOKEN ? 'Configurado' : 'Não configurado');
-console.log('- CLIENT_ID:', config.CLIENT_ID);
-console.log('- GUILD_ID:', config.GUILD_ID);
-console.log('- ADMIN_USERNAME:', config.ADMIN_USERNAME);
-console.log('- ADMIN_PASSWORD:', config.ADMIN_PASSWORD ? 'Configurada' : 'Não configurada');
-console.log('- JWT_SECRET:', config.JWT_SECRET ? 'Configurado' : 'Não configurado');
-console.log('- ADMIN_JWT_SECRET:', config.ADMIN_JWT_SECRET ? 'Configurado' : 'Não configurado');
-console.log('- LOG_ORACULO:', config.LOG_ORACULO);
-console.log('- LOG_FILTRO:', config.LOG_FILTRO);
-console.log('- LOG_CHAT:', config.LOG_CHAT);
-console.log('- LOG_PUNICOES:', config.LOG_PUNICOES);
-console.log('- LOG_WHITELIST:', config.LOG_WHITELIST);
-
-module.exports = config; 
+// Exportar configurações
+module.exports = defaultConfig; 
