@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const env = require('./env');
 
 class Logger {
     constructor(client) {
@@ -25,7 +26,7 @@ class Logger {
 
     async ensureLogChannels() {
         console.log('\n🔍 Verificando configuração do servidor:');
-        console.log('GUILD_ID:', process.env.GUILD_ID);
+        console.log('GUILD_ID:', env.GUILD_ID);
         console.log('Servidores disponíveis:', this.client.guilds.cache.map(g => `${g.name} (${g.id})`).join(', '));
         
         // Tentar buscar o servidor pelo ID fornecido
@@ -46,27 +47,26 @@ class Logger {
         console.log(`- Canais disponíveis: ${guild.channels.cache.size}`);
 
         const logChannels = {
-            LOG_ORACULO: 'logs-oraculo',
-            LOG_FILTRO: 'logs-filtro',
-            LOG_CHAT: 'logs',
-            LOG_PUNICOES: 'logs-punicoes',
-            LOG_WHITELIST: 'logs-whitelist'
+            LOG_ORACULO: env.LOG_ORACULO,
+            LOG_FILTRO: env.LOG_FILTRO,
+            LOG_CHAT: env.LOG_CHAT,
+            LOG_PUNICOES: env.LOG_PUNICOES,
+            LOG_WHITELIST: env.LOG_WHITELIST
         };
 
-        for (const [envVar, channelName] of Object.entries(logChannels)) {
-            const channelId = process.env[envVar];
+        for (const [envVar, channelId] of Object.entries(logChannels)) {
             if (!channelId) {
-                console.error(`❌ ID do canal ${channelName} não configurado no .env`);
+                console.error(`❌ ID do canal ${envVar} não configurado no .env`);
                 continue;
             }
 
             const channel = guild.channels.cache.get(channelId);
             if (!channel) {
-                console.error(`❌ Canal ${channelName} não encontrado com o ID: ${channelId}`);
+                console.error(`❌ Canal ${envVar} não encontrado com o ID: ${channelId}`);
                 continue;
             }
 
-            console.log(`✅ Canal ${channelName} verificado com sucesso (ID: ${channelId})`);
+            console.log(`✅ Canal ${envVar} verificado com sucesso (ID: ${channelId})`);
         }
     }
 
@@ -77,14 +77,14 @@ class Logger {
             return null;
         }
 
-        const guild = this.client.guilds.cache.get(process.env.GUILD_ID);
+        const guild = this.client.guilds.cache.get(env.GUILD_ID);
         if (!guild) {
             console.error('❌ Servidor não encontrado');
             return null;
         }
 
         // Tentar encontrar o canal pelo ID primeiro
-        const channelId = process.env[`LOG_${level}`];
+        const channelId = env[`LOG_${level}`];
         if (channelId) {
             const channel = guild.channels.cache.get(channelId);
             if (channel) {

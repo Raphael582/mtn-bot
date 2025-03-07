@@ -8,38 +8,36 @@ const jwt = require('jsonwebtoken');
 const uuid = require('uuid');
 const Logger = require('./logger');
 const fetch = require('node-fetch');
-
-// Carregar variáveis de ambiente
-require('./env');
+const env = require('./env');
 
 // Logs de debug para variáveis de ambiente
 console.log('\n🔍 Debug de variáveis de ambiente:');
-console.log('ADMIN_USERNAME:', process.env.ADMIN_USERNAME);
-console.log('ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD ? 'Configurada' : 'Não configurada');
-console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'Configurado' : 'Não configurado');
-console.log('Todas as variáveis de ambiente:', Object.keys(process.env).join(', '));
+console.log('ADMIN_USERNAME:', env.ADMIN_USERNAME);
+console.log('ADMIN_PASSWORD:', env.ADMIN_PASSWORD ? 'Configurada' : 'Não configurada');
+console.log('JWT_SECRET:', env.JWT_SECRET ? 'Configurado' : 'Não configurado');
+console.log('Todas as variáveis de ambiente:', Object.keys(env).join(', '));
 
 class WhitelistServer {
     constructor(client) {
         console.log('🔧 Inicializando servidor de whitelist...');
         console.log('📋 Verificando variáveis de ambiente:');
-        console.log('- ADMIN_USERNAME:', process.env.ADMIN_USERNAME || '❌ Não configurado');
-        console.log('- ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD ? '✅ Configurada' : '❌ Não configurada');
-        console.log('- JWT_SECRET:', process.env.JWT_SECRET ? '✅ Configurado' : '❌ Não configurado');
-        console.log('- ADMIN_JWT_SECRET:', process.env.ADMIN_JWT_SECRET ? '✅ Configurado' : '❌ Não configurado');
+        console.log('- ADMIN_USERNAME:', env.ADMIN_USERNAME || '❌ Não configurado');
+        console.log('- ADMIN_PASSWORD:', env.ADMIN_PASSWORD ? '✅ Configurada' : '❌ Não configurada');
+        console.log('- JWT_SECRET:', env.JWT_SECRET ? '✅ Configurado' : '❌ Não configurado');
+        console.log('- ADMIN_JWT_SECRET:', env.ADMIN_JWT_SECRET ? '✅ Configurado' : '❌ Não configurado');
         
         // Verificar variáveis obrigatórias
-        if (!process.env.ADMIN_USERNAME) {
+        if (!env.ADMIN_USERNAME) {
             console.error('❌ ADMIN_USERNAME não está configurado no .env');
             throw new Error('ADMIN_USERNAME não está configurado');
         }
         
-        if (!process.env.ADMIN_PASSWORD) {
+        if (!env.ADMIN_PASSWORD) {
             console.error('❌ ADMIN_PASSWORD não está configurado no .env');
             throw new Error('ADMIN_PASSWORD não está configurado');
         }
         
-        if (!process.env.ADMIN_JWT_SECRET) {
+        if (!env.ADMIN_JWT_SECRET) {
             console.error('❌ ADMIN_JWT_SECRET não está configurado no .env');
             throw new Error('ADMIN_JWT_SECRET não está configurado');
         }
@@ -58,7 +56,7 @@ class WhitelistServer {
         // Verificar variáveis de ambiente
         console.log('📋 Configurações do servidor:');
         console.log('- URL:', config.server.url);
-        console.log('- Webhook:', process.env.WHITELIST_WEBHOOK_URL ? '✅ Configurado' : '❌ Não configurado');
+        console.log('- Webhook:', env.WHITELIST_WEBHOOK_URL ? '✅ Configurado' : '❌ Não configurado');
         
         this.setupWebhook();
         this.setupMiddleware();
@@ -68,12 +66,12 @@ class WhitelistServer {
 
     async setupWebhook() {
         try {
-            const webhookUrl = process.env.WHITELIST_WEBHOOK_URL;
+            const webhookUrl = env.WHITELIST_WEBHOOK_URL;
             if (webhookUrl) {
                 console.log('🔗 Configurando webhook...');
                 this.webhookClient = new WebhookClient({ 
                     url: webhookUrl,
-                    channelId: process.env.LOG_WHITELIST
+                    channelId: env.LOG_WHITELIST
                 });
                 console.log('✅ Webhook configurado');
             } else {
@@ -139,7 +137,7 @@ class WhitelistServer {
             }
             
             try {
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                const decoded = jwt.verify(token, env.JWT_SECRET);
                 console.log(`📄 Servindo formulário para usuário ${decoded.userId}`);
                 
                 // Verificar se já existe um formulário para este usuário
@@ -192,14 +190,14 @@ class WhitelistServer {
             console.log('- Senha:', password ? 'Fornecida' : 'Não fornecida');
             
             // Validar se as variáveis de ambiente estão configuradas
-            if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
+            if (!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD) {
                 console.log('❌ Variáveis de ambiente não configuradas');
                 return res.status(500).json({ error: 'Configuração do servidor incompleta' });
             }
             
             // Comparar credenciais
-            const usernameMatch = username === process.env.ADMIN_USERNAME;
-            const passwordMatch = password === process.env.ADMIN_PASSWORD;
+            const usernameMatch = username === env.ADMIN_USERNAME;
+            const passwordMatch = password === env.ADMIN_PASSWORD;
             
             console.log('🔍 Validação:');
             console.log('- Usuário correto:', usernameMatch);
@@ -211,7 +209,7 @@ class WhitelistServer {
                     username,
                     role: 'admin',
                     permissions: ['manage_admins', 'view_logs', 'manage_whitelist', 'audit']
-                }, process.env.ADMIN_JWT_SECRET, { expiresIn: '24h' });
+                }, env.ADMIN_JWT_SECRET, { expiresIn: '24h' });
                 
                 res.json({ 
                     token,
@@ -244,7 +242,7 @@ class WhitelistServer {
         }
 
         try {
-            const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
+            const decoded = jwt.verify(token, env.ADMIN_JWT_SECRET);
             console.log(`✅ Token válido para usuário ${decoded.userId}`);
             req.user = decoded;
             next();
@@ -282,7 +280,7 @@ class WhitelistServer {
             console.log(`✅ Formulário criado com ID ${formId}`);
             
             // Enviar notificação para o Discord
-            const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+            const webhookUrl = env.DISCORD_WEBHOOK_URL;
             if (webhookUrl) {
                 const embed = new EmbedBuilder()
                     .setTitle('Nova Solicitação de Whitelist')
@@ -327,12 +325,12 @@ class WhitelistServer {
             // Adicionar cargo de whitelist ao usuário
             const member = await this.client.guilds.cache.first()?.members.fetch(form.userId);
             if (member) {
-                await member.roles.add(process.env.WHITELIST_ROLE_ID);
+                await member.roles.add(env.WHITELIST_ROLE_ID);
                 console.log(`✅ Cargo de whitelist adicionado para ${member.user.tag}`);
             }
 
             // Enviar notificação para o Discord
-            const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+            const webhookUrl = env.DISCORD_WEBHOOK_URL;
             if (webhookUrl) {
                 const embed = new EmbedBuilder()
                     .setTitle('Solicitação de Whitelist Aprovada')
@@ -372,12 +370,12 @@ class WhitelistServer {
             // Remover cargo de whitelist do usuário se existir
             const member = await this.client.guilds.cache.first()?.members.fetch(form.userId);
             if (member) {
-                await member.roles.remove(process.env.WHITELIST_ROLE_ID);
+                await member.roles.remove(env.WHITELIST_ROLE_ID);
                 console.log(`✅ Cargo de whitelist removido de ${member.user.tag}`);
             }
 
             // Enviar notificação para o Discord
-            const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+            const webhookUrl = env.DISCORD_WEBHOOK_URL;
             if (webhookUrl) {
                 const embed = new EmbedBuilder()
                     .setTitle('Solicitação de Whitelist Rejeitada')
@@ -423,12 +421,12 @@ class WhitelistServer {
 
     async start() {
         try {
-            const port = process.env.PORT || 3000;
+            const port = env.PORT || 3000;
             console.log('🚀 Iniciando servidor na porta:', port);
             console.log('📋 Variáveis de ambiente:');
-            console.log('- ADMIN_USERNAME:', process.env.ADMIN_USERNAME);
-            console.log('- ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD ? 'Configurada' : 'Não configurada');
-            console.log('- JWT_SECRET:', process.env.JWT_SECRET ? 'Configurado' : 'Não configurado');
+            console.log('- ADMIN_USERNAME:', env.ADMIN_USERNAME);
+            console.log('- ADMIN_PASSWORD:', env.ADMIN_PASSWORD ? 'Configurada' : 'Não configurada');
+            console.log('- JWT_SECRET:', env.JWT_SECRET ? 'Configurado' : 'Não configurado');
             
             this.server = this.app.listen(port, () => {
                 console.log('\n🌐 Servidor de whitelist rodando em:');
@@ -474,7 +472,7 @@ class WhitelistServer {
             return res.status(401).json({ error: 'Token não fornecido' });
         }
         
-        jwt.verify(token, process.env.ADMIN_JWT_SECRET, (err, user) => {
+        jwt.verify(token, env.ADMIN_JWT_SECRET, (err, user) => {
             if (err) {
                 return res.status(403).json({ error: 'Token inválido' });
             }
