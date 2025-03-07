@@ -2,6 +2,8 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
 const { WebhookClient } = require('discord.js');
+const config = require('../config/whitelist.config');
+const os = require('os');
 
 class WhitelistServer {
     constructor(client) {
@@ -16,10 +18,10 @@ class WhitelistServer {
         this.server = null;
         
         // Verificar variáveis de ambiente
-        console.log('📋 Verificando configurações:');
-        console.log('- Porta:', process.env.WHITELIST_PORT);
-        console.log('- URL:', process.env.WHITELIST_URL);
-        console.log('- Webhook:', process.env.WHITELIST_WEBHOOK_URL ? 'Configurado' : 'Não configurado');
+        console.log('📋 Configurações do servidor:');
+        console.log('- Porta:', config.server.port);
+        console.log('- URL:', config.server.url);
+        console.log('- Webhook:', config.notifications.webhookEnabled ? 'Configurado' : 'Não configurado');
         
         this.setupWebhook();
         this.setupMiddleware();
@@ -193,12 +195,31 @@ class WhitelistServer {
 
     async start() {
         try {
-            const port = process.env.WHITELIST_PORT || 5000;
-            console.log('🚀 Iniciando servidor na porta:', port);
+            const port = config.server.port;
+            const host = config.server.useLocalhost ? 'localhost' : '0.0.0.0';
+            console.log('🚀 Iniciando servidor:', { host, port });
             
             return new Promise((resolve, reject) => {
-                this.server = this.app.listen(port, () => {
-                    console.log(`✅ Servidor de whitelist rodando na porta ${port}`);
+                this.server = this.app.listen(port, host, () => {
+                    const networkInterfaces = os.networkInterfaces();
+                    const addresses = [];
+                    
+                    // Coletar todos os IPs disponíveis
+                    Object.keys(networkInterfaces).forEach((interfaceName) => {
+                        networkInterfaces[interfaceName].forEach((interface) => {
+                            if (interface.family === 'IPv4' && !interface.internal) {
+                                addresses.push(interface.address);
+                            }
+                        });
+                    });
+
+                    console.log('\n🌐 Servidor de whitelist rodando em:');
+                    console.log(`   http://localhost:${port}`);
+                    addresses.forEach(ip => {
+                        console.log(`   http://${ip}:${port}`);
+                    });
+                    console.log('\n💡 Dica: Use Ctrl+C para parar o servidor\n');
+                    
                     resolve();
                 }).on('error', (error) => {
                     console.error('❌ Erro ao iniciar servidor de whitelist:', error);
