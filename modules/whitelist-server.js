@@ -6,7 +6,7 @@ const config = require('../config/whitelist.config');
 const os = require('os');
 const jwt = require('jsonwebtoken');
 const uuid = require('uuid');
-const Logger = require('./logger');
+const { Logger } = require('./logger');
 const fetch = require('node-fetch');
 const env = require('./env');
 

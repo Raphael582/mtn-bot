@@ -298,8 +298,10 @@ const httpLogger = (req, res, next) => {
     next();
 };
 
-// Exportar tanto a classe quanto a instância do Winston
+// Exportar a classe Logger
 module.exports = {
     Logger,
-    winston: winstonLogger
+    winston: winstonLogger,
+    log,
+    httpLogger
 };
