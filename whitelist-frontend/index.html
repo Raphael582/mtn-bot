@@ -428,9 +428,11 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // Verificar se há um token na URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const token = urlParams.get('token');
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
             const error = urlParams.get('error');
+            
+            console.log('Token na página inicial:', token); // Log para debug
             
             // Mostrar mensagens de erro se houver
             if (error) {
@@ -454,8 +456,9 @@
             }
             
             if (token) {
+                console.log('Redirecionando para o formulário com token:', token); // Log para debug
                 // Redirecionar para o formulário com o token
-                window.location.href = `/form?token=${token}`;
+                window.location.href = `/form.html?token=${encodeURIComponent(token)}`;
             }
 
             // Login Admin

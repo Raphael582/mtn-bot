@@ -641,8 +641,11 @@
             // Capturar token da URL
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token');
+            
+            console.log('Token recebido:', token); // Log para debug
 
             if (!token) {
+                console.log('Token não encontrado na URL'); // Log para debug
                 status.textContent = 'Token inválido ou não fornecido. Por favor, use o comando /whitelist no Discord.';
                 status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
                 status.classList.remove('hidden');
@@ -655,6 +658,8 @@
                 const decodedToken = JSON.parse(atob(token.split('.')[1]));
                 const userId = decodedToken.userId;
                 const username = decodedToken.username;
+                
+                console.log('Token decodificado:', { userId, username }); // Log para debug
                 
                 // Adicionar o ID e nome do usuário ao formulário
                 const userIdInput = document.createElement('input');
@@ -675,7 +680,7 @@
                 welcomeMessage.innerHTML = `<i class="fas fa-user-circle mr-2"></i>Bem-vindo(a), ${username}!`;
                 form.insertBefore(welcomeMessage, form.firstChild);
             } catch (error) {
-                console.error('Erro ao decodificar token:', error);
+                console.error('Erro ao decodificar token:', error); // Log para debug
                 status.textContent = 'Token inválido. Por favor, use o comando /whitelist no Discord.';
                 status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
                 status.classList.remove('hidden');
