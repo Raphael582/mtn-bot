@@ -15,15 +15,29 @@ class Logger {
             WHITELIST: { color: 0x1abc9c, emoji: '📝', channelName: 'logs-whitelist' },
             ORACULO: { color: 0x9b59b6, emoji: '🔮', channelName: 'logs-oraculo' }
         };
-        this.ensureLogChannels();
+        
+        // Aguardar o bot estar pronto antes de configurar os canais
+        this.client.once('ready', () => {
+            console.log('🤖 Bot está pronto, configurando canais de log...');
+            this.ensureLogChannels();
+        });
     }
 
     async ensureLogChannels() {
+        console.log('\n🔍 Verificando configuração do servidor:');
+        console.log('GUILD_ID:', process.env.GUILD_ID);
+        console.log('Servidores disponíveis:', this.client.guilds.cache.map(g => `${g.name} (${g.id})`).join(', '));
+        
         const guild = this.client.guilds.cache.get(process.env.GUILD_ID);
         if (!guild) {
-            console.error('❌ Servidor não encontrado');
+            console.error('❌ Servidor não encontrado. Verifique se:');
+            console.error('1. O ID do servidor no .env está correto');
+            console.error('2. O bot está no servidor');
+            console.error('3. O bot tem permissão para ver o servidor');
             return;
         }
+
+        console.log(`✅ Servidor encontrado: ${guild.name}`);
 
         const logChannels = {
             LOG_ORACULO: 'logs-oraculo',
