@@ -413,18 +413,18 @@
 
                     <div>
                         <label class="block text-sm font-medium mb-2">
-                            Religião
+                            Como Conheceu
                             <span class="tooltip">
                                 <i class="fas fa-info-circle ml-1 text-gray-400"></i>
-                                <span class="tooltip-text">Sua religião atual</span>
+                                <span class="tooltip-text">Como você conheceu o servidor?</span>
                             </span>
                         </label>
                         <div class="relative">
-                            <i class="fas fa-pray absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <input type="text" name="religiao" required
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" name="comoConheceu" required
                                 class="input-field w-full px-4 py-2 pl-10"
-                                placeholder="Digite sua religião">
-                            <div class="error-message">Por favor, insira sua religião</div>
+                                placeholder="Como você conheceu o servidor?">
+                            <div class="error-message">Por favor, digite como conheceu o servidor</div>
                         </div>
                     </div>
                 </div>
@@ -679,9 +679,11 @@
                         nome: document.getElementById('nome').value,
                         idade: document.getElementById('idade').value,
                         estado: document.getElementById('estado').value,
-                        experiencia: document.getElementById('experiencia').value,
-                        motivacao: document.getElementById('motivacao').value
+                        comoConheceu: document.getElementById('comoConheceu').value,
+                        religiao: document.getElementById('religiao').value
                     };
+
+                    console.log('Enviando dados:', formData);
 
                     const response = await fetch('/api/whitelist/submit', {
                         method: 'POST',
@@ -693,6 +695,7 @@
                     });
 
                     const data = await response.json();
+                    console.log('Resposta do servidor:', data);
 
                     if (response.ok) {
                         // Esconder o formulário

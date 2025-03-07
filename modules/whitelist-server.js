@@ -292,6 +292,8 @@ class WhitelistServer {
         try {
             console.log('\n📝 Nova submissão de whitelist');
             console.log('Dados recebidos:', req.body);
+            console.log('Headers:', req.headers);
+            console.log('User:', req.user);
             
             const { nome, idade, estado, comoConheceu, religiao } = req.body;
             const userId = req.user.userId;
@@ -327,12 +329,16 @@ class WhitelistServer {
                 ip: req.clientIp
             };
             
+            console.log('📝 Criando novo formulário:', form);
+            
             // Salvar no banco de dados
             this.db.forms[formId] = form;
+            console.log('✅ Formulário salvo no banco de dados');
             
             // Enviar notificação via webhook
             if (this.webhookClient) {
                 try {
+                    console.log('🔔 Enviando notificação via webhook...');
                     const embed = new EmbedBuilder()
                         .setTitle('📝 Nova Solicitação de Whitelist')
                         .setColor('#FFA500')
@@ -352,9 +358,11 @@ class WhitelistServer {
                 } catch (error) {
                     console.error('❌ Erro ao enviar notificação:', error);
                 }
+            } else {
+                console.log('⚠️ Webhook não configurado, pulando notificação');
             }
             
-            console.log('✅ Formulário salvo com sucesso');
+            console.log('✅ Formulário processado com sucesso');
             res.json({ success: true, message: 'Formulário enviado com sucesso' });
             
         } catch (error) {
