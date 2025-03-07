@@ -142,8 +142,17 @@ class WhitelistServer {
             const { username, password } = req.body;
             
             if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-                const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '24h' });
-                res.json({ token });
+                const token = jwt.sign({ 
+                    username,
+                    role: 'admin',
+                    permissions: ['manage_admins', 'view_logs', 'manage_whitelist', 'audit']
+                }, process.env.JWT_SECRET, { expiresIn: '24h' });
+                res.json({ 
+                    token,
+                    username,
+                    role: 'admin',
+                    permissions: ['manage_admins', 'view_logs', 'manage_whitelist', 'audit']
+                });
             } else {
                 res.status(401).json({ error: 'Credenciais inválidas' });
             }
