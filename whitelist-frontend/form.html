@@ -278,21 +278,21 @@
         }
         .btn-next {
             position: relative;
-            width: 50px;
-            height: 50px;
+            width: 120px;
+            height: 40px;
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             border: none;
             color: white;
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            margin: 1rem auto;
+            margin: 1rem 0;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 0;
-            border-radius: 50%;
+            padding: 0 1.5rem;
+            border-radius: 8px;
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             will-change: transform;
@@ -305,20 +305,20 @@
             right: -2px;
             bottom: -2px;
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            border-radius: 50%;
+            border-radius: 10px;
             z-index: -1;
             opacity: 0;
             transition: opacity 0.3s ease;
         }
         .btn-next:hover {
-            transform: scale(1.1);
+            transform: translateY(-2px);
             box-shadow: 0 8px 30px rgba(59, 130, 246, 0.5);
         }
         .btn-next:hover::before {
             opacity: 1;
         }
         .btn-next:active {
-            transform: scale(0.95);
+            transform: translateY(0);
         }
         .btn-next:disabled {
             background: #cccccc;
@@ -331,8 +331,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 100%;
-            height: 100%;
+            gap: 0.5rem;
         }
         .credits {
             position: fixed;
