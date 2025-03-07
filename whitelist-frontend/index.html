@@ -41,6 +41,9 @@
             min-height: 600px;
             position: relative;
             overflow: hidden;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            perspective: 1000px;
         }
         .container::before {
             content: '';
@@ -220,6 +223,9 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            perspective: 1000px;
         }
         .form-step {
             display: none;
@@ -230,35 +236,45 @@
             width: 100%;
             top: 0;
             left: 0;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            perspective: 1000px;
         }
         .form-step.active {
             display: block;
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) translateZ(0);
         }
         .btn-next {
             background: #4CAF50;
             color: white;
-            padding: 1rem 2rem;
+            padding: 1.5rem;
             border: none;
-            border-radius: 0.5rem;
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: 600;
             transition: all 0.3s ease;
-            width: 100%;
-            max-width: 300px;
+            width: 120px;
+            height: 120px;
             margin: 2rem auto;
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.2;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
         }
         .btn-next:hover {
             background: #45a049;
-            transform: translateY(-2px);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
         }
         .btn-next:disabled {
             background: #cccccc;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
     </style>
 </head>
