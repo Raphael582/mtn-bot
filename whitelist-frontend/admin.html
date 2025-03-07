@@ -3,16 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Admin - Whitelist MTN</title>
+    <title>Painel Administrativo - MTN</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
             min-height: 100vh;
             color: #ffffff;
+            position: relative;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png') no-repeat center center;
+            background-size: cover;
+            opacity: 0.05;
+            z-index: -1;
         }
         .container {
             background: rgba(255, 255, 255, 0.05);
@@ -20,6 +35,22 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 1rem;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+        .container:hover::before {
+            transform: translateX(100%);
         }
         .container:hover {
             transform: translateY(-2px);
@@ -30,6 +61,7 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            border: none;
         }
         .btn-primary:hover {
             transform: translateY(-1px);
@@ -62,130 +94,151 @@
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0px); }
         }
-        .form-card {
+        .input-field {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 0.5rem;
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn-admin {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            border: none;
         }
-        .form-card::before {
+        .btn-admin:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        .btn-admin::after {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.1), transparent);
-            transform: translateX(-100%);
-            transition: transform 0.6s ease;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+        .btn-admin:hover::after {
+            width: 300px;
+            height: 300px;
+        }
+        .status-message {
+            animation: slideIn 0.5s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .form-card {
+            transition: all 0.3s ease;
         }
         .form-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-        .form-card:hover::before {
-            transform: translateX(100%);
-        }
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        .status-pendente {
-            background: rgba(234, 179, 8, 0.1);
-            color: #eab308;
-        }
-        .status-aprovado {
-            background: rgba(34, 197, 94, 0.1);
-            color: #22c55e;
-        }
-        .status-rejeitado {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
         }
         .modal {
-            animation: modalFadeIn 0.3s ease;
-        }
-        @keyframes modalFadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .loading {
-            position: relative;
-            overflow: hidden;
-        }
-        .loading::after {
-            content: '';
-            position: absolute;
+            display: none;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            animation: loading 1.5s infinite;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
         }
-        @keyframes loading {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
-        .refresh-btn {
-            transition: transform 0.3s ease;
+        .modal-content {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            animation: slideUp 0.3s ease;
         }
-        .refresh-btn:hover {
-            transform: rotate(180deg);
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @media (max-width: 640px) {
+            .container {
+                margin: 1rem;
+            }
         }
     </style>
 </head>
 <body class="py-12 px-4">
-    <div class="max-w-6xl mx-auto">
+    <div class="max-w-4xl mx-auto">
         <div class="text-center mb-8 animate__animated animate__fadeIn">
-            <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cbd351&is=67ca81d1&hm=2d1e12af5d853f0e88f8db96a6f4c74728e460faf6de2b8731eed8588739c11c&=&format=webp&width=914&height=930" alt="MTN Logo" class="logo mx-auto mb-4">
+            <img src="https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png" alt="MTN Logo" class="logo mx-auto mb-4">
             <h1 class="text-3xl font-bold mb-2">Painel Administrativo</h1>
             <p class="text-gray-300">Gerencie as solicitações de whitelist</p>
         </div>
 
         <div class="container p-6 mb-8 animate__animated animate__fadeInUp">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">Solicitações de Whitelist</h2>
+                <h2 class="text-2xl font-bold">Solicitações Pendentes</h2>
                 <div class="flex space-x-4">
-                    <button id="refreshBtn" class="btn-primary px-4 py-2 rounded-lg refresh-btn">
-                        <span class="mr-2">🔄</span> Atualizar
+                    <button id="refreshBtn" class="btn-primary px-4 py-2 rounded-lg font-medium text-white flex items-center">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Atualizar
                     </button>
-                    <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-all duration-300">
-                        <span class="mr-2">🚪</span> Sair
-                    </button>
+                    <a href="/" class="btn-admin px-4 py-2 rounded-lg font-medium text-white flex items-center">
+                        <i class="fas fa-home mr-2"></i>
+                        Início
+                    </a>
                 </div>
             </div>
 
             <div id="formsList" class="space-y-4">
-                <!-- Os formulários serão inseridos aqui via JavaScript -->
+                <!-- Loading state -->
+                <div class="text-center py-8">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+                </div>
             </div>
         </div>
+
+        <div id="status" class="hidden text-center p-4 rounded-lg status-message"></div>
     </div>
 
     <!-- Modal de Rejeição -->
-    <div id="rejectModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
-        <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 modal">
+    <div id="rejectModal" class="modal">
+        <div class="modal-content max-w-md mx-auto mt-20 p-6">
             <h3 class="text-xl font-bold mb-4">Rejeitar Solicitação</h3>
             <form id="rejectForm" class="space-y-4">
-                <input type="hidden" id="rejectFormId" name="formId">
+                <input type="hidden" id="rejectFormId">
                 <div>
                     <label class="block text-sm font-medium mb-2">Motivo da Rejeição</label>
-                    <textarea name="motivo" required
-                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                        rows="4"></textarea>
+                    <textarea id="rejectReason" required
+                        class="input-field w-full px-4 py-2 min-h-[100px]"
+                        placeholder="Digite o motivo da rejeição..."></textarea>
                 </div>
                 <div class="flex justify-end space-x-4">
-                    <button type="button" id="cancelRejectBtn"
-                        class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-all duration-300">
+                    <button type="button" id="cancelReject"
+                        class="px-4 py-2 rounded-lg font-medium text-white bg-gray-600 hover:bg-gray-700">
                         Cancelar
                     </button>
                     <button type="submit"
-                        class="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg transition-all duration-300">
+                        class="btn-primary px-4 py-2 rounded-lg font-medium text-white">
                         Rejeitar
                     </button>
                 </div>
@@ -196,11 +249,13 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const formsList = document.getElementById('formsList');
-            const refreshBtn = document.getElementById('refreshBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
+            const status = document.getElementById('status');
             const rejectModal = document.getElementById('rejectModal');
             const rejectForm = document.getElementById('rejectForm');
-            const cancelRejectBtn = document.getElementById('cancelRejectBtn');
+            const rejectFormId = document.getElementById('rejectFormId');
+            const rejectReason = document.getElementById('rejectReason');
+            const cancelReject = document.getElementById('cancelReject');
+            const refreshBtn = document.getElementById('refreshBtn');
 
             // Verificar autenticação
             const token = localStorage.getItem('adminToken');
@@ -209,159 +264,143 @@
                 return;
             }
 
-            // Função para fazer requisições autenticadas
-            async function fetchWithAuth(url, options = {}) {
-                const headers = {
-                    ...options.headers,
-                    'Authorization': `Bearer ${token}`
-                };
-
-                const response = await fetch(url, { ...options, headers });
-                
-                if (response.status === 401) {
-                    localStorage.removeItem('adminToken');
-                    window.location.href = '/';
-                    return null;
-                }
-                
-                return response;
-            }
-
-            // Verificar autenticação inicial
-            fetchWithAuth('/api/admin/check-auth')
-                .then(response => {
-                    if (!response || !response.ok) {
-                        window.location.href = '/';
-                    }
-                })
-                .catch(() => {
-                    window.location.href = '/';
-                });
-
-            // Carregar formulários
+            // Função para carregar os formulários
             async function loadForms() {
                 try {
-                    formsList.innerHTML = '<div class="text-center py-8 loading">Carregando...</div>';
+                    const response = await fetch('/api/whitelist/forms', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
                     
-                    const response = await fetchWithAuth('/api/whitelist/forms');
-                    if (!response) return;
+                    if (!response.ok) {
+                        throw new Error('Erro ao carregar formulários');
+                    }
                     
                     const forms = await response.json();
                     
+                    if (forms.length === 0) {
+                        formsList.innerHTML = `
+                            <div class="text-center py-8 text-gray-400">
+                                <i class="fas fa-inbox text-4xl mb-4"></i>
+                                <p>Nenhuma solicitação pendente</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
                     formsList.innerHTML = forms.map(form => `
-                        <div class="form-card p-4 animate__animated animate__fadeIn">
+                        <div class="form-card container p-4 animate__animated animate__fadeIn">
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <h3 class="text-lg font-semibold">${form.nome}</h3>
-                                    <p class="text-gray-400">ID Discord: ${form.userId}</p>
+                                    <h3 class="text-lg font-bold mb-2">${form.characterName}</h3>
+                                    <p class="text-gray-400 mb-2">Discord: ${form.discordName}</p>
+                                    <p class="text-gray-400 mb-4">ID: ${form.discordId}</p>
+                                    <div class="space-y-2">
+                                        <p class="text-sm"><span class="font-medium">História:</span> ${form.characterStory}</p>
+                                        <p class="text-sm"><span class="font-medium">Experiência:</span> ${form.rpExperience}</p>
+                                    </div>
                                 </div>
-                                <span class="status-badge status-${form.status}">
-                                    ${form.status.toUpperCase()}
-                                </span>
-                            </div>
-                            <div class="mt-4 grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm text-gray-400">Idade</p>
-                                    <p>${form.idade}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-gray-400">Estado</p>
-                                    <p>${form.estado}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-gray-400">Como Conheceu</p>
-                                    <p>${form.comoConheceu}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-gray-400">Religião</p>
-                                    <p>${form.religiao}</p>
-                                </div>
-                            </div>
-                            ${form.status === 'pendente' ? `
-                                <div class="mt-4 flex justify-end space-x-4">
-                                    <button onclick="approveForm('${form.id}')"
-                                        class="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg transition-all duration-300">
-                                        <span class="mr-2">✅</span> Aprovar
+                                <div class="flex space-x-2">
+                                    <button onclick="approveForm('${form._id}')"
+                                        class="btn-primary px-4 py-2 rounded-lg font-medium text-white flex items-center">
+                                        <i class="fas fa-check mr-2"></i>
+                                        Aprovar
                                     </button>
-                                    <button onclick="showRejectModal('${form.id}')"
-                                        class="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg transition-all duration-300">
-                                        <span class="mr-2">❌</span> Rejeitar
+                                    <button onclick="showRejectModal('${form._id}')"
+                                        class="px-4 py-2 rounded-lg font-medium text-white bg-red-600 hover:bg-red-700 flex items-center">
+                                        <i class="fas fa-times mr-2"></i>
+                                        Rejeitar
                                     </button>
                                 </div>
-                            ` : ''}
+                            </div>
                         </div>
                     `).join('');
                 } catch (error) {
                     console.error('Erro ao carregar formulários:', error);
-                    formsList.innerHTML = '<div class="text-center py-8 text-red-500">Erro ao carregar formulários</div>';
+                    status.textContent = 'Erro ao carregar formulários. Tente novamente.';
+                    status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
                 }
             }
 
-            // Funções globais para os botões
+            // Função para aprovar formulário
             window.approveForm = async (formId) => {
                 try {
-                    const response = await fetchWithAuth('/api/whitelist/approve', {
+                    const response = await fetch(`/api/whitelist/approve/${formId}`, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ formId })
+                            'Authorization': `Bearer ${token}`
+                        }
                     });
                     
-                    if (response && response.ok) {
-                        loadForms();
+                    if (!response.ok) {
+                        throw new Error('Erro ao aprovar formulário');
                     }
+                    
+                    status.textContent = 'Formulário aprovado com sucesso!';
+                    status.className = 'text-green-500 bg-green-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
+                    
+                    loadForms();
                 } catch (error) {
                     console.error('Erro ao aprovar formulário:', error);
+                    status.textContent = 'Erro ao aprovar formulário. Tente novamente.';
+                    status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
                 }
             };
 
+            // Função para mostrar modal de rejeição
             window.showRejectModal = (formId) => {
-                document.getElementById('rejectFormId').value = formId;
-                rejectModal.classList.remove('hidden');
-                rejectModal.classList.add('flex');
+                rejectFormId.value = formId;
+                rejectReason.value = '';
+                rejectModal.style.display = 'block';
             };
 
-            // Event Listeners
-            refreshBtn.addEventListener('click', loadForms);
-            
-            logoutBtn.addEventListener('click', async () => {
-                try {
-                    await fetchWithAuth('/api/admin/logout', { method: 'POST' });
-                    localStorage.removeItem('adminToken');
-                    window.location.href = '/';
-                } catch (error) {
-                    console.error('Erro ao fazer logout:', error);
-                }
-            });
-
-            cancelRejectBtn.addEventListener('click', () => {
-                rejectModal.classList.remove('flex');
-                rejectModal.classList.add('hidden');
-            });
-
+            // Event listeners
             rejectForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const formData = new FormData(rejectForm);
-                const data = Object.fromEntries(formData.entries());
-
+                
                 try {
-                    const response = await fetchWithAuth('/api/whitelist/reject', {
+                    const response = await fetch(`/api/whitelist/reject/${rejectFormId.value}`, {
                         method: 'POST',
                         headers: {
+                            'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify(data)
+                        body: JSON.stringify({
+                            reason: rejectReason.value
+                        })
                     });
-
-                    if (response && response.ok) {
-                        rejectModal.classList.remove('flex');
-                        rejectModal.classList.add('hidden');
-                        loadForms();
+                    
+                    if (!response.ok) {
+                        throw new Error('Erro ao rejeitar formulário');
                     }
+                    
+                    rejectModal.style.display = 'none';
+                    status.textContent = 'Formulário rejeitado com sucesso!';
+                    status.className = 'text-green-500 bg-green-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
+                    
+                    loadForms();
                 } catch (error) {
                     console.error('Erro ao rejeitar formulário:', error);
+                    status.textContent = 'Erro ao rejeitar formulário. Tente novamente.';
+                    status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
                 }
+            });
+
+            cancelReject.addEventListener('click', () => {
+                rejectModal.style.display = 'none';
+            });
+
+            refreshBtn.addEventListener('click', () => {
+                refreshBtn.classList.add('animate-spin');
+                loadForms().finally(() => {
+                    refreshBtn.classList.remove('animate-spin');
+                });
             });
 
             // Carregar formulários inicialmente

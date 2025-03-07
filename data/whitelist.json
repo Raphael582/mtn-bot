@@ -1,0 +1,13 @@
+{
+    "admins": [
+        {
+            "id": "1",
+            "username": "admin",
+            "password": "$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9E9vpo9tXvq2e",
+            "createdAt": "2024-03-20T00:00:00.000Z",
+            "lastLogin": null
+        }
+    ],
+    "auditLog": [],
+    "requests": []
+} 

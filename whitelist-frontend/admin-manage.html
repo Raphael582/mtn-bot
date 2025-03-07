@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Administradores - MTN</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            position: relative;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png') no-repeat center center;
+            background-size: cover;
+            opacity: 0.05;
+            z-index: -1;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+        .container:hover::before {
+            transform: translateX(100%);
+        }
+        .container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border: none;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+        .btn-primary:hover::after {
+            width: 300px;
+            height: 300px;
+        }
+        .logo {
+            max-width: 200px;
+            height: auto;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .input-field {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn-admin {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border: none;
+        }
+        .btn-admin:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        .btn-admin::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+        .btn-admin:hover::after {
+            width: 300px;
+            height: 300px;
+        }
+        .status-message {
+            animation: slideIn 0.5s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-content {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .audit-log {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .audit-log::-webkit-scrollbar {
+            width: 8px;
+        }
+        .audit-log::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        .audit-log::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        .audit-log::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        @media (max-width: 640px) {
+            .container {
+                margin: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="py-12 px-4">
+    <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-8 animate__animated animate__fadeIn">
+            <img src="https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png" alt="MTN Logo" class="logo mx-auto mb-4">
+            <h1 class="text-3xl font-bold mb-2">Gerenciamento de Administradores</h1>
+            <p class="text-gray-300">Gerencie os administradores e visualize o registro de auditoria</p>
+        </div>
+
+        <div class="container p-6 mb-8 animate__animated animate__fadeInUp">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Administradores</h2>
+                <div class="flex space-x-4">
+                    <button id="addAdminBtn" class="btn-primary px-4 py-2 rounded-lg font-medium text-white flex items-center">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Adicionar Admin
+                    </button>
+                    <a href="/admin" class="btn-admin px-4 py-2 rounded-lg font-medium text-white flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Voltar
+                    </a>
+                </div>
+            </div>
+
+            <div id="adminsList" class="space-y-4">
+                <!-- Loading state -->
+                <div class="text-center py-8">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container p-6 mb-8 animate__animated animate__fadeInUp">
+            <h2 class="text-2xl font-bold mb-6">Registro de Auditoria</h2>
+            <div id="auditLog" class="audit-log space-y-4">
+                <!-- Loading state -->
+                <div class="text-center py-8">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="status" class="hidden text-center p-4 rounded-lg status-message"></div>
+    </div>
+
+    <!-- Modal de Adicionar Admin -->
+    <div id="addAdminModal" class="modal">
+        <div class="modal-content max-w-md mx-auto mt-20 p-6">
+            <h3 class="text-xl font-bold mb-4">Adicionar Administrador</h3>
+            <form id="addAdminForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Nome de Usuário</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" name="username" required
+                            class="input-field w-full px-4 py-2 pl-10"
+                            placeholder="Nome de usuário">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Senha</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="password" name="password" required
+                            class="input-field w-full px-4 py-2 pl-10"
+                            placeholder="Senha">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Confirmar Senha</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="password" name="confirmPassword" required
+                            class="input-field w-full px-4 py-2 pl-10"
+                            placeholder="Confirmar senha">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancelAddAdmin"
+                        class="px-4 py-2 rounded-lg font-medium text-white bg-gray-600 hover:bg-gray-700">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="btn-primary px-4 py-2 rounded-lg font-medium text-white">
+                        Adicionar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const adminsList = document.getElementById('adminsList');
+            const auditLog = document.getElementById('auditLog');
+            const status = document.getElementById('status');
+            const addAdminModal = document.getElementById('addAdminModal');
+            const addAdminForm = document.getElementById('addAdminForm');
+            const addAdminBtn = document.getElementById('addAdminBtn');
+            const cancelAddAdmin = document.getElementById('cancelAddAdmin');
+
+            // Verificar autenticação
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+
+            // Função para carregar os administradores
+            async function loadAdmins() {
+                try {
+                    const response = await fetch('/api/admin/list', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Erro ao carregar administradores');
+                    }
+                    
+                    const admins = await response.json();
+                    
+                    if (admins.length === 0) {
+                        adminsList.innerHTML = `
+                            <div class="text-center py-8 text-gray-400">
+                                <i class="fas fa-users text-4xl mb-4"></i>
+                                <p>Nenhum administrador cadastrado</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    adminsList.innerHTML = admins.map(admin => `
+                        <div class="container p-4 animate__animated animate__fadeIn">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="text-lg font-bold">${admin.username}</h3>
+                                    <p class="text-gray-400">Criado em: ${new Date(admin.createdAt).toLocaleString()}</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button onclick="resetPassword('${admin._id}')"
+                                        class="btn-primary px-4 py-2 rounded-lg font-medium text-white flex items-center">
+                                        <i class="fas fa-key mr-2"></i>
+                                        Resetar Senha
+                                    </button>
+                                    <button onclick="deleteAdmin('${admin._id}')"
+                                        class="px-4 py-2 rounded-lg font-medium text-white bg-red-600 hover:bg-red-700 flex items-center">
+                                        <i class="fas fa-trash mr-2"></i>
+                                        Remover
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (error) {
+                    console.error('Erro ao carregar administradores:', error);
+                    status.textContent = 'Erro ao carregar administradores. Tente novamente.';
+                    status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
+                }
+            }
+
+            // Função para carregar o registro de auditoria
+            async function loadAuditLog() {
+                try {
+                    const response = await fetch('/api/admin/audit-log', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Erro ao carregar registro de auditoria');
+                    }
+                    
+                    const logs = await response.json();
+                    
+                    if (logs.length === 0) {
+                        auditLog.innerHTML = `
+                            <div class="text-center py-8 text-gray-400">
+                                <i class="fas fa-history text-4xl mb-4"></i>
+                                <p>Nenhum registro de auditoria</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    auditLog.innerHTML = logs.map(log => `
+                        <div class="container p-4 animate__animated animate__fadeIn">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-medium">${log.action}</p>
+                                    <p class="text-sm text-gray-400">${log.details}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm text-gray-400">${new Date(log.timestamp).toLocaleString()}</p>
+                                    <p class="text-sm text-gray-400">Por: ${log.admin}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (error) {
+                    console.error('Erro ao carregar registro de auditoria:', error);
+                    status.textContent = 'Erro ao carregar registro de auditoria. Tente novamente.';
+                    status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
+                }
+            }
+
+            // Função para resetar senha
+            window.resetPassword = async (adminId) => {
+                if (!confirm('Tem certeza que deseja resetar a senha deste administrador?')) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/admin/reset-password/${adminId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Erro ao resetar senha');
+                    }
+                    
+                    status.textContent = 'Senha resetada com sucesso!';
+                    status.className = 'text-green-500 bg-green-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
+                } catch (error) {
+                    console.error('Erro ao resetar senha:', error);
+                    status.textContent = 'Erro ao resetar senha. Tente novamente.';
+                    status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
+                }
+            };
+
+            // Função para remover administrador
+            window.deleteAdmin = async (adminId) => {
+                if (!confirm('Tem certeza que deseja remover este administrador?')) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/admin/delete/${adminId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Erro ao remover administrador');
+                    }
+                    
+                    status.textContent = 'Administrador removido com sucesso!';
+                    status.className = 'text-green-500 bg-green-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
+                    
+                    loadAdmins();
+                } catch (error) {
+                    console.error('Erro ao remover administrador:', error);
+                    status.textContent = 'Erro ao remover administrador. Tente novamente.';
+                    status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
+                }
+            };
+
+            // Event listeners
+            addAdminBtn.addEventListener('click', () => {
+                addAdminModal.style.display = 'block';
+            });
+
+            cancelAddAdmin.addEventListener('click', () => {
+                addAdminModal.style.display = 'none';
+            });
+
+            addAdminForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(addAdminForm);
+                const data = Object.fromEntries(formData.entries());
+                
+                if (data.password !== data.confirmPassword) {
+                    status.textContent = 'As senhas não coincidem';
+                    status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/admin/create', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: data.username,
+                            password: data.password
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Erro ao criar administrador');
+                    }
+                    
+                    addAdminModal.style.display = 'none';
+                    addAdminForm.reset();
+                    status.textContent = 'Administrador criado com sucesso!';
+                    status.className = 'text-green-500 bg-green-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
+                    
+                    loadAdmins();
+                } catch (error) {
+                    console.error('Erro ao criar administrador:', error);
+                    status.textContent = 'Erro ao criar administrador. Tente novamente.';
+                    status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                    status.classList.remove('hidden');
+                }
+            });
+
+            // Carregar dados inicialmente
+            loadAdmins();
+            loadAuditLog();
+        });
+    </script>
+</body>
+</html> 
