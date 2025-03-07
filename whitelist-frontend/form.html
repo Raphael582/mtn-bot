@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Whitelist - MTN</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        .form-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+        }
+        .input-field {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        .logo {
+            max-width: 200px;
+            height: auto;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+        }
+    </style>
+</head>
+<body class="py-12 px-4">
+    <div class="max-w-2xl mx-auto">
+        <div class="text-center mb-8">
+            <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cbd351&is=67ca81d1&hm=2d1e12af5d853f0e88f8db96a6f4c74728e460faf6de2b8731eed8588739c11c&=&format=webp&width=914&height=930" alt="MTN Logo" class="logo mx-auto mb-4">
+            <h1 class="text-3xl font-bold mb-2">Formulário de Whitelist</h1>
+            <p class="text-gray-300">Preencha o formulário abaixo para solicitar sua whitelist</p>
+        </div>
+
+        <div class="form-container p-6 mb-8">
+            <form id="whitelistForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Nome Completo</label>
+                    <input type="text" name="nome" required
+                        class="input-field w-full px-4 py-2">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Idade</label>
+                    <input type="number" name="idade" required min="18"
+                        class="input-field w-full px-4 py-2">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Estado</label>
+                    <select name="estado" required
+                        class="input-field w-full px-4 py-2">
+                        <option value="">Selecione seu estado</option>
+                        <option value="AC">Acre</option>
+                        <option value="AL">Alagoas</option>
+                        <option value="AP">Amapá</option>
+                        <option value="AM">Amazonas</option>
+                        <option value="BA">Bahia</option>
+                        <option value="CE">Ceará</option>
+                        <option value="DF">Distrito Federal</option>
+                        <option value="ES">Espírito Santo</option>
+                        <option value="GO">Goiás</option>
+                        <option value="MA">Maranhão</option>
+                        <option value="MT">Mato Grosso</option>
+                        <option value="MS">Mato Grosso do Sul</option>
+                        <option value="MG">Minas Gerais</option>
+                        <option value="PA">Pará</option>
+                        <option value="PB">Paraíba</option>
+                        <option value="PR">Paraná</option>
+                        <option value="PE">Pernambuco</option>
+                        <option value="PI">Piauí</option>
+                        <option value="RJ">Rio de Janeiro</option>
+                        <option value="RN">Rio Grande do Norte</option>
+                        <option value="RS">Rio Grande do Sul</option>
+                        <option value="RO">Rondônia</option>
+                        <option value="RR">Roraima</option>
+                        <option value="SC">Santa Catarina</option>
+                        <option value="SP">São Paulo</option>
+                        <option value="SE">Sergipe</option>
+                        <option value="TO">Tocantins</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Como Conheceu o Servidor?</label>
+                    <select name="comoConheceu" required
+                        class="input-field w-full px-4 py-2">
+                        <option value="">Selecione uma opção</option>
+                        <option value="Discord">Discord</option>
+                        <option value="Instagram">Instagram</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="Amigo">Indicação de Amigo</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Religião</label>
+                    <input type="text" name="religiao" required
+                        class="input-field w-full px-4 py-2">
+                </div>
+
+                <button type="submit"
+                    class="btn-primary w-full py-3 px-4 rounded-lg font-medium text-white">
+                    Enviar Formulário
+                </button>
+            </form>
+        </div>
+
+        <div id="status" class="hidden text-center p-4 rounded-lg"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('whitelistForm');
+            const status = document.getElementById('status');
+            
+            // Pegar o ID do usuário da URL
+            const userId = window.location.pathname.split('/').pop();
+            
+            // Verificar se já existe um formulário para este usuário
+            fetch(`/api/whitelist/user/${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.id) {
+                        status.textContent = 'Você já enviou um formulário anteriormente.';
+                        status.className = 'text-yellow-500 bg-yellow-500 bg-opacity-10 p-4 rounded-lg text-center';
+                        status.classList.remove('hidden');
+                        form.style.display = 'none';
+                    }
+                })
+                .catch(() => {
+                    // Se não encontrar formulário, adiciona o userId ao form
+                    const userIdInput = document.createElement('input');
+                    userIdInput.type = 'hidden';
+                    userIdInput.name = 'userId';
+                    userIdInput.value = userId;
+                    form.appendChild(userIdInput);
+                });
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+                
+                try {
+                    const response = await fetch('/api/whitelist/submit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        status.textContent = 'Formulário enviado com sucesso!';
+                        status.className = 'text-green-500 bg-green-500 bg-opacity-10 p-4 rounded-lg text-center';
+                        form.style.display = 'none';
+                    } else {
+                        status.textContent = result.error || 'Erro ao enviar formulário';
+                        status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center';
+                    }
+                } catch (error) {
+                    status.textContent = 'Erro ao enviar formulário. Tente novamente.';
+                    status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center';
+                }
+                
+                status.classList.remove('hidden');
+            });
+        });
+    </script>
+</body>
+</html> 

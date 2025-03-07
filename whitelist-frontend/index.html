@@ -3,246 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Whitelist - Metânia</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        metania: {
-                            500: '#0f1122',
-                            600: '#0a0c17',
-                            700: '#06080e'
-                        },
-                        discord: {
-                            500: '#5865F2',
-                            600: '#4752C4',
-                            700: '#3C45A5'
-                        },
-                        dark: {
-                            800: '#1e2039',
-                            900: '#0f1122'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <title>Whitelist - MTN</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        
         body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #0f1122;
-            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            color: #ffffff;
         }
-        
-        .loader {
-            border-top-color: #5865F2;
-            animation: spinner 0.6s linear infinite;
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
         }
-        
-        @keyframes spinner {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        .logo {
+            max-width: 200px;
+            height: auto;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
         }
     </style>
 </head>
-<body class="bg-dark-900 min-h-screen text-gray-100">
-    <!-- Container principal -->
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
-        <!-- Cabeçalho -->
-        <header class="mb-8 text-center">
-            <div class="flex justify-center mb-4">
-                <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67c93051&is=67c7ded1&hm=a337ccc36d99cb5360371bfa81955bc8b14ddb78ed722cec120421d3460a8d34&=&format=webp&width=651&height=663" 
-                     alt="Logo Metânia" 
-                     class="w-24 h-24 rounded-full mb-2">
+<body class="py-12 px-4">
+    <div class="max-w-2xl mx-auto">
+        <div class="text-center mb-8">
+            <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cbd351&is=67ca81d1&hm=2d1e12af5d853f0e88f8db96a6f4c74728e460faf6de2b8731eed8588739c11c&=&format=webp&width=914&height=930" alt="MTN Logo" class="logo mx-auto mb-4">
+            <h1 class="text-3xl font-bold mb-2">Bem-vindo ao Sistema de Whitelist</h1>
+            <p class="text-gray-300">Para acessar o formulário, você precisa usar o comando /whitelist no Discord</p>
+        </div>
+
+        <div class="container p-6 mb-8">
+            <div class="text-center">
+                <p class="text-gray-300 mb-6">
+                    Para solicitar sua whitelist, siga estes passos:
+                </p>
+                <ol class="text-left space-y-4 mb-8">
+                    <li class="flex items-start">
+                        <span class="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold mr-3">1</span>
+                        <span>Entre no nosso servidor Discord</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold mr-3">2</span>
+                        <span>Use o comando /whitelist no canal apropriado</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold mr-3">3</span>
+                        <span>Clique no botão que aparecerá na mensagem</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold mr-3">4</span>
+                        <span>Preencha o formulário com suas informações</span>
+                    </li>
+                </ol>
             </div>
-            <h1 class="text-4xl font-bold text-white flex items-center justify-center gap-2">
-                Metânia Whitelist
-                <span class="bg-discord-500 text-white text-xs px-2 py-1 rounded-full uppercase font-semibold tracking-wider">Oficial</span>
-            </h1>
-            <p class="text-gray-400 mt-2">Preencha o formulário abaixo para solicitar acesso ao servidor</p>
-        </header>
+        </div>
 
-        <!-- Área principal -->
-        <main>
-            <!-- Formulário de whitelist -->
-            <div class="bg-dark-800 rounded-lg shadow-md p-8 mb-8">
-                <h2 class="text-2xl font-semibold text-gray-100 mb-6">Formulário de Whitelist</h2>
-                
-                <form id="whitelist-form" class="space-y-6">
-                    <!-- Campos do formulário -->
-                    <div class="space-y-6">
-                        <!-- Nome -->
-                        <div>
-                            <label for="nome" class="block text-sm font-medium text-gray-300">Nome Completo</label>
-                            <input type="text" id="nome" name="nome" required
-                                class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-
-                        <!-- Idade -->
-                        <div>
-                            <label for="idade" class="block text-sm font-medium text-gray-300">Idade</label>
-                            <input type="number" id="idade" name="idade" min="18" required
-                                class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-
-                        <!-- Estado -->
-                        <div>
-                            <label for="estado" class="block text-sm font-medium text-gray-300">Estado</label>
-                            <select id="estado" name="estado" required
-                                class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="">Selecione um estado</option>
-                                <option value="AC">Acre</option>
-                                <option value="AL">Alagoas</option>
-                                <option value="AP">Amapá</option>
-                                <option value="AM">Amazonas</option>
-                                <option value="BA">Bahia</option>
-                                <option value="CE">Ceará</option>
-                                <option value="DF">Distrito Federal</option>
-                                <option value="ES">Espírito Santo</option>
-                                <option value="GO">Goiás</option>
-                                <option value="MA">Maranhão</option>
-                                <option value="MT">Mato Grosso</option>
-                                <option value="MS">Mato Grosso do Sul</option>
-                                <option value="MG">Minas Gerais</option>
-                                <option value="PA">Pará</option>
-                                <option value="PB">Paraíba</option>
-                                <option value="PR">Paraná</option>
-                                <option value="PE">Pernambuco</option>
-                                <option value="PI">Piauí</option>
-                                <option value="RJ">Rio de Janeiro</option>
-                                <option value="RN">Rio Grande do Norte</option>
-                                <option value="RS">Rio Grande do Sul</option>
-                                <option value="RO">Rondônia</option>
-                                <option value="RR">Roraima</option>
-                                <option value="SC">Santa Catarina</option>
-                                <option value="SP">São Paulo</option>
-                                <option value="SE">Sergipe</option>
-                                <option value="TO">Tocantins</option>
-                            </select>
-                        </div>
-
-                        <!-- Como Conheceu -->
-                        <div>
-                            <label for="comoConheceu" class="block text-sm font-medium text-gray-300">Como Conheceu o Servidor?</label>
-                            <input type="text" id="comoConheceu" name="comoConheceu" required
-                                class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-
-                        <!-- Religião -->
-                        <div>
-                            <label for="religiao" class="block text-sm font-medium text-gray-300">Religião</label>
-                            <input type="text" id="religiao" name="religiao" required
-                                class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-                    </div>
-                    
-                    <!-- Botões -->
-                    <div class="flex justify-end space-x-4 pt-4 border-t border-gray-700">
-                        <button type="button" id="reset-button" class="px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 transition">
-                            Limpar
-                        </button>
-                        <button type="submit" id="submit-button" class="px-6 py-2 bg-discord-500 text-white rounded hover:bg-discord-600 transition flex items-center">
-                            <span>Enviar</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                <path fill-rule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                    </div>
-                </form>
-            </div>
-            
-            <!-- Informações adicionais -->
-            <div class="bg-blue-900 border-l-4 border-blue-500 p-4 rounded">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-blue-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm text-blue-200">
-                            Todas as informações fornecidas serão revisadas pela equipe de administração. Preencha com sinceridade e aguarde a aprovação.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <!-- Rodapé -->
-        <footer class="text-center text-gray-500 text-sm mt-8">
-            <p>&copy; 2025 Metânia - Sistema de Whitelist</p>
-            <p class="mt-1">Desenvolvido para Metânia por Mr.Dark</p>
-        </footer>
+        <div id="status" class="hidden text-center p-4 rounded-lg"></div>
     </div>
 
-    <!-- Scripts -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const formElement = document.getElementById('whitelist-form');
-            const resetButton = document.getElementById('reset-button');
-            const submitButton = document.getElementById('submit-button');
+            // Verificar se há um ID de usuário na URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('userId');
             
-            // Configurar formulário
-            formElement.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                // Validar idade mínima
-                const idade = parseInt(document.getElementById('idade').value);
-                if (idade < 18) {
-                    alert('Você precisa ter pelo menos 18 anos para solicitar whitelist.');
-                    return;
-                }
-                
-                // Coletar dados do formulário
-                const formData = {
-                    nome: document.getElementById('nome').value,
-                    idade: idade,
-                    estado: document.getElementById('estado').value,
-                    comoConheceu: document.getElementById('comoConheceu').value,
-                    religiao: document.getElementById('religiao').value
-                };
-                
-                // Desabilitar botão de envio
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<span>Enviando...</span>';
-                
-                try {
-                    const response = await fetch('/api/whitelist/submit', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(formData)
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (!response.ok) {
-                        throw new Error(result.error || 'Erro ao enviar formulário');
-                    }
-                    
-                    // Mostrar mensagem de sucesso
-                    alert('Formulário enviado com sucesso! Aguarde a análise da equipe.');
-                    formElement.reset();
-                } catch (error) {
-                    console.error('Erro ao enviar formulário:', error);
-                    alert(error.message || 'Ocorreu um erro ao processar sua solicitação.');
-                } finally {
-                    // Reabilitar botão de envio
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = '<span>Enviar</span><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>';
-                }
-            });
-            
-            // Botão de limpar formulário
-            resetButton.addEventListener('click', () => {
-                formElement.reset();
-            });
+            if (userId) {
+                // Redirecionar para o formulário personalizado
+                window.location.href = `/form/${userId}`;
+            }
         });
     </script>
 </body>

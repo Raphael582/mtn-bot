@@ -12,7 +12,8 @@ class WhitelistServer {
         this.app = express();
         this.db = {
             forms: {},
-            admins: {}
+            admins: {},
+            userLinks: {} // Armazena os links únicos por usuário
         };
         this.webhookClient = null;
         this.server = null;
@@ -72,6 +73,13 @@ class WhitelistServer {
             res.sendFile(path.join(__dirname, '..', 'whitelist-frontend', 'index.html'));
         });
 
+        // Rota para link único
+        this.app.get('/form/:userId', (req, res) => {
+            const userId = req.params.userId;
+            console.log(`📄 Servindo formulário para usuário ${userId}`);
+            res.sendFile(path.join(__dirname, '..', 'whitelist-frontend', 'form.html'));
+        });
+
         // Rota do painel admin
         this.app.get('/admin', (req, res) => {
             console.log('🔒 Servindo página de admin');
@@ -83,6 +91,7 @@ class WhitelistServer {
         this.app.post('/api/whitelist/approve', this.handleWhitelistApprove.bind(this));
         this.app.post('/api/whitelist/reject', this.handleWhitelistReject.bind(this));
         this.app.get('/api/whitelist/forms', this.handleGetForms.bind(this));
+        this.app.get('/api/whitelist/user/:userId', this.handleGetUserForm.bind(this));
         
         console.log('✅ Rotas configuradas');
     }
@@ -94,13 +103,22 @@ class WhitelistServer {
             const clientIp = req.clientIp;
 
             // Validar campos obrigatórios
-            const camposObrigatorios = ['nome', 'idade', 'comoConheceu', 'estado', 'religiao'];
+            const camposObrigatorios = ['nome', 'idade', 'comoConheceu', 'estado', 'religiao', 'userId'];
             const camposFaltantes = camposObrigatorios.filter(campo => !form[campo]);
             
             if (camposFaltantes.length > 0) {
                 return res.status(400).json({ 
                     error: 'Campos obrigatórios não preenchidos',
                     campos: camposFaltantes
+                });
+            }
+
+            // Verificar se já existe um formulário para este usuário
+            const existingForm = Object.values(formsDb).find(f => f.userId === form.userId);
+            if (existingForm) {
+                return res.status(400).json({ 
+                    error: 'Você já enviou um formulário anteriormente',
+                    formId: existingForm.id
                 });
             }
 
@@ -127,7 +145,8 @@ class WhitelistServer {
                             { name: 'Estado', value: form.estado, inline: true },
                             { name: 'Como Conheceu', value: form.comoConheceu, inline: true },
                             { name: 'Religião', value: form.religiao, inline: true },
-                            { name: 'IP', value: clientIp, inline: true }
+                            { name: 'IP', value: clientIp, inline: true },
+                            { name: 'ID Discord', value: form.userId, inline: true }
                         ],
                         timestamp: new Date()
                     }]
@@ -189,6 +208,22 @@ class WhitelistServer {
         } catch (error) {
             console.error('❌ Erro ao buscar formulários:', error);
             res.status(500).json({ error: 'Erro ao buscar formulários' });
+        }
+    }
+
+    async handleGetUserForm(req, res) {
+        try {
+            const userId = req.params.userId;
+            const form = Object.values(this.db.forms).find(f => f.userId === userId);
+            
+            if (!form) {
+                return res.status(404).json({ error: 'Formulário não encontrado' });
+            }
+
+            res.json(form);
+        } catch (error) {
+            console.error('❌ Erro ao buscar formulário do usuário:', error);
+            res.status(500).json({ error: 'Erro ao buscar formulário' });
         }
     }
 
