@@ -263,17 +263,37 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        .btn-next {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 3rem auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+        }
     </style>
 </head>
 <body class="py-12 px-4">
     <div class="progress-bar" id="progressBar"></div>
     <div class="max-w-2xl mx-auto">
         <div class="text-center mb-8 animate__animated animate__fadeIn">
-            <img src="https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png" 
-                 alt="MTN Logo" 
-                 class="logo mx-auto mb-4"
-                 onerror="this.src='https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png'">
-            <h1 class="text-3xl font-bold mb-2">Formulário de Whitelist</h1>
+            <div class="flex items-center justify-center mb-4">
+                <img src="https://cdn.discordapp.com/icons/1336748568853090508/a_0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f.gif" alt="Metânia Logo" class="server-logo">
+                <h1 class="text-3xl font-bold">Formulário de Whitelist</h1>
+            </div>
             <p class="text-gray-300">Preencha todas as informações necessárias</p>
         </div>
 
@@ -466,6 +486,11 @@
         </div>
 
         <div id="status" class="hidden text-center p-4 rounded-lg status-message"></div>
+    </div>
+
+    <div class="credits animate__animated animate__fadeIn">
+        <img src="https://cdn.discordapp.com/avatars/1336748568853090508/a_0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f.gif" alt="Mr.Dark">
+        <span>Desenvolvido por Mr.Dark para Metânia</span>
     </div>
 
     <script>
