@@ -198,8 +198,13 @@
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('errorMessage');
             const successMessage = document.getElementById('successMessage');
+            const submitButton = e.target.querySelector('button[type="submit"]');
 
             try {
+                // Desabilitar o botão durante a requisição
+                submitButton.disabled = true;
+                submitButton.textContent = 'Entrando...';
+                
                 console.log('Tentando fazer login...');
                 console.log('Usuário:', username);
                 
@@ -239,9 +244,13 @@
                 }
             } catch (error) {
                 console.error('Erro na requisição:', error);
-                errorMessage.textContent = 'Erro ao conectar com o servidor';
+                errorMessage.textContent = 'Erro ao conectar com o servidor. Verifique se o servidor está rodando.';
                 errorMessage.style.display = 'block';
                 successMessage.style.display = 'none';
+            } finally {
+                // Reabilitar o botão
+                submitButton.disabled = false;
+                submitButton.textContent = 'Entrar';
             }
         });
 

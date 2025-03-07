@@ -139,16 +139,42 @@ class WhitelistServer {
         
         // Rotas de autenticação
         this.app.post('/api/admin/login', (req, res) => {
+            console.log('\n🔐 Nova tentativa de login');
+            
+            // Validar se o corpo da requisição está correto
+            if (!req.body || typeof req.body !== 'object') {
+                console.log('❌ Corpo da requisição inválido');
+                return res.status(400).json({ error: 'Corpo da requisição inválido' });
+            }
+            
             const { username, password } = req.body;
             
-            console.log('Tentativa de login:');
-            console.log('Usuário recebido:', username);
-            console.log('Usuário esperado:', process.env.ADMIN_USERNAME);
-            console.log('Senha recebida:', password);
-            console.log('Senha esperada:', process.env.ADMIN_PASSWORD);
+            // Validar se os campos foram enviados
+            if (!username || !password) {
+                console.log('❌ Campos obrigatórios não fornecidos');
+                return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
+            }
             
-            if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-                console.log('Login bem sucedido!');
+            console.log('📝 Dados recebidos:');
+            console.log('- Usuário:', username);
+            console.log('- Senha:', password ? 'Fornecida' : 'Não fornecida');
+            
+            // Validar se as variáveis de ambiente estão configuradas
+            if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
+                console.log('❌ Variáveis de ambiente não configuradas');
+                return res.status(500).json({ error: 'Configuração do servidor incompleta' });
+            }
+            
+            // Comparar credenciais
+            const usernameMatch = username === process.env.ADMIN_USERNAME;
+            const passwordMatch = password === process.env.ADMIN_PASSWORD;
+            
+            console.log('🔍 Validação:');
+            console.log('- Usuário correto:', usernameMatch);
+            console.log('- Senha correta:', passwordMatch);
+            
+            if (usernameMatch && passwordMatch) {
+                console.log('✅ Login bem sucedido!');
                 const token = jwt.sign({ 
                     username,
                     role: 'admin',
@@ -162,7 +188,7 @@ class WhitelistServer {
                     permissions: ['manage_admins', 'view_logs', 'manage_whitelist', 'audit']
                 });
             } else {
-                console.log('Login falhou: credenciais inválidas');
+                console.log('❌ Login falhou: credenciais inválidas');
                 res.status(401).json({ error: 'Credenciais inválidas' });
             }
         });
@@ -365,10 +391,17 @@ class WhitelistServer {
 
     async start() {
         try {
-            this.server = this.app.listen(process.env.WHITELIST_PORT, () => {
+            const port = process.env.PORT || 3000;
+            console.log('🚀 Iniciando servidor na porta:', port);
+            console.log('📋 Variáveis de ambiente:');
+            console.log('- ADMIN_USERNAME:', process.env.ADMIN_USERNAME);
+            console.log('- ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD ? 'Configurada' : 'Não configurada');
+            console.log('- JWT_SECRET:', process.env.JWT_SECRET ? 'Configurado' : 'Não configurado');
+            
+            this.server = this.app.listen(port, () => {
                 console.log('\n🌐 Servidor de whitelist rodando em:');
-                console.log(`- Local: http://localhost:${process.env.WHITELIST_PORT}`);
-                console.log(`- IP: http://${this.getLocalIP()}:${process.env.WHITELIST_PORT}`);
+                console.log(`- Local: http://localhost:${port}`);
+                console.log(`- IP: http://${this.getLocalIP()}:${port}`);
                 console.log(`- URL: ${config.server.url}`);
             });
         } catch (error) {
