@@ -222,97 +222,6 @@ class WhitelistServer {
         });
     }
 
-    async updateNginxConfig(port) {
-        try {
-            console.log('🔄 Atualizando configuração do Nginx...');
-            
-            const { exec } = require('child_process');
-            const util = require('util');
-            const execAsync = util.promisify(exec);
-            const os = require('os');
-            const tmpDir = os.tmpdir();
-
-            // Criar arquivos temporários
-            const tempLogError = path.join(tmpDir, 'whitelist-error.log');
-            const tempLogAccess = path.join(tmpDir, 'whitelist-access.log');
-            const tempNginxConfig = path.join(tmpDir, 'whitelist.conf');
-
-            // Criar arquivos de log temporários
-            await fs.writeFile(tempLogError, '');
-            await fs.writeFile(tempLogAccess, '');
-
-            const nginxConfig = `
-server {
-    listen 80;
-    server_name 56.124.64.115;
-
-    location / {
-        proxy_pass http://127.0.0.1:${port};
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # Timeout settings
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-
-        # Logs para debug
-        error_log /var/log/nginx/whitelist-error.log debug;
-        access_log /var/log/nginx/whitelist-access.log;
-    }
-}`;
-
-            // Salvar configuração temporária
-            await fs.writeFile(tempNginxConfig, nginxConfig);
-
-            // Mover arquivos para seus destinos com sudo
-            try {
-                // Mover logs
-                await execAsync(`sudo mv ${tempLogError} /var/log/nginx/whitelist-error.log`);
-                await execAsync(`sudo mv ${tempLogAccess} /var/log/nginx/whitelist-access.log`);
-                await execAsync('sudo chown www-data:www-data /var/log/nginx/whitelist-*.log');
-                await execAsync('sudo chmod 644 /var/log/nginx/whitelist-*.log');
-                console.log('✅ Arquivos de log criados e configurados');
-
-                // Mover configuração do Nginx
-                await execAsync(`sudo mv ${tempNginxConfig} /etc/nginx/sites-available/whitelist.conf`);
-                console.log('💾 Configuração do Nginx atualizada');
-
-                // Criar link simbólico
-                await execAsync('sudo ln -sf /etc/nginx/sites-available/whitelist.conf /etc/nginx/sites-enabled/');
-                console.log('🔗 Link simbólico criado');
-
-                // Remover configuração padrão
-                await execAsync('sudo rm -f /etc/nginx/sites-enabled/default');
-                console.log('🗑️ Configuração padrão removida');
-
-                // Testar configuração do Nginx
-                const { stdout } = await execAsync('sudo nginx -t');
-                console.log('✅ Configuração do Nginx testada com sucesso');
-
-                // Reiniciar Nginx
-                await execAsync('sudo systemctl restart nginx');
-                console.log('✅ Nginx reiniciado com sucesso');
-
-                // Verificar status do Nginx
-                const { stdout: status } = await execAsync('sudo systemctl status nginx');
-                console.log('📊 Status do Nginx:', status);
-            } catch (error) {
-                console.error('❌ Erro ao configurar Nginx:', error);
-                console.error('Saída:', error.stdout);
-                console.error('Erro:', error.stderr);
-            }
-        } catch (error) {
-            console.error('❌ Erro ao atualizar configuração do Nginx:', error);
-        }
-    }
-
     async start() {
         try {
             const host = config.server.useLocalhost ? 'localhost' : '0.0.0.0';
@@ -369,9 +278,6 @@ server {
                         console.log(`   http://${ip}:${port}`);
                     });
                     console.log('\n💡 Dica: Use Ctrl+C para parar o servidor\n');
-
-                    // Atualizar configuração do Nginx
-                    await this.updateNginxConfig(port);
                     
                     resolve();
                 }).on('error', (error) => {
