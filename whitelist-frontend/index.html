@@ -108,13 +108,35 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Verificar se há um ID de usuário na URL
+            // Verificar se há um token na URL
             const urlParams = new URLSearchParams(window.location.search);
-            const userId = urlParams.get('userId');
+            const token = urlParams.get('token');
+            const error = urlParams.get('error');
             
-            if (userId) {
-                // Redirecionar para o formulário personalizado
-                window.location.href = `/form/${userId}`;
+            // Mostrar mensagens de erro se houver
+            if (error) {
+                const status = document.getElementById('status');
+                let message = '';
+                
+                switch(error) {
+                    case 'invalid_token':
+                        message = 'Token inválido ou expirado. Use o comando /whitelist no Discord para obter um novo link.';
+                        break;
+                    case 'already_submitted':
+                        message = 'Você já possui uma solicitação pendente. Aguarde a resposta da equipe.';
+                        break;
+                    default:
+                        message = 'Ocorreu um erro. Tente novamente mais tarde.';
+                }
+                
+                status.textContent = message;
+                status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center';
+                status.classList.remove('hidden');
+            }
+            
+            if (token) {
+                // Redirecionar para o formulário com o token
+                window.location.href = `/form?token=${token}`;
             }
 
             // Login Admin

@@ -82,16 +82,25 @@ class WhitelistServer {
         this.app.get('/form', (req, res) => {
             const token = req.query.token;
             if (!token) {
+                console.log('❌ Token não fornecido');
                 return res.redirect('/');
             }
 
             try {
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 console.log(`📄 Servindo formulário para usuário ${decoded.userId}`);
+                
+                // Verificar se já existe um formulário para este usuário
+                const existingForm = Object.values(this.db.forms).find(f => f.userId === decoded.userId);
+                if (existingForm) {
+                    console.log(`⚠️ Usuário ${decoded.userId} já possui um formulário pendente`);
+                    return res.redirect('/?error=already_submitted');
+                }
+                
                 res.sendFile(path.join(__dirname, '..', 'whitelist-frontend', 'form.html'));
             } catch (error) {
                 console.error('❌ Token inválido:', error);
-                res.redirect('/');
+                res.redirect('/?error=invalid_token');
             }
         });
 
