@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const dataManager = require('../modules/dataManager');
+const autoVerification = require('../modules/autoVerification');
 const { EmbedBuilder } = require('discord.js');
 
 // Middleware para validar token
@@ -53,36 +54,13 @@ async function removeRole(client, userId, roleId) {
     }
 }
 
-// Enviar solicitação de whitelist
+// Enviar solicitação
 router.post('/submit', validateToken, async (req, res) => {
     try {
-        const { nome, idade, religiao, estado, habilidades, motivo, contribuicao, discordUsername } = req.body;
-        const userId = req.user.userId;
-
-        // Verificar se já existe uma solicitação pendente para este usuário
-        const existingRequest = await dataManager.getUserRequest(userId);
-        if (existingRequest && existingRequest.status === 'pendente') {
-            return res.status(400).json({ error: 'Você já possui uma solicitação pendente' });
-        }
-        
-        const request = await dataManager.addWhitelistRequest({
-            nome,
-            idade,
-            religiao,
-            estado,
-            habilidades,
-            motivo,
-            contribuicao,
-            userId,
-            discordUsername,
-            status: 'pendente',
-            data: new Date().toISOString()
-        });
-        
-        res.status(201).json({ message: 'Solicitação enviada com sucesso', request });
+        const request = await dataManager.addWhitelistRequest(req.user.userId, req.body);
+        res.json(request);
     } catch (error) {
-        console.error('Erro ao enviar solicitação:', error);
-        res.status(500).json({ error: 'Erro ao enviar solicitação' });
+        res.status(400).json({ error: error.message });
     }
 });
 
@@ -90,6 +68,7 @@ router.post('/submit', validateToken, async (req, res) => {
 router.post('/approve/:id', async (req, res) => {
     try {
         const request = await dataManager.updateWhitelistRequest(req.params.id, 'aprovado');
+        await autoVerification.verifyMember(request.userId);
         
         // Criar embed para mensagem de aprovação
         const embed = new EmbedBuilder()
@@ -111,10 +90,9 @@ router.post('/approve/:id', async (req, res) => {
         // Adicionar cargo
         await addRole(req.app.locals.client, request.userId, process.env.ROLE_ACESS);
         
-        res.json({ message: 'Solicitação aprovada com sucesso' });
+        res.json(request);
     } catch (error) {
-        console.error('Erro ao aprovar solicitação:', error);
-        res.status(500).json({ error: 'Erro ao aprovar solicitação' });
+        res.status(400).json({ error: error.message });
     }
 });
 
@@ -123,6 +101,7 @@ router.post('/reject/:id', async (req, res) => {
     try {
         const { reason } = req.body;
         const request = await dataManager.updateWhitelistRequest(req.params.id, 'rejeitado', reason);
+        await autoVerification.removeWhitelist(request.userId, reason);
         
         // Criar embed para mensagem de rejeição
         const embed = new EmbedBuilder()
@@ -142,10 +121,9 @@ router.post('/reject/:id', async (req, res) => {
         // Enviar mensagem privada
         await sendPrivateMessage(req.app.locals.client, request.userId, embed);
         
-        res.json({ message: 'Solicitação rejeitada com sucesso' });
+        res.json(request);
     } catch (error) {
-        console.error('Erro ao rejeitar solicitação:', error);
-        res.status(500).json({ error: 'Erro ao rejeitar solicitação' });
+        res.status(400).json({ error: error.message });
     }
 });
 
@@ -155,8 +133,40 @@ router.get('/pending', async (req, res) => {
         const requests = await dataManager.getPendingRequests();
         res.json(requests);
     } catch (error) {
-        console.error('Erro ao listar solicitações:', error);
-        res.status(500).json({ error: 'Erro ao listar solicitações' });
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Obter solicitação por ID
+router.get('/:id', async (req, res) => {
+    try {
+        const request = await dataManager.getRequestById(req.params.id);
+        if (!request) {
+            return res.status(404).json({ error: 'Solicitação não encontrada' });
+        }
+        res.json(request);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Resetar cooldown de um usuário
+router.post('/reset-cooldown/:userId', async (req, res) => {
+    try {
+        await dataManager.resetCooldown(req.params.userId);
+        res.json({ message: 'Cooldown resetado com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Verificar cooldown de um usuário
+router.get('/cooldown/:userId', async (req, res) => {
+    try {
+        const cooldown = await dataManager.getCooldown(req.params.userId);
+        res.json({ cooldown });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 

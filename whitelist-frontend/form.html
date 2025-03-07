@@ -106,6 +106,14 @@
             border-color: #3b82f6;
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
         }
+        select.input-field option {
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        select.input-field option:checked {
+            background: #2ecc71;
+            color: #ffffff;
+        }
         .glass-effect {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
@@ -150,133 +158,309 @@
                 margin: 1rem;
             }
         }
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #2ecc71);
+            transition: width 0.3s ease;
+            z-index: 1000;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            text-align: center;
+            padding: 5px 10px;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        .form-step {
+            display: none;
+        }
+        .form-step.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 1;
+        }
+        .step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+        .step.active {
+            background: #3b82f6;
+        }
+        .step.completed {
+            background: #2ecc71;
+        }
+        .error-message {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+        .input-field.error {
+            border-color: #ef4444;
+        }
+        .success-message {
+            color: #2ecc71;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 1s linear infinite;
+            margin-left: 0.5rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="py-12 px-4">
+    <div class="progress-bar" id="progressBar"></div>
     <div class="max-w-2xl mx-auto">
         <div class="text-center mb-8 animate__animated animate__fadeIn">
-            <img src="https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png" alt="MTN Logo" class="logo mx-auto mb-4">
+            <img src="https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png" 
+                 alt="MTN Logo" 
+                 class="logo mx-auto mb-4"
+                 onerror="this.src='https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png'">
             <h1 class="text-3xl font-bold mb-2">Formulário de Whitelist</h1>
             <p class="text-gray-300">Preencha todas as informações necessárias</p>
         </div>
 
         <div class="container p-6 mb-8 animate__animated animate__fadeInUp">
+            <div class="step-indicator mb-8">
+                <div class="step active" data-step="1">1</div>
+                <div class="step" data-step="2">2</div>
+                <div class="step" data-step="3">3</div>
+            </div>
+
             <form id="whitelistForm" class="space-y-6">
-                <div>
-                    <label class="block text-sm font-medium mb-2">Nome Completo</label>
-                    <div class="relative">
-                        <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" name="nome" required
-                            class="input-field w-full px-4 py-2 pl-10"
-                            placeholder="Digite seu nome completo">
+                <div class="form-step active" data-step="1">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            Nome Completo
+                            <span class="tooltip">
+                                <i class="fas fa-info-circle ml-1 text-gray-400"></i>
+                                <span class="tooltip-text">Digite seu nome completo como aparece em seus documentos</span>
+                            </span>
+                        </label>
+                        <div class="relative">
+                            <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" name="nome" required
+                                class="input-field w-full px-4 py-2 pl-10"
+                                placeholder="Digite seu nome completo">
+                            <div class="error-message">Por favor, insira seu nome completo</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            Idade
+                            <span class="tooltip">
+                                <i class="fas fa-info-circle ml-1 text-gray-400"></i>
+                                <span class="tooltip-text">Você precisa ter pelo menos 10 anos</span>
+                            </span>
+                        </label>
+                        <div class="relative">
+                            <i class="fas fa-birthday-cake absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="number" name="idade" required min="10" max="100"
+                                class="input-field w-full px-4 py-2 pl-10"
+                                placeholder="Digite sua idade">
+                            <div class="error-message">Idade deve estar entre 10 e 100 anos</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            Religião
+                            <span class="tooltip">
+                                <i class="fas fa-info-circle ml-1 text-gray-400"></i>
+                                <span class="tooltip-text">Sua religião atual</span>
+                            </span>
+                        </label>
+                        <div class="relative">
+                            <i class="fas fa-pray absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" name="religiao" required
+                                class="input-field w-full px-4 py-2 pl-10"
+                                placeholder="Digite sua religião">
+                            <div class="error-message">Por favor, insira sua religião</div>
+                        </div>
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium mb-2">Idade</label>
-                    <div class="relative">
-                        <i class="fas fa-birthday-cake absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input type="number" name="idade" required min="10" max="100"
-                            class="input-field w-full px-4 py-2 pl-10"
-                            placeholder="Digite sua idade">
+                <div class="form-step" data-step="2">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            Estado
+                            <span class="tooltip">
+                                <i class="fas fa-info-circle ml-1 text-gray-400"></i>
+                                <span class="tooltip-text">Selecione o estado onde você reside</span>
+                            </span>
+                        </label>
+                        <div class="relative">
+                            <i class="fas fa-map-marker-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <select name="estado" required class="input-field w-full px-4 py-2 pl-10">
+                                <option value="">Selecione seu estado</option>
+                                <option value="AC">Acre</option>
+                                <option value="AL">Alagoas</option>
+                                <option value="AP">Amapá</option>
+                                <option value="AM">Amazonas</option>
+                                <option value="BA">Bahia</option>
+                                <option value="CE">Ceará</option>
+                                <option value="DF">Distrito Federal</option>
+                                <option value="ES">Espírito Santo</option>
+                                <option value="GO">Goiás</option>
+                                <option value="MA">Maranhão</option>
+                                <option value="MT">Mato Grosso</option>
+                                <option value="MS">Mato Grosso do Sul</option>
+                                <option value="MG">Minas Gerais</option>
+                                <option value="PA">Pará</option>
+                                <option value="PB">Paraíba</option>
+                                <option value="PR">Paraná</option>
+                                <option value="PE">Pernambuco</option>
+                                <option value="PI">Piauí</option>
+                                <option value="RJ">Rio de Janeiro</option>
+                                <option value="RN">Rio Grande do Norte</option>
+                                <option value="RS">Rio Grande do Sul</option>
+                                <option value="RO">Rondônia</option>
+                                <option value="RR">Roraima</option>
+                                <option value="SC">Santa Catarina</option>
+                                <option value="SP">São Paulo</option>
+                                <option value="SE">Sergipe</option>
+                                <option value="TO">Tocantins</option>
+                            </select>
+                            <div class="error-message">Por favor, selecione seu estado</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            Habilidades/Interesses
+                            <span class="tooltip">
+                                <i class="fas fa-info-circle ml-1 text-gray-400"></i>
+                                <span class="tooltip-text">Selecione suas principais habilidades e interesses</span>
+                            </span>
+                        </label>
+                        <div class="relative">
+                            <i class="fas fa-tools absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <select name="habilidades" required multiple class="input-field w-full px-4 py-2 pl-10" size="4">
+                                <option value="tecnologia">💻 Tecnologia</option>
+                                <option value="hacking">🔒 Hacking</option>
+                                <option value="design">🎨 Design</option>
+                                <option value="politica">🏛️ Política</option>
+                                <option value="comunicacao">💬 Comunicação</option>
+                                <option value="marketing">📢 Marketing</option>
+                                <option value="gestao">📊 Gestão</option>
+                                <option value="desenvolvimento">⚙️ Desenvolvimento</option>
+                            </select>
+                            <div class="error-message">Selecione pelo menos uma habilidade</div>
+                        </div>
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium mb-2">Religião</label>
-                    <div class="relative">
-                        <i class="fas fa-pray absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" name="religiao" required
-                            class="input-field w-full px-4 py-2 pl-10"
-                            placeholder="Digite sua religião">
+                <div class="form-step" data-step="3">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            Por que você quer participar do servidor?
+                            <span class="tooltip">
+                                <i class="fas fa-info-circle ml-1 text-gray-400"></i>
+                                <span class="tooltip-text">Explique seus motivos para querer participar</span>
+                            </span>
+                        </label>
+                        <div class="relative">
+                            <i class="fas fa-question-circle absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <textarea name="motivo" required
+                                class="input-field w-full px-4 py-2 pl-10 min-h-[100px]"
+                                placeholder="Explique seus motivos para querer participar"></textarea>
+                            <div class="error-message">Por favor, explique seus motivos</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            Com o que você pode contribuir?
+                            <span class="tooltip">
+                                <i class="fas fa-info-circle ml-1 text-gray-400"></i>
+                                <span class="tooltip-text">Descreva como você pode contribuir com o servidor</span>
+                            </span>
+                        </label>
+                        <div class="relative">
+                            <i class="fas fa-hand-holding-heart absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <textarea name="contribuicao" required
+                                class="input-field w-full px-4 py-2 pl-10 min-h-[100px]"
+                                placeholder="Descreva como você pode contribuir com o servidor"></textarea>
+                            <div class="error-message">Por favor, descreva sua contribuição</div>
+                        </div>
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium mb-2">Estado</label>
-                    <div class="relative">
-                        <i class="fas fa-map-marker-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <select name="estado" required class="input-field w-full px-4 py-2 pl-10">
-                            <option value="">Selecione seu estado</option>
-                            <option value="AC">Acre</option>
-                            <option value="AL">Alagoas</option>
-                            <option value="AP">Amapá</option>
-                            <option value="AM">Amazonas</option>
-                            <option value="BA">Bahia</option>
-                            <option value="CE">Ceará</option>
-                            <option value="DF">Distrito Federal</option>
-                            <option value="ES">Espírito Santo</option>
-                            <option value="GO">Goiás</option>
-                            <option value="MA">Maranhão</option>
-                            <option value="MT">Mato Grosso</option>
-                            <option value="MS">Mato Grosso do Sul</option>
-                            <option value="MG">Minas Gerais</option>
-                            <option value="PA">Pará</option>
-                            <option value="PB">Paraíba</option>
-                            <option value="PR">Paraná</option>
-                            <option value="PE">Pernambuco</option>
-                            <option value="PI">Piauí</option>
-                            <option value="RJ">Rio de Janeiro</option>
-                            <option value="RN">Rio Grande do Norte</option>
-                            <option value="RS">Rio Grande do Sul</option>
-                            <option value="RO">Rondônia</option>
-                            <option value="RR">Roraima</option>
-                            <option value="SC">Santa Catarina</option>
-                            <option value="SP">São Paulo</option>
-                            <option value="SE">Sergipe</option>
-                            <option value="TO">Tocantins</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-2">Habilidades/Interesses</label>
-                    <div class="relative">
-                        <i class="fas fa-tools absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <select name="habilidades" required multiple class="input-field w-full px-4 py-2 pl-10" size="4">
-                            <option value="tecnologia">💻 Tecnologia</option>
-                            <option value="hacking">🔒 Hacking</option>
-                            <option value="design">🎨 Design</option>
-                            <option value="politica">🏛️ Política</option>
-                            <option value="comunicacao">💬 Comunicação</option>
-                            <option value="marketing">📢 Marketing</option>
-                            <option value="gestao">📊 Gestão</option>
-                            <option value="desenvolvimento">⚙️ Desenvolvimento</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-2">Por que você quer participar do servidor?</label>
-                    <div class="relative">
-                        <i class="fas fa-question-circle absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <textarea name="motivo" required
-                            class="input-field w-full px-4 py-2 pl-10 min-h-[100px]"
-                            placeholder="Explique seus motivos para querer participar"></textarea>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-2">Com o que você pode contribuir?</label>
-                    <div class="relative">
-                        <i class="fas fa-hand-holding-heart absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <textarea name="contribuicao" required
-                            class="input-field w-full px-4 py-2 pl-10 min-h-[100px]"
-                            placeholder="Descreva como você pode contribuir com o servidor"></textarea>
-                    </div>
+                <div class="flex justify-between mt-8">
+                    <button type="button" id="prevStep" class="btn-secondary hidden">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Voltar
+                    </button>
+                    <button type="button" id="nextStep" class="btn-primary">
+                        Próximo
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
                 </div>
 
                 <div class="flex flex-col space-y-4">
-                    <button type="submit"
-                        class="btn-primary w-full py-3 px-4 rounded-lg font-medium text-white flex items-center justify-center">
+                    <button type="submit" id="submitBtn" class="btn-primary w-full py-3 px-4 rounded-lg font-medium text-white flex items-center justify-center hidden">
                         <i class="fas fa-paper-plane mr-2"></i>
                         Enviar Solicitação
+                        <div class="loading-spinner"></div>
                     </button>
-                    
-                    <a href="/admin" class="btn-admin w-full py-3 px-4 rounded-lg font-medium text-white flex items-center justify-center">
-                        <i class="fas fa-user-shield mr-2"></i>
-                        Área Administrativa
-                    </a>
                 </div>
             </form>
         </div>
@@ -288,6 +472,76 @@
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('whitelistForm');
             const status = document.getElementById('status');
+            const progressBar = document.getElementById('progressBar');
+            const steps = document.querySelectorAll('.form-step');
+            const stepIndicators = document.querySelectorAll('.step');
+            const prevBtn = document.getElementById('prevStep');
+            const nextBtn = document.getElementById('nextStep');
+            const submitBtn = document.getElementById('submitBtn');
+            let currentStep = 1;
+
+            // Atualizar barra de progresso
+            function updateProgress() {
+                const progress = ((currentStep - 1) / (steps.length - 1)) * 100;
+                progressBar.style.width = `${progress}%`;
+            }
+
+            // Mostrar/ocultar botões
+            function updateButtons() {
+                prevBtn.classList.toggle('hidden', currentStep === 1);
+                nextBtn.classList.toggle('hidden', currentStep === steps.length);
+                submitBtn.classList.toggle('hidden', currentStep !== steps.length);
+            }
+
+            // Validar campos do passo atual
+            function validateCurrentStep() {
+                const currentStepElement = document.querySelector(`.form-step[data-step="${currentStep}"]`);
+                const inputs = currentStepElement.querySelectorAll('input[required], select[required], textarea[required]');
+                let isValid = true;
+
+                inputs.forEach(input => {
+                    const errorMessage = input.parentElement.querySelector('.error-message');
+                    if (!input.value || (input.type === 'number' && (input.value < 10 || input.value > 100))) {
+                        input.classList.add('error');
+                        errorMessage.style.display = 'block';
+                        isValid = false;
+                    } else {
+                        input.classList.remove('error');
+                        errorMessage.style.display = 'none';
+                    }
+                });
+
+                return isValid;
+            }
+
+            // Navegar entre passos
+            function goToStep(step) {
+                steps.forEach(s => s.classList.remove('active'));
+                stepIndicators.forEach(i => {
+                    i.classList.remove('active', 'completed');
+                    if (parseInt(i.dataset.step) < step) {
+                        i.classList.add('completed');
+                    } else if (parseInt(i.dataset.step) === step) {
+                        i.classList.add('active');
+                    }
+                });
+
+                document.querySelector(`.form-step[data-step="${step}"]`).classList.add('active');
+                currentStep = step;
+                updateProgress();
+                updateButtons();
+            }
+
+            // Event listeners
+            nextBtn.addEventListener('click', () => {
+                if (validateCurrentStep()) {
+                    goToStep(currentStep + 1);
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                goToStep(currentStep - 1);
+            });
 
             // Capturar token da URL
             const urlParams = new URLSearchParams(window.location.search);

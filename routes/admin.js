@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const dataManager = require('../modules/dataManager');
 const Admin = require('../models/Admin');
 const AuditLog = require('../models/AuditLog');
 const auth = require('../middleware/auth');
@@ -18,39 +20,62 @@ async function logAction(admin, action, details) {
     }
 }
 
-// Login de administrador
+// Middleware para validar token de admin
+const validateAdminToken = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ error: 'Token não fornecido' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
+        req.admin = decoded;
+        next();
+    } catch (error) {
+        return res.status(401).json({ error: 'Token inválido' });
+    }
+};
+
+// Login
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        
-        const admin = await Admin.findOne({ username });
+
+        const admin = await dataManager.findAdmin(username);
         if (!admin) {
-            return res.status(401).json({ error: 'Credenciais inválidas' });
+            return res.status(401).json({ error: 'Usuário ou senha inválidos' });
         }
-        
-        const isMatch = await admin.comparePassword(password);
-        if (!isMatch) {
-            return res.status(401).json({ error: 'Credenciais inválidas' });
+
+        const isValidPassword = await bcrypt.compare(password, admin.password);
+        if (!isValidPassword) {
+            return res.status(401).json({ error: 'Usuário ou senha inválidos' });
         }
-        
-        // Atualizar último login
-        admin.lastLogin = new Date();
-        await admin.save();
-        
-        // Registrar login no log de auditoria
-        await logAction(username, 'Login', 'Login realizado com sucesso');
-        
+
         const token = jwt.sign(
-            { id: admin._id, username: admin.username },
-            process.env.JWT_SECRET,
+            { id: admin.id, username: admin.username },
+            process.env.ADMIN_JWT_SECRET,
             { expiresIn: '24h' }
         );
-        
+
+        // Atualizar último login
+        await dataManager.updateAdminLogin(admin.id);
+
         res.json({ token });
     } catch (error) {
         console.error('Erro no login:', error);
         res.status(500).json({ error: 'Erro ao fazer login' });
     }
+});
+
+// Verificar token
+router.get('/verify', validateAdminToken, (req, res) => {
+    res.json({ valid: true });
+});
+
+// Logout
+router.post('/logout', (req, res) => {
+    res.json({ message: 'Logout realizado com sucesso' });
 });
 
 // Listar administradores (requer autenticação)
