@@ -18,12 +18,14 @@ module.exports = {
 
             // Construir URL do formulário
             const formUrl = `${config.server.url}/form?token=${token}`;
+            const adminUrl = `${config.server.url}/admin`;
 
             // Criar embed informativo
             const embed = new EmbedBuilder()
-                .setTitle('🎮 Sistema de Whitelist')
+                .setTitle('🎮 Sistema de Whitelist - Metânia')
                 .setDescription(`Olá ${interaction.user}! Para solicitar sua whitelist, siga os passos abaixo:`)
                 .setColor('#3b82f6')
+                .setThumbnail('https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png')
                 .addFields(
                     { name: '1️⃣ Clique no Botão', value: 'Clique no botão abaixo para acessar o formulário' },
                     { name: '2️⃣ Preencha o Formulário', value: 'Preencha todas as informações solicitadas' },
@@ -31,16 +33,24 @@ module.exports = {
                     { name: '💡 Dica', value: 'Use seu nome do Discord para facilitar a identificação' },
                     { name: '⚠️ Importante', value: 'Você só pode enviar uma solicitação por vez' }
                 )
+                .setFooter({ text: 'Metânia - Sistema de Whitelist', iconURL: 'https://cdn.discordapp.com/attachments/1336748568853090508/1344726203453542494/metania-logo.png' })
                 .setTimestamp();
 
-            // Criar botão com URL
-            const button = new ButtonBuilder()
+            // Criar botões
+            const whitelistButton = new ButtonBuilder()
                 .setLabel('Solicitar Whitelist')
                 .setStyle(ButtonStyle.Link)
-                .setURL(formUrl);
+                .setURL(formUrl)
+                .setEmoji('📝');
+
+            const adminButton = new ButtonBuilder()
+                .setLabel('Painel Admin')
+                .setStyle(ButtonStyle.Link)
+                .setURL(adminUrl)
+                .setEmoji('⚙️');
 
             const row = new ActionRowBuilder()
-                .addComponents(button);
+                .addComponents(whitelistButton, adminButton);
 
             await interaction.reply({
                 embeds: [embed],

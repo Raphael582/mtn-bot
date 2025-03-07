@@ -6,13 +6,14 @@ class Logger {
     constructor(client) {
         this.client = client;
         this.logLevels = {
-            INFO: { color: 0x3498db, emoji: 'ℹ️' },
-            SUCCESS: { color: 0x2ecc71, emoji: '✅' },
-            WARNING: { color: 0xf39c12, emoji: '⚠️' },
-            ERROR: { color: 0xe74c3c, emoji: '❌' },
-            FILTER: { color: 0x9b59b6, emoji: '🔍' },
-            PUNISH: { color: 0xe67e22, emoji: '🚫' },
-            WHITELIST: { color: 0x1abc9c, emoji: '📝' }
+            INFO: { color: 0x3498db, emoji: 'ℹ️', channelName: 'logs' },
+            SUCCESS: { color: 0x2ecc71, emoji: '✅', channelName: 'logs' },
+            WARNING: { color: 0xf39c12, emoji: '⚠️', channelName: 'logs' },
+            ERROR: { color: 0xe74c3c, emoji: '❌', channelName: 'logs' },
+            FILTER: { color: 0x9b59b6, emoji: '🔍', channelName: 'logs-filtro' },
+            PUNISH: { color: 0xe67e22, emoji: '🚫', channelName: 'logs-punicoes' },
+            WHITELIST: { color: 0x1abc9c, emoji: '📝', channelName: 'logs-whitelist' },
+            ORACULO: { color: 0x9b59b6, emoji: '🔮', channelName: 'logs-oraculo' }
         };
         this.ensureLogChannels();
     }
@@ -27,7 +28,7 @@ class Logger {
         const logChannels = {
             LOG_ORACULO: 'logs-oraculo',
             LOG_FILTRO: 'logs-filtro',
-            LOG_CHAT: 'logs-chat',
+            LOG_CHAT: 'logs',
             LOG_PUNICOES: 'logs-punicoes',
             LOG_WHITELIST: 'logs-whitelist'
         };
@@ -35,13 +36,19 @@ class Logger {
         for (const [envVar, channelName] of Object.entries(logChannels)) {
             const channelId = process.env[envVar];
             if (!channelId) {
-                console.error(`❌ ID do canal ${channelName} não configurado`);
+                console.log(`⚠️ ID do canal ${channelName} não configurado, buscando por nome...`);
+                const channel = guild.channels.cache.find(c => c.name === channelName);
+                if (!channel) {
+                    console.error(`❌ Canal ${channelName} não encontrado`);
+                    continue;
+                }
+                console.log(`✅ Canal ${channelName} encontrado por nome`);
                 continue;
             }
 
             const channel = guild.channels.cache.get(channelId);
             if (!channel) {
-                console.error(`❌ Canal ${channelName} não encontrado`);
+                console.error(`❌ Canal ${channelName} não encontrado pelo ID`);
                 continue;
             }
 
@@ -50,15 +57,31 @@ class Logger {
     }
 
     async getLogChannel(level) {
-        const channelId = process.env[`LOG_${level}`] || process.env.LOG_CHAT;
-        if (!channelId) {
-            console.error(`❌ ID do canal de logs ${level} não configurado`);
+        const logLevel = this.logLevels[level];
+        if (!logLevel) {
+            console.error(`❌ Nível de log ${level} não encontrado`);
             return null;
         }
 
-        const channel = this.client.channels.cache.get(channelId);
+        const guild = this.client.guilds.cache.get(process.env.GUILD_ID);
+        if (!guild) {
+            console.error('❌ Servidor não encontrado');
+            return null;
+        }
+
+        // Tentar encontrar o canal pelo ID primeiro
+        const channelId = process.env[`LOG_${level}`];
+        if (channelId) {
+            const channel = guild.channels.cache.get(channelId);
+            if (channel) {
+                return channel;
+            }
+        }
+
+        // Se não encontrar pelo ID, buscar por nome
+        const channel = guild.channels.cache.find(c => c.name === logLevel.channelName);
         if (!channel) {
-            console.error(`❌ Canal de logs ${level} não encontrado`);
+            console.error(`❌ Canal ${logLevel.channelName} não encontrado`);
             return null;
         }
 
