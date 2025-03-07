@@ -233,204 +233,20 @@ client.on('interactionCreate', async (interaction) => {
             
             if (customId === 'start_whitelist' || customId === 'open_whitelist_modal') {
                 const whitelistCommand = client.commands.get('whitelist');
-                if (whitelistCommand && whitelistCommand.handleButton) {
-                    await whitelistCommand.handleButton(interaction, client);
+                if (whitelistCommand) {
+                    await whitelistCommand.execute(interaction, client);
                 }
             } 
             else if (customId.startsWith('approve_whitelist_') || 
                     customId.startsWith('reject_whitelist_')) {
-                // Usar o manipulador de aprovação/rejeição do whitelist
                 const whitelistCommand = client.commands.get('whitelist');
-                if (whitelistCommand && whitelistCommand.handleApprovalButtons) {
-                    await whitelistCommand.handleApprovalButtons(interaction, client);
-                } else if (client.commands.get('wlnew') && client.commands.get('wlnew').handleButtonApproval) {
-                    // Fallback para o comando wlnew se whitelist não tiver o manipulador
-                    await client.commands.get('wlnew').handleButtonApproval(interaction, client);
-                } else {
-                    console.error('❌ Manipuladores de aprovação não encontrados');
-                    await interaction.reply({ 
-                        content: 'Função de aprovação/rejeição não configurada.', 
-                        ephemeral: true 
-                    });
-                }
-            } 
-            // Novos botões específicos para o servidor web
-            else if (customId.startsWith('wl_approve_') || customId.startsWith('wl_reject_')) {
-                const formId = customId.split('_')[2];
-                const action = customId.startsWith('wl_approve_') ? 'aprovado' : 'rejeitado';
-                
-                if (!whitelistServer) {
-                    await initWhitelistServer();
-                }
-                
-                if (whitelistServer) {
-                    try {
-                        // Buscar formulário
-                        const form = whitelistServer.db.forms[formId];
-                        
-                        if (!form) {
-                            await interaction.reply({
-                                content: '❌ Formulário não encontrado ou já processado.',
-                                ephemeral: true
-                            });
-                            return;
-                        }
-                        
-                        // Confirmar ação
-                        await interaction.reply({
-                            content: `⚠️ Tem certeza que deseja ${action === 'aprovado' ? 'aprovar' : 'rejeitar'} a whitelist de **${form.username}**?`,
-                            ephemeral: true,
-                            components: [
-                                {
-                                    type: 1,
-                                    components: [
-                                        {
-                                            type: 2,
-                                            style: action === 'aprovado' ? 3 : 4,
-                                            label: 'Confirmar',
-                                            custom_id: `confirm_${action}_${formId}`
-                                        },
-                                        {
-                                            type: 2,
-                                            style: 2,
-                                            label: 'Cancelar',
-                                            custom_id: 'cancel_action'
-                                        }
-                                    ]
-                                }
-                            ]
-                        });
-                    } catch (error) {
-                        console.error('❌ Erro ao processar botão de whitelist:', error);
-                        await interaction.reply({
-                            content: 'Ocorreu um erro ao processar esta ação.',
-                            ephemeral: true
-                        });
-                    }
-                } else {
-                    await interaction.reply({
-                        content: '❌ Servidor de whitelist não está disponível.',
-                        ephemeral: true
-                    });
-                }
-            }
-            // Confirmação de ações de whitelist
-            else if (customId.startsWith('confirm_aprovado_') || customId.startsWith('confirm_rejeitado_')) {
-                const [_, action, formId] = customId.split('_');
-                
-                await interaction.deferUpdate();
-                
-                if (!whitelistServer) {
-                    await initWhitelistServer();
-                }
-                
-                if (whitelistServer) {
-                    try {
-                        // Buscar formulário
-                        const form = whitelistServer.db.forms[formId];
-                        
-                        if (!form) {
-                            await interaction.followUp({
-                                content: '❌ Formulário não encontrado ou já processado.',
-                                ephemeral: true
-                            });
-                            return;
-                        }
-                        
-                        // Atualizar formulário
-                        form.status = action;
-                        form.reviewedBy = interaction.user.tag;
-                        form.reviewedAt = new Date().toISOString();
-                        
-                        // Salvar
-                        whitelistServer.saveForms();
-                        
-                        // Notificar usuário se tiver Discord ID
-                        if (form.discordId) {
-                            await whitelistServer.notifyUser(form, action, '');
-                        }
-                        
-                        // Atualizar resposta
-                        await interaction.editReply({
-                            content: `✅ Whitelist de **${form.username}** foi ${action} com sucesso!`,
-                            components: []
-                        });
-                        
-                    } catch (error) {
-                        console.error('❌ Erro ao processar confirmação:', error);
-                        await interaction.followUp({
-                            content: 'Ocorreu um erro ao processar esta ação.',
-                            ephemeral: true
-                        });
-                    }
-                } else {
-                    await interaction.followUp({
-                        content: '❌ Servidor de whitelist não está disponível.',
-                        ephemeral: true
-                    });
-                }
-            }
-            else if (customId === 'cancel_action') {
-                await interaction.update({
-                    content: '❌ Ação cancelada.',
-                    components: []
-                });
-            }
-        }
-        
-        // Modais
-        else if (interaction.isModalSubmit()) {
-            const customId = interaction.customId;
-            
-            if (customId === 'whitelist_modal') {
-                const whitelistCommand = client.commands.get('whitelist');
-                if (whitelistCommand && whitelistCommand.handleModal) {
-                    await whitelistCommand.handleModal(interaction, client);
-                }
-            } else if (customId === 'whitelist_modal_new') {
-                const wlnewCommand = client.commands.get('wlnew');
-                if (wlnewCommand && wlnewCommand.handleModal) {
-                    await wlnewCommand.handleModal(interaction, client);
-                } else {
-                    console.error('❌ Método handleModal não encontrado para wlnew');
-                    await interaction.reply({ 
-                        content: 'Erro ao processar o formulário de whitelist.', 
-                        ephemeral: true 
-                    });
+                if (whitelistCommand) {
+                    await whitelistCommand.execute(interaction, client);
                 }
             }
         }
     } catch (error) {
-        console.error('❌ Erro geral na interação:', error);
-        
-        // Tentar registrar o erro
-        try {
-            if (interaction.guild) {
-                await logger.logError(interaction.guild, 'interacao', error, {
-                    userId: interaction.user?.id,
-                    type: interaction.type,
-                    commandName: interaction.commandName
-                });
-            }
-        } catch (logError) {
-            console.error('❌ Erro ao registrar erro de interação:', logError);
-        }
-        
-        // Responder ao usuário
-        try {
-            if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ 
-                    content: 'Ocorreu um erro ao processar esta interação.', 
-                    ephemeral: true 
-                });
-            } else {
-                await interaction.editReply({ 
-                    content: 'Ocorreu um erro ao processar esta interação.' 
-                });
-            }
-        } catch (replyError) {
-            console.error('❌ Erro ao tentar informar erro ao usuário:', replyError);
-        }
+        console.error('❌ Erro ao processar interação:', error);
     }
 });
 
