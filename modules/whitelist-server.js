@@ -23,9 +23,26 @@ class WhitelistServer {
     constructor(client) {
         console.log('🔧 Inicializando servidor de whitelist...');
         console.log('📋 Verificando variáveis de ambiente:');
-        console.log('- ADMIN_USERNAME:', process.env.ADMIN_USERNAME);
-        console.log('- ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD ? 'Configurada' : 'Não configurada');
-        console.log('- JWT_SECRET:', process.env.JWT_SECRET ? 'Configurado' : 'Não configurado');
+        console.log('- ADMIN_USERNAME:', process.env.ADMIN_USERNAME || '❌ Não configurado');
+        console.log('- ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD ? '✅ Configurada' : '❌ Não configurada');
+        console.log('- JWT_SECRET:', process.env.JWT_SECRET ? '✅ Configurado' : '❌ Não configurado');
+        console.log('- ADMIN_JWT_SECRET:', process.env.ADMIN_JWT_SECRET ? '✅ Configurado' : '❌ Não configurado');
+        
+        // Verificar variáveis obrigatórias
+        if (!process.env.ADMIN_USERNAME) {
+            console.error('❌ ADMIN_USERNAME não está configurado no .env');
+            throw new Error('ADMIN_USERNAME não está configurado');
+        }
+        
+        if (!process.env.ADMIN_PASSWORD) {
+            console.error('❌ ADMIN_PASSWORD não está configurado no .env');
+            throw new Error('ADMIN_PASSWORD não está configurado');
+        }
+        
+        if (!process.env.ADMIN_JWT_SECRET) {
+            console.error('❌ ADMIN_JWT_SECRET não está configurado no .env');
+            throw new Error('ADMIN_JWT_SECRET não está configurado');
+        }
         
         this.client = client;
         this.app = express();
@@ -41,7 +58,7 @@ class WhitelistServer {
         // Verificar variáveis de ambiente
         console.log('📋 Configurações do servidor:');
         console.log('- URL:', config.server.url);
-        console.log('- Webhook:', config.notifications.webhookEnabled ? 'Configurado' : 'Não configurado');
+        console.log('- Webhook:', process.env.WHITELIST_WEBHOOK_URL ? '✅ Configurado' : '❌ Não configurado');
         
         this.setupWebhook();
         this.setupMiddleware();

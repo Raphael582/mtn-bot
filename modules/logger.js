@@ -56,23 +56,17 @@ class Logger {
         for (const [envVar, channelName] of Object.entries(logChannels)) {
             const channelId = process.env[envVar];
             if (!channelId) {
-                console.log(`⚠️ ID do canal ${channelName} não configurado, buscando por nome...`);
-                const channel = guild.channels.cache.find(c => c.name === channelName);
-                if (!channel) {
-                    console.error(`❌ Canal ${channelName} não encontrado`);
-                    continue;
-                }
-                console.log(`✅ Canal ${channelName} encontrado por nome`);
+                console.error(`❌ ID do canal ${channelName} não configurado no .env`);
                 continue;
             }
 
             const channel = guild.channels.cache.get(channelId);
             if (!channel) {
-                console.error(`❌ Canal ${channelName} não encontrado pelo ID`);
+                console.error(`❌ Canal ${channelName} não encontrado com o ID: ${channelId}`);
                 continue;
             }
 
-            console.log(`✅ Canal ${channelName} verificado com sucesso`);
+            console.log(`✅ Canal ${channelName} verificado com sucesso (ID: ${channelId})`);
         }
     }
 
