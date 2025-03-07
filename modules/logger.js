@@ -2,6 +2,8 @@ const { EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const env = require('./env');
+const winston = require('winston');
+const config = require('../config/server.config');
 
 class Logger {
     constructor(client) {
@@ -215,4 +217,89 @@ class Logger {
     }
 }
 
-module.exports = Logger;
+// Configuração dos formatos
+const formats = winston.format.combine(
+    winston.format.timestamp({
+        format: 'YYYY-MM-DD HH:mm:ss'
+    }),
+    winston.format.errors({ stack: true }),
+    winston.format.splat(),
+    winston.format.json()
+);
+
+// Configuração dos transportes
+const transports = [];
+
+// Transporte para console
+if (config.logging.transports.includes('console')) {
+    transports.push(
+        new winston.transports.Console({
+            format: winston.format.combine(
+                winston.format.colorize(),
+                winston.format.simple()
+            )
+        })
+    );
+}
+
+// Transporte para arquivo
+if (config.logging.transports.includes('file')) {
+    transports.push(
+        new winston.transports.File({
+            filename: path.join(__dirname, '..', config.logging.filename),
+            maxsize: 5242880, // 5MB
+            maxFiles: 5
+        })
+    );
+}
+
+// Criar o logger
+const logger = winston.createLogger({
+    level: config.logging.level,
+    format: formats,
+    transports,
+    exitOnError: false
+});
+
+// Funções auxiliares
+const log = {
+    info: (message, meta = {}) => {
+        logger.info(message, meta);
+    },
+    error: (message, meta = {}) => {
+        logger.error(message, meta);
+    },
+    warn: (message, meta = {}) => {
+        logger.warn(message, meta);
+    },
+    debug: (message, meta = {}) => {
+        logger.debug(message, meta);
+    },
+    http: (message, meta = {}) => {
+        logger.http(message, meta);
+    }
+};
+
+// Middleware para logging de requisições HTTP
+const httpLogger = (req, res, next) => {
+    const start = Date.now();
+
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        logger.http(`${req.method} ${req.originalUrl}`, {
+            method: req.method,
+            url: req.originalUrl,
+            status: res.statusCode,
+            duration: `${duration}ms`,
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+    });
+
+    next();
+};
+
+module.exports = {
+    log,
+    httpLogger
+};

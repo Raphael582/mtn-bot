@@ -1,203 +1,191 @@
 const fs = require('fs').promises;
 const path = require('path');
-const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid');
+const config = require('../config/whitelist.config');
 
 class DataManager {
     constructor() {
-        this.dataPath = path.join(__dirname, '..', 'data', 'whitelist.json');
-        this.cooldownsPath = path.join(__dirname, '..', 'data', 'cooldowns.json');
-        this.adminsPath = path.join(__dirname, '..', 'data', 'admins.json');
-        this.initializeData();
+        this.dataPath = config.storage.path;
+        this.formsPath = path.join(this.dataPath, 'forms.json');
+        this.adminsPath = path.join(this.dataPath, 'admins.json');
+        this.auditPath = path.join(this.dataPath, 'audit.json');
     }
 
-    async initializeData() {
+    async initialize() {
         try {
-            await fs.mkdir(path.join(__dirname, '..', 'data'), { recursive: true });
-            
-            // Inicializar arquivo de whitelist
-            try {
-                await fs.access(this.dataPath);
-            } catch {
-                await fs.writeFile(this.dataPath, JSON.stringify({ requests: [] }, null, 2));
-            }
+            // Criar diretório de dados se não existir
+            await fs.mkdir(this.dataPath, { recursive: true });
 
-            // Inicializar arquivo de cooldowns
-            try {
-                await fs.access(this.cooldownsPath);
-            } catch {
-                await fs.writeFile(this.cooldownsPath, JSON.stringify({ cooldowns: {} }, null, 2));
-            }
+            // Inicializar arquivos JSON se não existirem
+            await this.initializeFile(this.formsPath, { forms: [] });
+            await this.initializeFile(this.adminsPath, { 
+                admins: [
+                    {
+                        id: '1',
+                        username: config.auth.admin.username,
+                        password: config.auth.admin.password,
+                        role: 'superadmin',
+                        created_at: new Date().toISOString()
+                    }
+                ]
+            });
+            await this.initializeFile(this.auditPath, { logs: [] });
 
-            // Inicializar arquivo de admins
-            try {
-                await fs.access(this.adminsPath);
-            } catch {
-                const initialAdmin = {
-                    id: "1",
-                    username: process.env.ADMIN_USERNAME,
-                    password: process.env.ADMIN_PASSWORD,
-                    createdAt: new Date().toISOString(),
-                    lastLogin: null
-                };
-                await fs.writeFile(this.adminsPath, JSON.stringify({ admins: [initialAdmin] }, null, 2));
-            }
+            console.log('✅ Arquivos de dados inicializados com sucesso');
         } catch (error) {
-            console.error('Erro ao inicializar dados:', error);
+            console.error('❌ Erro ao inicializar arquivos de dados:', error);
+            throw error;
         }
     }
 
-    async readData() {
+    async initializeFile(filePath, defaultData) {
         try {
-            const data = await fs.readFile(this.dataPath, 'utf8');
+            await fs.access(filePath);
+        } catch {
+            await fs.writeFile(filePath, JSON.stringify(defaultData, null, 2));
+        }
+    }
+
+    async readFile(filePath) {
+        try {
+            const data = await fs.readFile(filePath, 'utf8');
             return JSON.parse(data);
         } catch (error) {
-            console.error('Erro ao ler dados:', error);
-            return { requests: [] };
+            console.error(`❌ Erro ao ler arquivo ${filePath}:`, error);
+            throw error;
         }
     }
 
-    async writeData(data) {
+    async writeFile(filePath, data) {
         try {
-            await fs.writeFile(this.dataPath, JSON.stringify(data, null, 2));
+            await fs.writeFile(filePath, JSON.stringify(data, null, 2));
         } catch (error) {
-            console.error('Erro ao escrever dados:', error);
+            console.error(`❌ Erro ao escrever arquivo ${filePath}:`, error);
+            throw error;
         }
     }
 
-    async readCooldowns() {
-        try {
-            const data = await fs.readFile(this.cooldownsPath, 'utf8');
-            return JSON.parse(data);
-        } catch (error) {
-            console.error('Erro ao ler cooldowns:', error);
-            return { cooldowns: {} };
-        }
+    // Gerenciamento de Formulários
+    async getAllForms() {
+        const data = await this.readFile(this.formsPath);
+        return data.forms;
     }
 
-    async writeCooldowns(data) {
-        try {
-            await fs.writeFile(this.cooldownsPath, JSON.stringify(data, null, 2));
-        } catch (error) {
-            console.error('Erro ao escrever cooldowns:', error);
-        }
+    async getFormById(id) {
+        const forms = await this.getAllForms();
+        return forms.find(form => form.id === id);
     }
 
-    async readAdmins() {
-        try {
-            const data = await fs.readFile(this.adminsPath, 'utf8');
-            return JSON.parse(data);
-        } catch (error) {
-            console.error('Erro ao ler admins:', error);
-            return { admins: [] };
-        }
+    async getFormByDiscordId(discordId) {
+        const forms = await this.getAllForms();
+        return forms.find(form => form.discord_id === discordId);
     }
 
-    async writeAdmins(data) {
-        try {
-            await fs.writeFile(this.adminsPath, JSON.stringify(data, null, 2));
-        } catch (error) {
-            console.error('Erro ao escrever admins:', error);
-        }
+    async createForm(formData) {
+        const data = await this.readFile(this.formsPath);
+        const newForm = {
+            id: Date.now().toString(),
+            ...formData
+        };
+        data.forms.push(newForm);
+        await this.writeFile(this.formsPath, data);
+        return newForm;
     }
 
-    async findAdmin(username) {
-        const data = await this.readAdmins();
-        return data.admins.find(admin => admin.username === username);
-    }
-
-    async updateAdminLogin(adminId) {
-        const data = await this.readAdmins();
-        const admin = data.admins.find(a => a.id === adminId);
-        if (admin) {
-            admin.lastLogin = new Date().toISOString();
-            await this.writeAdmins(data);
-        }
-    }
-
-    async addWhitelistRequest(userId, data) {
-        const whitelistData = await this.readData();
-        const cooldownsData = await this.readCooldowns();
+    async updateFormStatus(id, status, adminUsername) {
+        const data = await this.readFile(this.formsPath);
+        const formIndex = data.forms.findIndex(form => form.id === id);
         
-        // Verificar cooldown
-        const cooldown = cooldownsData.cooldowns[userId];
-        if (cooldown && Date.now() < cooldown) {
-            const remainingTime = Math.ceil((cooldown - Date.now()) / (1000 * 60 * 60 * 24));
-            throw new Error(`Você precisa aguardar ${remainingTime} dias antes de fazer uma nova solicitação`);
-        }
+        if (formIndex === -1) return null;
 
-        // Verificar se já existe uma solicitação pendente
-        const existingRequest = whitelistData.requests.find(r => 
-            r.userId === userId && r.status === 'pendente'
-        );
-        if (existingRequest) {
-            throw new Error('Você já possui uma solicitação pendente');
-        }
-
-        const request = {
-            id: uuidv4(),
-            userId,
-            ...data,
-            status: 'pendente',
-            data: new Date().toISOString()
+        data.forms[formIndex] = {
+            ...data.forms[formIndex],
+            status,
+            updated_by: adminUsername,
+            updated_at: new Date().toISOString()
         };
 
-        whitelistData.requests.push(request);
-        await this.writeData(whitelistData);
-
-        // Definir cooldown de 7 dias
-        cooldownsData.cooldowns[userId] = Date.now() + (7 * 24 * 60 * 60 * 1000);
-        await this.writeCooldowns(cooldownsData);
-
-        return request;
+        await this.writeFile(this.formsPath, data);
+        return data.forms[formIndex];
     }
 
-    async updateWhitelistRequest(id, status, motivo = null) {
-        const data = await this.readData();
-        const request = data.requests.find(r => r.id === id);
+    // Gerenciamento de Admins
+    async getAllAdmins() {
+        const data = await this.readFile(this.adminsPath);
+        return data.admins;
+    }
+
+    async getAdminByUsername(username) {
+        const admins = await this.getAllAdmins();
+        return admins.find(admin => admin.username === username);
+    }
+
+    async addAdmin(adminData) {
+        const data = await this.readFile(this.adminsPath);
         
-        if (!request) {
-            throw new Error('Solicitação não encontrada');
+        // Verificar se o usuário já existe
+        if (data.admins.some(admin => admin.username === adminData.username)) {
+            throw new Error('Usuário já existe');
         }
 
-        request.status = status;
-        request.motivo = motivo;
-        request.dataAtualizacao = new Date().toISOString();
+        const newAdmin = {
+            id: Date.now().toString(),
+            ...adminData
+        };
 
-        await this.writeData(data);
-        return request;
+        data.admins.push(newAdmin);
+        await this.writeFile(this.adminsPath, data);
+        return newAdmin;
     }
 
-    async getPendingRequests() {
-        const data = await this.readData();
-        return data.requests.filter(r => r.status === 'pendente');
+    async updateAdmin(id, adminData) {
+        const data = await this.readFile(this.adminsPath);
+        const adminIndex = data.admins.findIndex(admin => admin.id === id);
+        
+        if (adminIndex === -1) return null;
+
+        data.admins[adminIndex] = {
+            ...data.admins[adminIndex],
+            ...adminData,
+            updated_at: new Date().toISOString()
+        };
+
+        await this.writeFile(this.adminsPath, data);
+        return data.admins[adminIndex];
     }
 
-    async getRequestById(id) {
-        const data = await this.readData();
-        return data.requests.find(r => r.id === id);
-    }
+    async deleteAdmin(id) {
+        const data = await this.readFile(this.adminsPath);
+        const adminIndex = data.admins.findIndex(admin => admin.id === id);
+        
+        if (adminIndex === -1) return false;
 
-    async getUserRequest(userId) {
-        const data = await this.readData();
-        return data.requests.find(r => r.userId === userId);
-    }
-
-    async getAllRequests() {
-        const data = await this.readData();
-        return data.requests;
-    }
-
-    async resetCooldown(userId) {
-        const cooldownsData = await this.readCooldowns();
-        delete cooldownsData.cooldowns[userId];
-        await this.writeCooldowns(cooldownsData);
+        data.admins.splice(adminIndex, 1);
+        await this.writeFile(this.adminsPath, data);
         return true;
     }
 
-    async getCooldown(userId) {
-        const cooldownsData = await this.readCooldowns();
-        return cooldownsData.cooldowns[userId];
+    // Gerenciamento de Logs de Auditoria
+    async getAuditLogs() {
+        const data = await this.readFile(this.auditPath);
+        return data.logs;
+    }
+
+    async addAuditLog(logData) {
+        const data = await this.readFile(this.auditPath);
+        const newLog = {
+            id: Date.now().toString(),
+            timestamp: new Date().toISOString(),
+            ...logData
+        };
+        data.logs.push(newLog);
+        await this.writeFile(this.auditPath, data);
+        return newLog;
+    }
+
+    async clearAuditLogs() {
+        const data = await this.readFile(this.auditPath);
+        data.logs = [];
+        await this.writeFile(this.auditPath, data);
     }
 }
 

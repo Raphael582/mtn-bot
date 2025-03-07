@@ -1,10 +1,10 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const { Client, GatewayIntentBits } = require('discord.js');
-const whitelistRoutes = require('./routes/whitelist');
-const adminRoutes = require('./routes/admin');
+const config = require('./config/whitelist.config');
+const apiRoutes = require('./routes/api');
+const dataManager = require('./modules/dataManager');
 require('dotenv').config();
 
 const app = express();
@@ -29,14 +29,8 @@ app.use(express.static(path.join(__dirname, 'whitelist-frontend')));
 // Compartilhar cliente Discord com as rotas
 app.locals.client = client;
 
-// Conectar ao MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('Conectado ao MongoDB'))
-    .catch(err => console.error('Erro ao conectar ao MongoDB:', err));
-
 // Rotas
-app.use('/api/whitelist', whitelistRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api', apiRoutes);
 
 // Rota para a página inicial
 app.get('/', (req, res) => {
@@ -53,18 +47,45 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'whitelist-frontend', 'admin.html'));
 });
 
-// Rota para o gerenciamento de administradores
-app.get('/admin-manage', (req, res) => {
-    res.sendFile(path.join(__dirname, 'whitelist-frontend', 'admin-manage.html'));
+// Inicializar o gerenciador de dados
+async function initialize() {
+    try {
+        await dataManager.initialize();
+        console.log('✅ Gerenciador de dados inicializado com sucesso');
+    } catch (error) {
+        console.error('❌ Erro ao inicializar gerenciador de dados:', error);
+        process.exit(1);
+    }
+}
+
+// Iniciar o servidor
+async function startServer() {
+    try {
+        await initialize();
+        
+        app.listen(config.port, config.host, () => {
+            console.log(`
+🚀 Servidor Whitelist iniciado
+📡 URL: http://${config.host}:${config.port}
+📝 Painel Admin: http://${config.host}:${config.port}/admin
+            `);
+        });
+    } catch (error) {
+        console.error('❌ Erro ao iniciar servidor:', error);
+        process.exit(1);
+    }
+}
+
+// Tratamento de erros não capturados
+process.on('uncaughtException', (error) => {
+    console.error('❌ Erro não capturado:', error);
+    process.exit(1);
 });
 
-// Tratamento de erros
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+process.on('unhandledRejection', (error) => {
+    console.error('❌ Promessa rejeitada não tratada:', error);
+    process.exit(1);
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-}); 
+// Iniciar o servidor
+startServer(); 

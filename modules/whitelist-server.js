@@ -254,16 +254,26 @@ class WhitelistServer {
 
     async handleWhitelistSubmit(req, res) {
         try {
-            const { ...formData } = req.body;
+            console.log('\n📝 Nova submissão de whitelist');
+            console.log('Dados recebidos:', req.body);
+            
+            const { nome, idade, estado, comoConheceu, religiao } = req.body;
             const userId = req.user.userId;
             
-            console.log(`📝 Processando formulário para usuário ${userId}`);
+            // Validar campos obrigatórios
+            const requiredFields = ['nome', 'idade', 'estado', 'comoConheceu', 'religiao'];
+            const missingFields = requiredFields.filter(field => !req.body[field]);
             
-            // Verificar se já existe um formulário para este usuário
+            if (missingFields.length > 0) {
+                console.log('❌ Campos obrigatórios faltando:', missingFields);
+                return res.status(400).json({ error: 'Campos obrigatórios não preenchidos' });
+            }
+            
+            // Verificar se já existe um formulário pendente
             const existingForm = Object.values(this.db.forms).find(f => f.userId === userId && f.status === 'pendente');
             if (existingForm) {
                 console.log(`⚠️ Usuário ${userId} já possui um formulário pendente`);
-                return res.status(400).json({ error: 'Você já enviou uma solicitação' });
+                return res.status(400).json({ error: 'Você já possui um formulário pendente' });
             }
             
             // Criar novo formulário
@@ -271,40 +281,49 @@ class WhitelistServer {
             const form = {
                 id: formId,
                 userId,
-                ...formData,
+                nome,
+                idade,
+                estado,
+                comoConheceu,
+                religiao,
                 status: 'pendente',
-                createdAt: new Date().toISOString()
+                submittedAt: new Date().toISOString(),
+                ip: req.clientIp
             };
             
+            // Salvar no banco de dados
             this.db.forms[formId] = form;
-            console.log(`✅ Formulário criado com ID ${formId}`);
             
-            // Enviar notificação para o Discord
-            const webhookUrl = env.DISCORD_WEBHOOK_URL;
-            if (webhookUrl) {
-                const embed = new EmbedBuilder()
-                    .setTitle('Nova Solicitação de Whitelist')
-                    .setColor('#3b82f6')
-                    .addFields(
-                        { name: 'Usuário', value: formData.nome, inline: true },
-                        { name: 'Discord', value: `<@${userId}>`, inline: true },
-                        { name: 'Estado', value: formData.estado, inline: true },
-                        { name: 'Idade', value: formData.idade, inline: true },
-                        { name: 'Experiência', value: formData.experiencia, inline: true },
-                        { name: 'Motivação', value: formData.motivacao }
-                    )
-                    .setTimestamp();
+            // Enviar notificação via webhook
+            if (this.webhookClient) {
+                try {
+                    const embed = new EmbedBuilder()
+                        .setTitle('📝 Nova Solicitação de Whitelist')
+                        .setColor('#FFA500')
+                        .addFields(
+                            { name: 'Nome', value: nome },
+                            { name: 'Idade', value: idade.toString() },
+                            { name: 'Estado', value: estado },
+                            { name: 'Como Conheceu', value: comoConheceu },
+                            { name: 'Religião', value: religiao },
+                            { name: 'ID do Usuário', value: userId },
+                            { name: 'IP', value: req.clientIp }
+                        )
+                        .setTimestamp();
                     
-                await this.sendDiscordNotification(webhookUrl, embed);
+                    await this.webhookClient.send({ embeds: [embed] });
+                    console.log('✅ Notificação enviada via webhook');
+                } catch (error) {
+                    console.error('❌ Erro ao enviar notificação:', error);
+                }
             }
             
-            res.json({
-                success: true,
-                message: 'Solicitação enviada com sucesso! Aguarde a análise da equipe.'
-            });
+            console.log('✅ Formulário salvo com sucesso');
+            res.json({ success: true, message: 'Formulário enviado com sucesso' });
+            
         } catch (error) {
             console.error('❌ Erro ao processar formulário:', error);
-            res.status(500).json({ error: 'Erro ao processar solicitação' });
+            res.status(500).json({ error: 'Erro ao processar formulário' });
         }
     }
 

@@ -4,184 +4,215 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - Whitelist</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-            min-height: 100vh;
-            color: #fff;
+            background-color: #1a1a1a;
+            color: #ffffff;
         }
-        .glass {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
         }
-        .btn-primary {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
-        }
-        .input-field {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-            color: #fff;
-        }
-        .input-field:focus {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
-        }
-        .input-field::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-        .error-message {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-            padding: 0.75rem;
+        .card {
+            background-color: #2d2d2d;
             border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            display: none;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        .success-message {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            color: #22c55e;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
+        .btn {
+            background-color: #3b82f6;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #2563eb;
+        }
+        .btn-danger {
+            background-color: #ef4444;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+        .form-input {
+            background-color: #3d3d3d;
+            border: 1px solid #4d4d4d;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            width: 100%;
             margin-bottom: 1rem;
-            display: none;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table th, .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #4d4d4d;
+        }
+        .table th {
+            background-color: #3d3d3d;
+            font-weight: 600;
+        }
+        .table tr:hover {
+            background-color: #3d3d3d;
+        }
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .badge-pending {
+            background-color: #f59e0b;
+            color: #1a1a1a;
+        }
+        .badge-approved {
+            background-color: #10b981;
+            color: #1a1a1a;
+        }
+        .badge-rejected {
+            background-color: #ef4444;
+            color: #1a1a1a;
+        }
+        .badge-admin {
+            background-color: #3b82f6;
+            color: #1a1a1a;
+        }
+        .badge-superadmin {
+            background-color: #8b5cf6;
+            color: #1a1a1a;
         }
     </style>
 </head>
 <body>
-    <!-- Login Form -->
-    <div id="loginForm" class="min-h-screen flex items-center justify-center p-4">
-        <div class="glass rounded-lg p-8 w-full max-w-md">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold mb-2">Login Admin</h2>
-                <p class="text-gray-400">Acesse o painel administrativo</p>
+    <div class="container">
+        <div class="card">
+            <h1 class="text-2xl font-bold mb-4">Painel Administrativo</h1>
+            
+            <!-- Login Form -->
+            <div id="loginForm" class="mb-8">
+                <h2 class="text-xl font-semibold mb-4">Login</h2>
+                <form id="loginFormElement" class="space-y-4">
+                    <div>
+                        <label class="block mb-2">Usuário</label>
+                        <input type="text" id="username" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="block mb-2">Senha</label>
+                        <input type="password" id="password" class="form-input" required>
+                    </div>
+                    <button type="submit" class="btn">Entrar</button>
+                </form>
             </div>
-            
-            <div id="errorMessage" class="error-message"></div>
-            <div id="successMessage" class="success-message"></div>
-            
-            <form id="loginFormElement" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium mb-2">Usuário</label>
-                    <input type="text" id="username" class="input-field w-full rounded-lg px-4 py-2" placeholder="Digite seu usuário" required>
+
+            <!-- Admin Panel -->
+            <div id="adminPanel" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold">Gerenciamento de Whitelist</h2>
+                    <div class="space-x-2">
+                        <button id="addAdminBtn" class="btn">Adicionar Admin</button>
+                        <button id="logoutBtn" class="btn btn-danger">Sair</button>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium mb-2">Senha</label>
-                    <input type="password" id="password" class="input-field w-full rounded-lg px-4 py-2" placeholder="Digite sua senha" required>
+
+                <!-- Forms List -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold mb-4">Solicitações Pendentes</h3>
+                    <div class="overflow-x-auto">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome</th>
+                                    <th>Idade</th>
+                                    <th>Estado</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="formsList"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <button type="submit" class="btn-primary w-full rounded-lg px-4 py-3 font-medium text-lg">
-                    Entrar
-                </button>
-            </form>
+
+                <!-- Admins List -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold mb-4">Administradores</h3>
+                    <div class="overflow-x-auto">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Usuário</th>
+                                    <th>Cargo</th>
+                                    <th>Data de Criação</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminsList"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Audit Logs -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Logs de Auditoria</h3>
+                    <div class="overflow-x-auto">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Admin</th>
+                                    <th>Ação</th>
+                                    <th>Data</th>
+                                    <th>Detalhes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditLogs"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Admin Panel -->
-    <div id="adminPanel" class="hidden min-h-screen p-4">
-        <div class="max-w-7xl mx-auto">
-            <!-- Header -->
-            <div class="glass rounded-lg p-4 mb-6 flex justify-between items-center">
-                <h1 class="text-2xl font-bold">Painel Admin</h1>
-                <div class="flex items-center space-x-4">
-                    <span id="adminUsername" class="text-sm"></span>
-                    <button id="logoutBtn" class="btn-primary px-4 py-2 rounded-lg text-sm">
-                        Sair
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tabs -->
-            <div class="glass rounded-lg p-4 mb-6">
-                <div class="flex space-x-4">
-                    <button class="tab-btn active px-4 py-2 rounded-lg" data-tab="whitelist">
-                        Whitelist
-                    </button>
-                    <button class="tab-btn px-4 py-2 rounded-lg" data-tab="admins">
-                        Admins
-                    </button>
-                    <button class="tab-btn px-4 py-2 rounded-lg" data-tab="audit">
-                        Auditoria
-                    </button>
-                </div>
-            </div>
-
-            <!-- Whitelist Tab -->
-            <div id="whitelistTab" class="tab-content active">
-                <div class="glass rounded-lg p-4">
-                    <h2 class="text-xl font-bold mb-4">Solicitações de Whitelist</h2>
-                    <div id="whitelistRequests" class="space-y-4">
-                        <!-- Requests will be loaded here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Admins Tab -->
-            <div id="adminsTab" class="tab-content hidden">
-                <div class="glass rounded-lg p-4">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold">Gerenciar Admins</h2>
-                        <button id="addAdminBtn" class="btn-primary px-4 py-2 rounded-lg">
-                            Novo Admin
-                        </button>
-                    </div>
-                    <div id="adminsList" class="space-y-4">
-                        <!-- Admins will be loaded here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Audit Tab -->
-            <div id="auditTab" class="tab-content hidden">
-                <div class="glass rounded-lg p-4">
-                    <h2 class="text-xl font-bold mb-4">Logs de Auditoria</h2>
-                    <div id="auditLogs" class="space-y-4">
-                        <!-- Audit logs will be loaded here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add Admin Modal -->
-    <div id="addAdminModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="glass rounded-lg p-8 w-full max-w-md">
-            <h2 class="text-2xl font-bold mb-6">Novo Admin</h2>
-            <form id="addAdminForm" class="space-y-4">
+    <!-- Modal para Adicionar/Editar Admin -->
+    <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+        <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+            <h3 class="text-xl font-semibold mb-4">Adicionar Administrador</h3>
+            <form id="adminForm" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium mb-2">Usuário</label>
-                    <input type="text" id="newAdminUsername" class="input-field w-full rounded-lg px-4 py-2" required>
+                    <label class="block mb-2">Usuário</label>
+                    <input type="text" id="adminUsername" class="form-input" required>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-2">Senha</label>
-                    <input type="password" id="newAdminPassword" class="input-field w-full rounded-lg px-4 py-2" required>
+                    <label class="block mb-2">Senha</label>
+                    <input type="password" id="adminPassword" class="form-input" required>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-2">Cargo</label>
-                    <select id="newAdminRole" class="input-field w-full rounded-lg px-4 py-2" required>
+                    <label class="block mb-2">Cargo</label>
+                    <select id="adminRole" class="form-input" required>
                         <option value="admin">Admin</option>
                         <option value="superadmin">Super Admin</option>
                     </select>
                 </div>
-                <div class="flex space-x-4">
-                    <button type="submit" class="btn-primary flex-1 rounded-lg px-4 py-2">
-                        Criar
-                    </button>
-                    <button type="button" id="cancelAddAdmin" class="flex-1 rounded-lg px-4 py-2 bg-gray-700 hover:bg-gray-600">
-                        Cancelar
-                    </button>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" id="cancelAdminBtn" class="btn btn-danger">Cancelar</button>
+                    <button type="submit" class="btn">Salvar</button>
                 </div>
             </form>
         </div>
@@ -189,103 +220,163 @@
 
     <script>
         let token = localStorage.getItem('adminToken');
-        let currentUser = JSON.parse(localStorage.getItem('adminUser'));
+        let currentUser = null;
 
-        // Login Form
+        // Funções de API
+        async function login(username, password) {
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                if (!response.ok) throw new Error('Login falhou');
+                
+                const data = await response.json();
+                token = data.token;
+                currentUser = data;
+                localStorage.setItem('adminToken', token);
+                
+                showAdminPanel();
+                loadData();
+            } catch (error) {
+                alert('Erro ao fazer login: ' + error.message);
+            }
+        }
+
+        async function loadData() {
+            if (!token) return;
+            
+            try {
+                await Promise.all([
+                    loadForms(),
+                    loadAdmins(),
+                    loadAuditLogs()
+                ]);
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+            }
+        }
+
+        async function loadForms() {
+            const response = await fetch('/api/whitelist/forms', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!response.ok) throw new Error('Erro ao carregar formulários');
+            
+            const forms = await response.json();
+            const tbody = document.getElementById('formsList');
+            tbody.innerHTML = '';
+            
+            forms.forEach(form => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${form.id}</td>
+                    <td>${form.nome}</td>
+                    <td>${form.idade}</td>
+                    <td>${form.estado}</td>
+                    <td><span class="badge badge-${form.status}">${form.status}</span></td>
+                    <td>
+                        <button onclick="viewForm('${form.id}')" class="btn">Ver</button>
+                        ${form.status === 'pendente' ? `
+                            <button onclick="approveForm('${form.id}')" class="btn">Aprovar</button>
+                            <button onclick="rejectForm('${form.id}')" class="btn btn-danger">Rejeitar</button>
+                        ` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function loadAdmins() {
+            const response = await fetch('/api/admin/list', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!response.ok) throw new Error('Erro ao carregar admins');
+            
+            const admins = await response.json();
+            const tbody = document.getElementById('adminsList');
+            tbody.innerHTML = '';
+            
+            admins.forEach(admin => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${admin.id}</td>
+                    <td>${admin.username}</td>
+                    <td><span class="badge badge-${admin.role}">${admin.role}</span></td>
+                    <td>${new Date(admin.createdAt).toLocaleString()}</td>
+                    <td>
+                        <button onclick="editAdmin('${admin.id}')" class="btn">Editar</button>
+                        ${admin.id !== currentUser.id ? `
+                            <button onclick="deleteAdmin('${admin.id}')" class="btn btn-danger">Excluir</button>
+                        ` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function loadAuditLogs() {
+            const response = await fetch('/api/admin/audit', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!response.ok) throw new Error('Erro ao carregar logs');
+            
+            const logs = await response.json();
+            const tbody = document.getElementById('auditLogs');
+            tbody.innerHTML = '';
+            
+            logs.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${log.id}</td>
+                    <td>${log.adminUsername}</td>
+                    <td>${log.action}</td>
+                    <td>${new Date(log.timestamp).toLocaleString()}</td>
+                    <td>${log.details}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Event Listeners
         document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            const errorMessage = document.getElementById('errorMessage');
-            const successMessage = document.getElementById('successMessage');
-            const submitButton = e.target.querySelector('button[type="submit"]');
-
-            try {
-                // Desabilitar o botão durante a requisição
-                submitButton.disabled = true;
-                submitButton.textContent = 'Entrando...';
-                
-                console.log('Tentando fazer login...');
-                console.log('Usuário:', username);
-                
-                const response = await fetch('/api/admin/login', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ username, password })
-                });
-
-                const data = await response.json();
-                console.log('Resposta do servidor:', data);
-                
-                if (response.ok) {
-                    token = data.token;
-                    currentUser = {
-                        username: data.username,
-                        role: data.role,
-                        permissions: data.permissions
-                    };
-                    localStorage.setItem('adminToken', token);
-                    localStorage.setItem('adminUser', JSON.stringify(currentUser));
-                    
-                    successMessage.textContent = 'Login realizado com sucesso!';
-                    successMessage.style.display = 'block';
-                    errorMessage.style.display = 'none';
-                    
-                    setTimeout(() => {
-                        showAdminPanel();
-                    }, 1000);
-                } else {
-                    errorMessage.textContent = data.error || 'Erro ao fazer login';
-                    errorMessage.style.display = 'block';
-                    successMessage.style.display = 'none';
-                }
-            } catch (error) {
-                console.error('Erro na requisição:', error);
-                errorMessage.textContent = 'Erro ao conectar com o servidor. Verifique se o servidor está rodando.';
-                errorMessage.style.display = 'block';
-                successMessage.style.display = 'none';
-            } finally {
-                // Reabilitar o botão
-                submitButton.disabled = false;
-                submitButton.textContent = 'Entrar';
-            }
+            await login(username, password);
         });
 
-        // Logout
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('adminToken');
-            localStorage.removeItem('adminUser');
+            token = null;
+            currentUser = null;
             showLoginForm();
         });
 
-        // Tab Navigation
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tab = btn.dataset.tab;
-                switchTab(tab);
-            });
-        });
-
-        // Add Admin Modal
         document.getElementById('addAdminBtn').addEventListener('click', () => {
-            document.getElementById('addAdminModal').classList.remove('hidden');
+            document.getElementById('adminModal').classList.remove('hidden');
+            document.getElementById('adminModal').classList.add('flex');
+            document.getElementById('adminForm').reset();
         });
 
-        document.getElementById('cancelAddAdmin').addEventListener('click', () => {
-            document.getElementById('addAdminModal').classList.add('hidden');
+        document.getElementById('cancelAdminBtn').addEventListener('click', () => {
+            document.getElementById('adminModal').classList.add('hidden');
+            document.getElementById('adminModal').classList.remove('flex');
         });
 
-        document.getElementById('addAdminForm').addEventListener('submit', async (e) => {
+        document.getElementById('adminForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = document.getElementById('newAdminUsername').value;
-            const password = document.getElementById('newAdminPassword').value;
-            const role = document.getElementById('newAdminRole').value;
-
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+            const role = document.getElementById('adminRole').value;
+            
             try {
-                const response = await fetch('/api/admin/admins', {
+                const response = await fetch('/api/admin/create', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -293,20 +384,18 @@
                     },
                     body: JSON.stringify({ username, password, role })
                 });
-
-                const data = await response.json();
-                if (response.ok) {
-                    document.getElementById('addAdminModal').classList.add('hidden');
-                    loadAdmins();
-                } else {
-                    alert(data.error);
-                }
+                
+                if (!response.ok) throw new Error('Erro ao criar admin');
+                
+                document.getElementById('adminModal').classList.add('hidden');
+                document.getElementById('adminModal').classList.remove('flex');
+                loadAdmins();
             } catch (error) {
-                alert('Erro ao criar admin');
+                alert('Erro ao criar admin: ' + error.message);
             }
         });
 
-        // Functions
+        // Funções de UI
         function showLoginForm() {
             document.getElementById('loginForm').classList.remove('hidden');
             document.getElementById('adminPanel').classList.add('hidden');
@@ -315,117 +404,12 @@
         function showAdminPanel() {
             document.getElementById('loginForm').classList.add('hidden');
             document.getElementById('adminPanel').classList.remove('hidden');
-            document.getElementById('adminUsername').textContent = currentUser.username;
-            loadWhitelistRequests();
-            if (currentUser.role === 'superadmin') {
-                loadAdmins();
-                loadAuditLogs();
-            }
         }
 
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.add('hidden');
-            });
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.getElementById(`${tab}Tab`).classList.remove('hidden');
-            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
-        }
-
-        async function loadWhitelistRequests() {
-            try {
-                const response = await fetch('/api/whitelist/requests', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                const requests = await response.json();
-                const container = document.getElementById('whitelistRequests');
-                container.innerHTML = requests.map(request => `
-                    <div class="glass rounded-lg p-4">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h3 class="font-medium">${request.username}</h3>
-                                <p class="text-sm text-gray-400">${request.discord_id}</p>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button onclick="approveRequest('${request.id}')" class="btn-primary px-4 py-2 rounded-lg text-sm">
-                                    Aprovar
-                                </button>
-                                <button onclick="rejectRequest('${request.id}')" class="px-4 py-2 rounded-lg text-sm bg-red-600 hover:bg-red-700">
-                                    Rejeitar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Erro ao carregar solicitações:', error);
-            }
-        }
-
-        async function loadAdmins() {
-            try {
-                const response = await fetch('/api/admin/admins', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                const admins = await response.json();
-                const container = document.getElementById('adminsList');
-                container.innerHTML = admins.map(admin => `
-                    <div class="glass rounded-lg p-4">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h3 class="font-medium">${admin.username}</h3>
-                                <p class="text-sm text-gray-400">${admin.role}</p>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button onclick="editAdminPermissions('${admin.username}')" class="btn-primary px-4 py-2 rounded-lg text-sm">
-                                    Permissões
-                                </button>
-                                <button onclick="deleteAdmin('${admin.username}')" class="px-4 py-2 rounded-lg text-sm bg-red-600 hover:bg-red-700">
-                                    Deletar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Erro ao carregar admins:', error);
-            }
-        }
-
-        async function loadAuditLogs() {
-            try {
-                const response = await fetch('/api/admin/audit-logs', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                const logs = await response.json();
-                const container = document.getElementById('auditLogs');
-                container.innerHTML = logs.map(log => `
-                    <div class="glass rounded-lg p-4">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h3 class="font-medium">${log.action}</h3>
-                                <p class="text-sm text-gray-400">${log.username} - ${new Date(log.timestamp).toLocaleString()}</p>
-                            </div>
-                        </div>
-                        <pre class="mt-2 text-sm text-gray-400">${JSON.stringify(log.details, null, 2)}</pre>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Erro ao carregar logs:', error);
-            }
-        }
-
-        // Initialize
-        if (token && currentUser) {
+        // Inicialização
+        if (token) {
             showAdminPanel();
+            loadData();
         } else {
             showLoginForm();
         }
