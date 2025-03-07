@@ -289,6 +289,51 @@
             const form = document.getElementById('whitelistForm');
             const status = document.getElementById('status');
 
+            // Capturar token da URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+
+            if (!token) {
+                status.textContent = 'Token inválido ou não fornecido. Por favor, use o comando /whitelist no Discord.';
+                status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                status.classList.remove('hidden');
+                form.style.display = 'none';
+                return;
+            }
+
+            // Decodificar o token para obter o ID do usuário
+            try {
+                const decodedToken = JSON.parse(atob(token.split('.')[1]));
+                const userId = decodedToken.userId;
+                const username = decodedToken.username;
+                
+                // Adicionar o ID e nome do usuário ao formulário
+                const userIdInput = document.createElement('input');
+                userIdInput.type = 'hidden';
+                userIdInput.name = 'userId';
+                userIdInput.value = userId;
+                form.appendChild(userIdInput);
+
+                const usernameInput = document.createElement('input');
+                usernameInput.type = 'hidden';
+                usernameInput.name = 'discordUsername';
+                usernameInput.value = username;
+                form.appendChild(usernameInput);
+
+                // Exibir mensagem de boas-vindas
+                const welcomeMessage = document.createElement('div');
+                welcomeMessage.className = 'text-center mb-6 text-green-400 animate__animated animate__fadeIn';
+                welcomeMessage.innerHTML = `<i class="fas fa-user-circle mr-2"></i>Bem-vindo(a), ${username}!`;
+                form.insertBefore(welcomeMessage, form.firstChild);
+            } catch (error) {
+                console.error('Erro ao decodificar token:', error);
+                status.textContent = 'Token inválido. Por favor, use o comando /whitelist no Discord.';
+                status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
+                status.classList.remove('hidden');
+                form.style.display = 'none';
+                return;
+            }
+
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
@@ -299,7 +344,8 @@
                     const response = await fetch('/api/whitelist/submit', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
                         },
                         body: JSON.stringify(data)
                     });

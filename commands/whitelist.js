@@ -10,11 +10,10 @@ module.exports = {
     async execute(interaction) {
         try {
             // Gerar token JWT
-            const token = jwt.sign(
-                { userId: interaction.user.id },
-                process.env.JWT_SECRET,
-                { expiresIn: '1h' }
-            );
+            const token = jwt.sign({ 
+                userId: interaction.user.id,
+                username: interaction.user.tag
+            }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
             // Construir URL do formulário
             const formUrl = `${config.server.url}/form?token=${token}`;
