@@ -21,7 +21,7 @@ module.exports = {
             );
             
             // Gerar link único para o usuário
-            const formUrl = `${process.env.WHITELIST_URL}/form?token=${token}`;
+            const formUrl = `${config.server.url}/form?token=${token}`;
             
             // Criar embed com instruções
             const embed = new EmbedBuilder()

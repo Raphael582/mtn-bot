@@ -1,5 +1,6 @@
 {
     "enabled": true,
+    "filterAdmins": false,
     "logChannelName": "logs-filtro",
     "whitelistedRoles": [],
     "whitelistedChannels": [],

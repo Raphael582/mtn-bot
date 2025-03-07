@@ -8,10 +8,10 @@ module.exports = {
             // Porta máxima para aleatorização
             max: 9999,
             // Tentar usar porta específica (null para aleatória)
-            specific: null
+            specific: 3000
         },
         // URL base do servidor
-        url: process.env.WHITELIST_URL || 'http://localhost',
+        url: process.env.WHITELIST_URL || 'http://56.124.64.115',
         // Usar localhost ou IP da máquina
         useLocalhost: false,
         // Configurações de segurança
@@ -40,7 +40,7 @@ module.exports = {
     },
     
     // Configurações do servidor
-    port: process.env.PORT || 3001,
+    port: process.env.PORT || 3000,
     host: process.env.HOST || '0.0.0.0',
     
     // Configurações do banco de dados

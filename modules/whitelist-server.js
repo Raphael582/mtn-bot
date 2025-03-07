@@ -6,12 +6,14 @@ const config = require('../config/whitelist.config');
 const os = require('os');
 const jwt = require('jsonwebtoken');
 const uuid = require('uuid');
+const Logger = require('./logger');
 
 class WhitelistServer {
     constructor(client) {
         console.log('🔧 Inicializando servidor de whitelist...');
         this.client = client;
         this.app = express();
+        this.logger = new Logger(client);
         this.db = {
             forms: {},
             admins: {},
@@ -46,6 +48,7 @@ class WhitelistServer {
             }
         } catch (error) {
             console.error('❌ Erro ao configurar webhook:', error);
+            await this.logger.logError(null, 'whitelist-webhook', error);
         }
     }
 
@@ -151,6 +154,7 @@ class WhitelistServer {
             req.user = decoded;
             next();
         } catch (error) {
+            console.error('❌ Token inválido:', error);
             return res.status(403).json({ error: 'Token inválido' });
         }
     }

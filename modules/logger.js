@@ -14,39 +14,120 @@ class Logger {
             PUNISH: { color: 0xe67e22, emoji: '🚫' },
             WHITELIST: { color: 0x1abc9c, emoji: '📝' }
         };
+        this.ensureLogChannels();
     }
 
-    async log(level, title, description, fields = [], options = {}) {
-        const logLevel = this.logLevels[level] || this.logLevels.INFO;
+    async ensureLogChannels() {
+        const guild = this.client.guilds.cache.get(process.env.GUILD_ID);
+        if (!guild) {
+            console.error('❌ Servidor não encontrado');
+            return;
+        }
+
+        const logChannels = {
+            LOG_ORACULO: 'logs-oraculo',
+            LOG_FILTRO: 'logs-filtro',
+            LOG_CHAT: 'logs-chat',
+            LOG_PUNICOES: 'logs-punicoes',
+            LOG_WHITELIST: 'logs-whitelist'
+        };
+
+        for (const [envVar, channelName] of Object.entries(logChannels)) {
+            const channelId = process.env[envVar];
+            if (!channelId) {
+                console.error(`❌ ID do canal ${channelName} não configurado`);
+                continue;
+            }
+
+            const channel = guild.channels.cache.get(channelId);
+            if (!channel) {
+                console.error(`❌ Canal ${channelName} não encontrado`);
+                continue;
+            }
+
+            console.log(`✅ Canal ${channelName} verificado com sucesso`);
+        }
+    }
+
+    async getLogChannel(level) {
         const channelId = process.env[`LOG_${level}`] || process.env.LOG_CHAT;
-
-        const embed = new EmbedBuilder()
-            .setColor(logLevel.color)
-            .setTitle(`${logLevel.emoji} ${title}`)
-            .setDescription(description)
-            .setTimestamp();
-
-        if (fields && fields.length > 0) {
-            embed.addFields(fields);
-        }
-
-        if (options.footer) {
-            embed.setFooter({ text: options.footer });
-        }
-
-        if (options.author) {
-            embed.setAuthor(options.author);
-        }
-
-        if (options.thumbnail) {
-            embed.setThumbnail(options.thumbnail);
+        if (!channelId) {
+            console.error(`❌ ID do canal de logs ${level} não configurado`);
+            return null;
         }
 
         const channel = this.client.channels.cache.get(channelId);
-        if (channel) {
-            await channel.send({ embeds: [embed] });
+        if (!channel) {
+            console.error(`❌ Canal de logs ${level} não encontrado`);
+            return null;
         }
 
+        return channel;
+    }
+
+    async log(level, title, description, fields = [], options = {}) {
+        try {
+            const logLevel = this.logLevels[level] || this.logLevels.INFO;
+            const channel = await this.getLogChannel(level);
+            
+            if (!channel) {
+                console.error(`❌ Não foi possível enviar log ${level}: Canal não encontrado`);
+                return;
+            }
+
+            const embed = new EmbedBuilder()
+                .setColor(logLevel.color)
+                .setTitle(`${logLevel.emoji} ${title}`)
+                .setDescription(description)
+                .setTimestamp();
+
+            if (fields && fields.length > 0) {
+                embed.addFields(fields);
+            }
+
+            if (options.footer) {
+                embed.setFooter({ text: options.footer });
+            }
+
+            if (options.author) {
+                embed.setAuthor(options.author);
+            }
+
+            if (options.thumbnail) {
+                embed.setThumbnail(options.thumbnail);
+            }
+
+            await channel.send({ embeds: [embed] });
+            await this.saveToFile(level, {
+                title,
+                description,
+                fields,
+                options,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`❌ Erro ao enviar log ${level}:`, error);
+        }
+    }
+
+    async saveToFile(level, data) {
+        try {
+            const logsDir = path.join(__dirname, '..', 'logs');
+            if (!fs.existsSync(logsDir)) {
+                fs.mkdirSync(logsDir, { recursive: true });
+            }
+
+            const fileName = `${level.toLowerCase()}_${new Date().toISOString().split('T')[0]}.json`;
+            const filePath = path.join(logsDir, fileName);
+
+            let logs = [];
+            if (fs.existsSync(filePath)) {
+                logs = JSON.parse(fs.readFileSync(filePath));
+            }
+
+            logs.push(data);
+            fs.writeFileSync(filePath, JSON.stringify(logs, null, 2));
+        } catch (error) {
         // Salvar log em arquivo
         this.saveToFile(level, {
             title,

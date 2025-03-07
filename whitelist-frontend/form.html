@@ -148,14 +148,15 @@
             }
             
             // Verificar se já existe um formulário para este usuário
-            fetch(`/api/whitelist/user/${token}`, {
+            fetch('/api/whitelist/forms', {
                 headers: {
                     'x-user-token': token
                 }
             })
             .then(response => response.json())
-            .then(data => {
-                if (data.exists) {
+            .then(forms => {
+                const userForm = forms.find(f => f.userId === token);
+                if (userForm) {
                     status.textContent = 'Você já enviou uma solicitação. Aguarde a resposta.';
                     status.className = 'text-yellow-500 bg-yellow-500 bg-opacity-10 p-4 rounded-lg text-center';
                     status.classList.remove('hidden');
@@ -164,6 +165,7 @@
             })
             .catch(error => console.error('Erro ao verificar status:', error));
             
+            // Enviar formulário
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
@@ -183,19 +185,20 @@
                     const result = await response.json();
                     
                     if (response.ok) {
-                        status.textContent = 'Solicitação enviada com sucesso! Aguarde a resposta.';
+                        status.textContent = 'Sua solicitação foi enviada com sucesso! Aguarde a resposta da equipe.';
                         status.className = 'text-green-500 bg-green-500 bg-opacity-10 p-4 rounded-lg text-center';
+                        status.classList.remove('hidden');
                         form.classList.add('opacity-50', 'pointer-events-none');
                     } else {
                         status.textContent = result.error || 'Erro ao enviar solicitação';
                         status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center';
+                        status.classList.remove('hidden');
                     }
                 } catch (error) {
                     status.textContent = 'Erro ao enviar solicitação. Tente novamente.';
                     status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center';
+                    status.classList.remove('hidden');
                 }
-                
-                status.classList.remove('hidden');
             });
         });
     </script>
