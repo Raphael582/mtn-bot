@@ -226,36 +226,25 @@ class WhitelistServer {
         try {
             console.log('🔄 Atualizando configuração do Nginx...');
             
-            // Verificar se o diretório existe
-            try {
-                await fs.access('/etc/nginx/sites-available');
-            } catch (error) {
-                console.error('❌ Diretório /etc/nginx/sites-available não encontrado');
-                return;
-            }
+            const { exec } = require('child_process');
+            const util = require('util');
+            const execAsync = util.promisify(exec);
+            const os = require('os');
+            const tmpDir = os.tmpdir();
 
-            // Criar arquivos de log
-            try {
-                await fs.writeFile('/var/log/nginx/whitelist-error.log', '');
-                await fs.writeFile('/var/log/nginx/whitelist-access.log', '');
-                console.log('✅ Arquivos de log criados');
-            } catch (error) {
-                console.error('❌ Erro ao criar arquivos de log:', error);
-                // Tentar criar com sudo
-                const { exec } = require('child_process');
-                exec('sudo touch /var/log/nginx/whitelist-error.log /var/log/nginx/whitelist-access.log', (error) => {
-                    if (error) {
-                        console.error('❌ Erro ao criar arquivos de log com sudo:', error);
-                        return;
-                    }
-                    console.log('✅ Arquivos de log criados com sudo');
-                });
-            }
+            // Criar arquivos temporários
+            const tempLogError = path.join(tmpDir, 'whitelist-error.log');
+            const tempLogAccess = path.join(tmpDir, 'whitelist-access.log');
+            const tempNginxConfig = path.join(tmpDir, 'whitelist.conf');
+
+            // Criar arquivos de log temporários
+            await fs.writeFile(tempLogError, '');
+            await fs.writeFile(tempLogAccess, '');
 
             const nginxConfig = `
 server {
     listen 80;
-    server_name whitelist.mtn-bot.com;
+    server_name 56.124.64.115;
 
     location / {
         proxy_pass http://127.0.0.1:${port};
@@ -279,45 +268,46 @@ server {
     }
 }`;
 
-            // Salvar a porta atual
-            await fs.writeFile(this.portFile, port.toString());
-            console.log('💾 Porta salva:', port);
+            // Salvar configuração temporária
+            await fs.writeFile(tempNginxConfig, nginxConfig);
 
-            // Salvar configuração do Nginx
-            await fs.writeFile('/etc/nginx/sites-available/whitelist.conf', nginxConfig);
-            console.log('💾 Configuração do Nginx atualizada');
+            // Mover arquivos para seus destinos com sudo
+            try {
+                // Mover logs
+                await execAsync(`sudo mv ${tempLogError} /var/log/nginx/whitelist-error.log`);
+                await execAsync(`sudo mv ${tempLogAccess} /var/log/nginx/whitelist-access.log`);
+                await execAsync('sudo chown www-data:www-data /var/log/nginx/whitelist-*.log');
+                await execAsync('sudo chmod 644 /var/log/nginx/whitelist-*.log');
+                console.log('✅ Arquivos de log criados e configurados');
 
-            // Testar configuração do Nginx
-            const { exec } = require('child_process');
-            exec('sudo nginx -t', (error, stdout, stderr) => {
-                if (error) {
-                    console.error('❌ Erro ao testar configuração do Nginx:', error);
-                    console.error('Saída:', stdout);
-                    console.error('Erro:', stderr);
-                    return;
-                }
+                // Mover configuração do Nginx
+                await execAsync(`sudo mv ${tempNginxConfig} /etc/nginx/sites-available/whitelist.conf`);
+                console.log('💾 Configuração do Nginx atualizada');
+
+                // Criar link simbólico
+                await execAsync('sudo ln -sf /etc/nginx/sites-available/whitelist.conf /etc/nginx/sites-enabled/');
+                console.log('🔗 Link simbólico criado');
+
+                // Remover configuração padrão
+                await execAsync('sudo rm -f /etc/nginx/sites-enabled/default');
+                console.log('🗑️ Configuração padrão removida');
+
+                // Testar configuração do Nginx
+                const { stdout } = await execAsync('sudo nginx -t');
                 console.log('✅ Configuração do Nginx testada com sucesso');
 
                 // Reiniciar Nginx
-                exec('sudo systemctl restart nginx', (error, stdout, stderr) => {
-                    if (error) {
-                        console.error('❌ Erro ao reiniciar Nginx:', error);
-                        console.error('Saída:', stdout);
-                        console.error('Erro:', stderr);
-                        return;
-                    }
-                    console.log('✅ Nginx reiniciado com sucesso');
-                    
-                    // Verificar status do Nginx
-                    exec('sudo systemctl status nginx', (error, stdout, stderr) => {
-                        if (error) {
-                            console.error('❌ Erro ao verificar status do Nginx:', error);
-                            return;
-                        }
-                        console.log('📊 Status do Nginx:', stdout);
-                    });
-                });
-            });
+                await execAsync('sudo systemctl restart nginx');
+                console.log('✅ Nginx reiniciado com sucesso');
+
+                // Verificar status do Nginx
+                const { stdout: status } = await execAsync('sudo systemctl status nginx');
+                console.log('📊 Status do Nginx:', status);
+            } catch (error) {
+                console.error('❌ Erro ao configurar Nginx:', error);
+                console.error('Saída:', error.stdout);
+                console.error('Erro:', error.stderr);
+            }
         } catch (error) {
             console.error('❌ Erro ao atualizar configuração do Nginx:', error);
         }
