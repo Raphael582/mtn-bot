@@ -646,11 +646,12 @@
             console.log('Token recebido no formulário:', token);
             console.log('URL completa:', window.location.href);
             console.log('Parâmetros da URL:', Object.fromEntries(urlParams.entries()));
-            console.log('Estado do formulário:', form.style.display);
+
+            // Armazenar o token globalmente
+            window.formToken = token;
 
             if (!token) {
                 console.log('Token não encontrado na URL do formulário');
-                console.log('Ocultando formulário e exibindo mensagem de erro');
                 status.textContent = 'Token inválido ou não fornecido. Por favor, use o comando /whitelist no Discord.';
                 status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
                 status.classList.remove('hidden');
@@ -689,7 +690,6 @@
                 console.log('Formulário configurado com sucesso');
             } catch (error) {
                 console.error('Erro ao decodificar token:', error);
-                console.log('Ocultando formulário e exibindo mensagem de erro');
                 status.textContent = 'Token inválido. Por favor, use o comando /whitelist no Discord.';
                 status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
                 status.classList.remove('hidden');
@@ -704,16 +704,18 @@
                 const data = Object.fromEntries(formData.entries());
                 
                 try {
+                    console.log('Enviando formulário com token:', window.formToken);
                     const response = await fetch('/api/whitelist/submit', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
+                            'Authorization': `Bearer ${window.formToken}`
                         },
                         body: JSON.stringify(data)
                     });
                     
                     const result = await response.json();
+                    console.log('Resposta do servidor:', result);
                     
                     if (response.ok) {
                         status.innerHTML = `
@@ -731,6 +733,7 @@
                         status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
                     }
                 } catch (error) {
+                    console.error('Erro ao enviar formulário:', error);
                     status.textContent = 'Erro ao enviar solicitação. Tente novamente.';
                     status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
                 }
