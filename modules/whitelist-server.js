@@ -16,6 +16,7 @@ class WhitelistServer {
         };
         this.webhookClient = null;
         this.server = null;
+        this.portFile = path.join(__dirname, '..', '.whitelist-port');
         
         // Verificar variáveis de ambiente
         console.log('📋 Configurações do servidor:');
@@ -221,6 +222,62 @@ class WhitelistServer {
         });
     }
 
+    async updateNginxConfig(port) {
+        try {
+            const nginxConfig = `
+server {
+    listen 80;
+    server_name 56.124.64.115;
+
+    location / {
+        proxy_pass http://localhost:${port};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Timeout settings
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}`;
+
+            // Salvar a porta atual
+            await fs.writeFile(this.portFile, port.toString());
+            console.log('💾 Porta salva:', port);
+
+            // Salvar configuração do Nginx
+            await fs.writeFile('/etc/nginx/sites-available/whitelist.conf', nginxConfig);
+            console.log('💾 Configuração do Nginx atualizada');
+
+            // Testar configuração do Nginx
+            const { exec } = require('child_process');
+            exec('sudo nginx -t', (error, stdout, stderr) => {
+                if (error) {
+                    console.error('❌ Erro ao testar configuração do Nginx:', error);
+                    return;
+                }
+                console.log('✅ Configuração do Nginx testada com sucesso');
+
+                // Reiniciar Nginx
+                exec('sudo systemctl restart nginx', (error, stdout, stderr) => {
+                    if (error) {
+                        console.error('❌ Erro ao reiniciar Nginx:', error);
+                        return;
+                    }
+                    console.log('✅ Nginx reiniciado com sucesso');
+                });
+            });
+        } catch (error) {
+            console.error('❌ Erro ao atualizar configuração do Nginx:', error);
+        }
+    }
+
     async start() {
         try {
             const host = config.server.useLocalhost ? 'localhost' : '0.0.0.0';
@@ -251,7 +308,7 @@ class WhitelistServer {
             console.log('🚀 Iniciando servidor:', { host, port });
             
             return new Promise((resolve, reject) => {
-                this.server = this.app.listen(port, host, () => {
+                this.server = this.app.listen(port, host, async () => {
                     const networkInterfaces = os.networkInterfaces();
                     const addresses = [];
                     
@@ -270,6 +327,9 @@ class WhitelistServer {
                         console.log(`   http://${ip}:${port}`);
                     });
                     console.log('\n💡 Dica: Use Ctrl+C para parar o servidor\n');
+
+                    // Atualizar configuração do Nginx
+                    await this.updateNginxConfig(port);
                     
                     resolve();
                 }).on('error', (error) => {
