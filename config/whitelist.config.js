@@ -3,8 +3,11 @@ const env = require('../modules/env');
 
 module.exports = {
     // Configurações do servidor
-    port: env.PORT || 3000,
-    host: env.HOST || 'localhost',
+    server: {
+        url: env.WHITELIST_URL || `http://${env.HOST || 'localhost'}:${env.PORT || 3000}`,
+        port: env.PORT || 3000,
+        host: env.HOST || 'localhost'
+    },
 
     // Configurações de armazenamento
     storage: {

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, EmbedBuilder } = require('discord.js');
 const jwt = require('jsonwebtoken');
 const config = require('../config/whitelist.config');
+const env = require('../modules/env');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -26,11 +27,12 @@ module.exports = {
                 userId: interaction.user.id,
                 username: interaction.user.tag,
                 timestamp: Date.now()
-            }, process.env.JWT_SECRET, { expiresIn: '1h' });
+            }, env.JWT_SECRET, { expiresIn: '1h' });
 
             // Construir URL do formulário com o token
-            const formUrl = `${config.server.url}/form.html?token=${encodeURIComponent(token)}`;
-            const adminUrl = `${config.server.url}/admin.html`;
+            const serverUrl = config.server.url;
+            const formUrl = `${serverUrl}/form.html?token=${encodeURIComponent(token)}`;
+            const adminUrl = `${serverUrl}/admin.html`;
 
             // Criar embed informativo
             const embed = new EmbedBuilder()
