@@ -8,10 +8,16 @@ const jwt = require('jsonwebtoken');
 const uuid = require('uuid');
 const Logger = require('./logger');
 const fetch = require('node-fetch');
+require('dotenv').config();
 
 class WhitelistServer {
     constructor(client) {
         console.log('🔧 Inicializando servidor de whitelist...');
+        console.log('📋 Verificando variáveis de ambiente:');
+        console.log('- ADMIN_USERNAME:', process.env.ADMIN_USERNAME);
+        console.log('- ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD ? 'Configurada' : 'Não configurada');
+        console.log('- JWT_SECRET:', process.env.JWT_SECRET ? 'Configurado' : 'Não configurado');
+        
         this.client = client;
         this.app = express();
         this.logger = new Logger(client);
