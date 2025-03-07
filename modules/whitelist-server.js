@@ -289,46 +289,70 @@ class WhitelistServer {
     async start() {
         try {
             const host = '0.0.0.0';
-            const port = 3001;
+            let port = 3001;
+            let maxAttempts = 5;
+            let attempts = 0;
 
             console.log('🚀 Iniciando servidor:', { host, port });
             
-            return new Promise((resolve, reject) => {
-                this.server = this.app.listen(port, host, async () => {
-                    console.log(`✅ Servidor iniciado na porta ${port}`);
-                    
-                    // Testar se o servidor está respondendo
-                    try {
-                        const response = await fetch(`http://localhost:${port}`);
-                        console.log('✅ Servidor respondendo corretamente');
-                    } catch (error) {
-                        console.error('❌ Erro ao testar servidor:', error);
-                    }
+            while (attempts < maxAttempts) {
+                try {
+                    return new Promise((resolve, reject) => {
+                        this.server = this.app.listen(port, host, async () => {
+                            console.log(`✅ Servidor iniciado na porta ${port}`);
+                            
+                            // Testar se o servidor está respondendo
+                            try {
+                                const response = await fetch(`http://localhost:${port}`);
+                                console.log('✅ Servidor respondendo corretamente');
+                            } catch (error) {
+                                console.error('❌ Erro ao testar servidor:', error);
+                            }
 
-                    const networkInterfaces = os.networkInterfaces();
-                    const addresses = [];
-                    
-                    Object.keys(networkInterfaces).forEach((interfaceName) => {
-                        networkInterfaces[interfaceName].forEach((iface) => {
-                            if (iface.family === 'IPv4' && !iface.internal) {
-                                addresses.push(iface.address);
+                            const networkInterfaces = os.networkInterfaces();
+                            const addresses = [];
+                            
+                            Object.keys(networkInterfaces).forEach((interfaceName) => {
+                                networkInterfaces[interfaceName].forEach((iface) => {
+                                    if (iface.family === 'IPv4' && !iface.internal) {
+                                        addresses.push(iface.address);
+                                    }
+                                });
+                            });
+
+                            console.log('\n🌐 Servidor de whitelist rodando em:');
+                            console.log(`   http://localhost:${port}`);
+                            addresses.forEach(ip => {
+                                console.log(`   http://${ip}:${port}`);
+                            });
+                            console.log('\n💡 Dica: Use Ctrl+C para parar o servidor\n');
+                            
+                            resolve();
+                        }).on('error', (error) => {
+                            if (error.code === 'EADDRINUSE') {
+                                console.log(`⚠️ Porta ${port} em uso, tentando próxima porta...`);
+                                this.server.close();
+                                port++;
+                                attempts++;
+                                if (attempts < maxAttempts) {
+                                    this.start();
+                                } else {
+                                    reject(new Error(`Não foi possível encontrar uma porta disponível após ${maxAttempts} tentativas`));
+                                }
+                            } else {
+                                console.error('❌ Erro ao iniciar servidor de whitelist:', error);
+                                reject(error);
                             }
                         });
                     });
-
-                    console.log('\n🌐 Servidor de whitelist rodando em:');
-                    console.log(`   http://localhost:${port}`);
-                    addresses.forEach(ip => {
-                        console.log(`   http://${ip}:${port}`);
-                    });
-                    console.log('\n💡 Dica: Use Ctrl+C para parar o servidor\n');
-                    
-                    resolve();
-                }).on('error', (error) => {
-                    console.error('❌ Erro ao iniciar servidor de whitelist:', error);
-                    reject(error);
-                });
-            });
+                } catch (error) {
+                    if (attempts >= maxAttempts) {
+                        throw error;
+                    }
+                    attempts++;
+                    port++;
+                }
+            }
         } catch (error) {
             console.error('❌ Erro ao iniciar servidor de whitelist:', error);
             throw error;

@@ -1,29 +1,25 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, EmbedBuilder } = require('discord.js');
 const jwt = require('jsonwebtoken');
 const config = require('../config/whitelist.config');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('whitelist')
-        .setDescription('Solicite sua whitelist no servidor'),
-        
+        .setDescription('Gera um link para solicitar whitelist'),
+
     async execute(interaction) {
         try {
-            // Gerar token único para o usuário
+            // Gerar token JWT
             const token = jwt.sign(
-                { 
-                    userId: interaction.user.id,
-                    username: interaction.user.username,
-                    discriminator: interaction.user.discriminator
-                },
+                { userId: interaction.user.id },
                 process.env.JWT_SECRET,
-                { expiresIn: '24h' }
+                { expiresIn: '1h' }
             );
-            
-            // Gerar link único para o usuário
+
+            // Construir URL do formulário
             const formUrl = `${config.server.url}/form?token=${token}`;
-            
-            // Criar embed com instruções
+
+            // Criar embed informativo
             const embed = new EmbedBuilder()
                 .setTitle('🎮 Sistema de Whitelist')
                 .setDescription(`Olá ${interaction.user}! Para solicitar sua whitelist, siga os passos abaixo:`)
@@ -36,27 +32,25 @@ module.exports = {
                     { name: '⚠️ Importante', value: 'Você só pode enviar uma solicitação por vez' }
                 )
                 .setTimestamp();
-            
-            // Criar botão para acessar o formulário
+
+            // Criar botão com URL
+            const button = new ButtonBuilder()
+                .setLabel('Solicitar Whitelist')
+                .setStyle(ButtonStyle.Link)
+                .setURL(formUrl);
+
             const row = new ActionRowBuilder()
-                .addComponents(
-                    new ButtonBuilder()
-                        .setLabel('Acessar Formulário')
-                        .setStyle(ButtonStyle.Primary)
-                        .setURL(formUrl)
-                );
-            
-            // Responder com embed e botão
+                .addComponents(button);
+
             await interaction.reply({
                 embeds: [embed],
                 components: [row],
                 ephemeral: true
             });
-            
         } catch (error) {
             console.error('Erro ao executar comando whitelist:', error);
             await interaction.reply({
-                content: '❌ Ocorreu um erro ao processar sua solicitação. Tente novamente mais tarde.',
+                content: '❌ Ocorreu um erro ao gerar o link. Tente novamente mais tarde.',
                 ephemeral: true
             });
         }
