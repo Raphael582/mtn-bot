@@ -141,12 +141,20 @@ class WhitelistServer {
         this.app.post('/api/admin/login', (req, res) => {
             const { username, password } = req.body;
             
+            console.log('Tentativa de login:');
+            console.log('Usuário recebido:', username);
+            console.log('Usuário esperado:', process.env.ADMIN_USERNAME);
+            console.log('Senha recebida:', password);
+            console.log('Senha esperada:', process.env.ADMIN_PASSWORD);
+            
             if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
+                console.log('Login bem sucedido!');
                 const token = jwt.sign({ 
                     username,
                     role: 'admin',
                     permissions: ['manage_admins', 'view_logs', 'manage_whitelist', 'audit']
                 }, process.env.JWT_SECRET, { expiresIn: '24h' });
+                
                 res.json({ 
                     token,
                     username,
@@ -154,6 +162,7 @@ class WhitelistServer {
                     permissions: ['manage_admins', 'view_logs', 'manage_whitelist', 'audit']
                 });
             } else {
+                console.log('Login falhou: credenciais inválidas');
                 res.status(401).json({ error: 'Credenciais inválidas' });
             }
         });
