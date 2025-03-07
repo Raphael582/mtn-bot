@@ -25,48 +25,36 @@ class Logger {
     }
 
     async ensureLogChannels() {
-        console.log('\n🔍 Verificando configuração do servidor:');
-        console.log('GUILD_ID:', env.GUILD_ID);
-        console.log('Servidores disponíveis:', this.client.guilds.cache.map(g => `${g.name} (${g.id})`).join(', '));
+        console.log('\n🔍 Verificando canais de log...');
+        console.log('GUILD_ID:', process.env.GUILD_ID);
         
-        // Tentar buscar o servidor pelo ID fornecido
-        const guild = this.client.guilds.cache.get('1336748568853090508');
+        const guild = this.client.guilds.cache.get(process.env.GUILD_ID);
         if (!guild) {
-            console.error('❌ Servidor não encontrado. Verifique se:');
-            console.error('1. O ID do servidor está correto: 1336748568853090508');
-            console.error('2. O bot está no servidor');
-            console.error('3. O bot tem permissão para ver o servidor');
-            console.error('4. O bot está completamente inicializado');
+            console.error('❌ Servidor não encontrado!');
+            console.log('Servidores disponíveis:', this.client.guilds.cache.map(g => `${g.name} (${g.id})`).join(', '));
             return;
         }
-
-        console.log(`✅ Servidor encontrado: ${guild.name}`);
-        console.log(`📊 Informações do servidor:`);
-        console.log(`- Nome: ${guild.name}`);
-        console.log(`- ID: ${guild.id}`);
-        console.log(`- Canais disponíveis: ${guild.channels.cache.size}`);
-
+        
+        console.log(`✅ Servidor encontrado: ${guild.name} (${guild.id})`);
+        console.log('Canais disponíveis:', guild.channels.cache.map(c => `${c.name} (${c.id})`).join(', '));
+        
         const logChannels = {
-            LOG_ORACULO: env.LOG_ORACULO,
-            LOG_FILTRO: env.LOG_FILTRO,
-            LOG_CHAT: env.LOG_CHAT,
-            LOG_PUNICOES: env.LOG_PUNICOES,
-            LOG_WHITELIST: env.LOG_WHITELIST
+            oraculo: process.env.LOG_ORACULO,
+            filtro: process.env.LOG_FILTRO,
+            chat: process.env.LOG_CHAT,
+            punicoes: process.env.LOG_PUNICOES,
+            whitelist: process.env.LOG_WHITELIST
         };
-
-        for (const [envVar, channelId] of Object.entries(logChannels)) {
-            if (!channelId) {
-                console.error(`❌ ID do canal ${envVar} não configurado no .env`);
-                continue;
+        
+        console.log('\n📋 IDs dos canais de log configurados:');
+        for (const [name, id] of Object.entries(logChannels)) {
+            const channel = guild.channels.cache.get(id);
+            console.log(`${name.toUpperCase()}: ${id} - ${channel ? '✅ Encontrado' : '❌ Não encontrado'}`);
+            if (channel) {
+                console.log(`  Nome: ${channel.name}`);
+                console.log(`  Tipo: ${channel.type}`);
+                console.log(`  Permissões: ${channel.permissionsFor(guild.members.me).has('SendMessages') ? '✅ Pode enviar mensagens' : '❌ Não pode enviar mensagens'}`);
             }
-
-            const channel = guild.channels.cache.get(channelId);
-            if (!channel) {
-                console.error(`❌ Canal ${envVar} não encontrado com o ID: ${channelId}`);
-                continue;
-            }
-
-            console.log(`✅ Canal ${envVar} verificado com sucesso (ID: ${channelId})`);
         }
     }
 
