@@ -642,7 +642,8 @@
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token');
             
-            console.log('Token recebido:', token); // Log para debug
+            console.log('Token recebido no formulário:', token); // Log para debug
+            console.log('URL completa:', window.location.href); // Log para debug
 
             if (!token) {
                 console.log('Token não encontrado na URL'); // Log para debug

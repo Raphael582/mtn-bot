@@ -458,7 +458,7 @@
             if (token) {
                 console.log('Redirecionando para o formulário com token:', token); // Log para debug
                 // Redirecionar para o formulário com o token
-                window.location.href = `/form.html?token=${encodeURIComponent(token)}`;
+                window.location.replace(`form.html?token=${encodeURIComponent(token)}`);
             }
 
             // Login Admin
