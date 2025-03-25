@@ -1,76 +1,33 @@
-# Bot Discord Metânia
+# Metania Whitelist Bot
 
-Bot Discord desenvolvido para o servidor Metânia, com funcionalidades de moderação, whitelist e interação com IA.
+Bot e sistema de formulário de whitelist para o servidor Discord da Metânia.
 
-## 🚀 Funcionalidades
+## 📋 Funcionalidades
 
-### 🤖 Oráculo
-- Comando: `/oraculo`
-- Descrição: Sistema de IA para respostas diretas e assertivas
-- Recursos:
-  - Respostas baseadas em IA (Gemini)
-  - Análise de imagens
-  - Proteção contra prompt stealing
-  - Sistema de alertas para tentativas de manipulação
-  - Personalidade direta e objetiva
+- **Bot do Discord**:
+  - Comando `/whitelist` para gerar token de acesso ao formulário
+  - Sistema de autenticação para evitar spam
+  - Integração com webhooks para notificações de novas solicitações
 
-### 🛡️ Moderação
-- Comando: `/mod`
-- Subcomandos:
-  - `warn`: Avisa um usuário
-  - `timeout`: Aplica timeout temporário
-  - `ban`: Bane um usuário
-  - `unban`: Remove banimento
-  - `clear`: Limpa mensagens do canal
-- Recursos:
-  - Sistema de logs detalhado
-  - Notificações privadas
-  - Registro de punições
+- **Servidor Web**:
+  - Formulário de whitelist com validação em tempo real
+  - Interface minimalista e responsiva
+  - Sistema de passos para facilitar o preenchimento
+  - Notificações de sucesso/erro
 
-### 📝 Whitelist
-- Comando: `/whitelist`
-- Descrição: Sistema de solicitação de whitelist
-- Recursos:
-  - Link único por usuário
-  - Formulário personalizado
-  - Sistema de tokens JWT
-  - Interface web amigável
-  - Área administrativa
-
-### 🔍 Filtro de Chat
-- Sistema automático de moderação
-- Recursos:
-  - Filtragem por IA
-  - Detecção de conteúdo proibido
-  - Sistema de logs
-  - Avisos automáticos
-
-### 📊 Logs
-- Sistema centralizado de logs
-- Canais específicos para:
-  - Oráculo
-  - Filtro
-  - Chat
-  - Punições
-  - Whitelist
-
-## 🛠️ Tecnologias Utilizadas
-
-- Discord.js v14
-- Google Gemini AI
-- Express.js
-- JWT para autenticação
-- Tailwind CSS para frontend
-- MongoDB para banco de dados
-
-## 📋 Requisitos
-
-- Node.js 18+
-- MongoDB
-- Conta Discord com bot
-- Chave API do Google Gemini
+- **Painel Administrativo**:
+  - Revisão de solicitações pendentes
+  - Aprovação/reprovação com feedback
+  - Log de atividades administrativas
+  - Proteção por autenticação JWT
 
 ## 🔧 Instalação
+
+### Pré-requisitos
+- Node.js (v14+)
+- npm ou yarn
+
+### Passos para instalação
 
 1. Clone o repositório
 ```bash
@@ -83,58 +40,98 @@ cd mtn-bot
 npm install
 ```
 
-3. Configure as variáveis de ambiente
+3. Configure o arquivo `.env`
 ```bash
 cp .env.example .env
 # Edite o arquivo .env com suas configurações
 ```
 
-4. Inicie o bot
+4. Inicie o servidor e o bot
 ```bash
-npm start
+node bot.js
 ```
 
 ## ⚙️ Configuração
 
 ### Variáveis de Ambiente
-```env
-# Discord
-TOKEN=seu_token_aqui
-CLIENT_ID=seu_client_id
-GUILD_ID=seu_guild_id
 
-# API Gemini
-GEMINI_API_KEY=sua_chave_aqui
+| Variável | Descrição | Obrigatória |
+|----------|-----------|-------------|
+| BOT_TOKEN | Token do bot do Discord | Sim |
+| GUILD_ID | ID do servidor Discord | Sim |
+| JWT_SECRET | Chave secreta para tokens JWT | Sim |
+| ADMIN_USERNAME | Nome de usuário do administrador | Sim |
+| ADMIN_PASSWORD | Senha do administrador | Sim |
+| WHITELIST_WEBHOOK_URL | URL do webhook para notificações | Sim |
+| WHITELIST_ROLE_ID | ID do cargo para notificações | Não |
+| PORT | Porta do servidor web (padrão: 3000) | Não |
+| HOST | Host do servidor (padrão: 0.0.0.0) | Não |
+| WHITELIST_URL | URL base do formulário (padrão: http://localhost:3000/whitelist) | Não |
+| LOG_LEVEL | Nível de detalhes dos logs (padrão: info) | Não |
+| LOG_DISCORD_CHANNEL | ID do canal para logs gerais | Não |
+| ERROR_DISCORD_CHANNEL | ID do canal para logs de erro | Não |
 
-# Whitelist
-WHITELIST_URL=http://seu-dominio.com
-PORT=3001
+## 💻 Uso
 
-# Autenticação
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=sua_senha_aqui
-JWT_SECRET=seu_jwt_secret_aqui
+### Comandos do Discord
 
-# Canais de Log
-LOG_ORACULO=id_do_canal
-LOG_FILTRO=id_do_canal
-LOG_CHAT=id_do_canal
-LOG_PUNICOES=id_do_canal
-LOG_WHITELIST=id_do_canal
+- `/whitelist` - Gera um link único para acesso ao formulário de whitelist
+
+### Estrutura de Arquivos
+
 ```
+mtn-bot/
+│
+├── bot.js                 # Ponto de entrada do bot Discord
+├── whitelist-server.js    # Servidor web para o formulário
+├── env.js                 # Configuração de variáveis de ambiente
+├── .env                   # Arquivo de variáveis de ambiente
+│
+├── config/                # Configurações
+│   ├── bot.config.js      # Configuração do bot
+│   ├── server.config.js   # Configuração do servidor
+│   └── whitelist.config.js # Configuração da whitelist
+│
+├── modules/               # Módulos do sistema
+│   ├── dataManager.js     # Gerenciamento de dados (JSON)
+│   ├── discordWebhook.js  # Integração com webhooks do Discord
+│   └── logger.js          # Sistema de logging
+│
+├── whitelist-frontend/    # Frontend do formulário
+│   └── form.html          # Formulário de whitelist
+│
+└── data/                  # Dados persistidos em JSON
+    ├── admins.json        # Administradores
+    ├── forms.json         # Formulários submetidos
+    └── audit.json         # Logs de auditoria
+```
+
+## 🔒 Segurança
+
+- Tokens JWT com tempo de expiração para acesso ao formulário
+- Validação de campos para evitar injeção de código
+- Hashing de senhas com bcrypt
+- Log de atividades para auditoria
+
+## 🌐 Requisitos de Sistema
+
+- **Memória**: 512MB RAM mínimo
+- **CPU**: 1 núcleo mínimo
+- **Armazenamento**: 50MB mínimo
+- **Conexão**: Internet estável
 
 ## 📝 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está licenciado sob a [Licença MIT](LICENSE).
 
-## 👥 Contribuição
+## 🤝 Contribuindo
 
-1. Faça um Fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
+1. Faça um fork do projeto
+2. Crie sua branch de feature (`git checkout -b feature/nova-funcionalidade`)
+3. Faça commit das suas alterações (`git commit -m 'Adiciona nova funcionalidade'`)
+4. Faça push para a branch (`git push origin feature/nova-funcionalidade`)
 5. Abra um Pull Request
 
 ## 📞 Suporte
 
-Para suporte, entre em contato através do Discord do servidor Metânia ou abra uma issue no GitHub. 
+Para obter suporte, entre em contato através do Discord da Metânia. 

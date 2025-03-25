@@ -1,46 +1,21 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
-const { WebhookClient, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
-const config = require('../config/whitelist.config');
+const { WebhookClient, EmbedBuilder } = require('discord.js');
 const os = require('os');
 const jwt = require('jsonwebtoken');
 const uuid = require('uuid');
 const { Logger } = require('./logger');
 const fetch = require('node-fetch');
 const env = require('./env');
-
-// Logs de debug para variáveis de ambiente
-console.log('\n🔍 Debug de variáveis de ambiente:');
-console.log('ADMIN_USERNAME:', env.ADMIN_USERNAME);
-console.log('ADMIN_PASSWORD:', env.ADMIN_PASSWORD ? 'Configurada' : 'Não configurada');
-console.log('JWT_SECRET:', env.JWT_SECRET ? 'Configurado' : 'Não configurado');
-console.log('Todas as variáveis de ambiente:', Object.keys(env).join(', '));
+const config = require('../config/whitelist.config');
 
 class WhitelistServer {
     constructor(client) {
         console.log('🔧 Inicializando servidor de whitelist...');
-        console.log('📋 Verificando variáveis de ambiente:');
-        console.log('- ADMIN_USERNAME:', env.ADMIN_USERNAME || '❌ Não configurado');
-        console.log('- ADMIN_PASSWORD:', env.ADMIN_PASSWORD ? '✅ Configurada' : '❌ Não configurada');
-        console.log('- JWT_SECRET:', env.JWT_SECRET ? '✅ Configurado' : '❌ Não configurado');
-        console.log('- ADMIN_JWT_SECRET:', env.ADMIN_JWT_SECRET ? '✅ Configurado' : '❌ Não configurado');
         
-        // Verificar variáveis obrigatórias
-        if (!env.ADMIN_USERNAME) {
-            console.error('❌ ADMIN_USERNAME não está configurado no .env');
-            throw new Error('ADMIN_USERNAME não está configurado');
-        }
-        
-        if (!env.ADMIN_PASSWORD) {
-            console.error('❌ ADMIN_PASSWORD não está configurado no .env');
-            throw new Error('ADMIN_PASSWORD não está configurado');
-        }
-        
-        if (!env.ADMIN_JWT_SECRET) {
-            console.error('❌ ADMIN_JWT_SECRET não está configurado no .env');
-            throw new Error('ADMIN_JWT_SECRET não está configurado');
-        }
+        // Verificar variáveis de ambiente
+        this.checkEnvironmentVariables();
         
         this.client = client;
         this.app = express();
@@ -48,74 +23,80 @@ class WhitelistServer {
         this.db = {
             forms: {},
             admins: {},
-            userLinks: {} // Armazena os links únicos por usuário
+            userLinks: {}
         };
         this.webhookClient = null;
         this.server = null;
-        
-        // Verificar variáveis de ambiente
-        console.log('📋 Configurações do servidor:');
-        console.log('- Porta:', config.port);
-        console.log('- Host:', config.host);
-        console.log('- Webhook:', env.WHITELIST_WEBHOOK_URL ? '✅ Configurado' : '❌ Não configurado');
         
         this.setupWebhook();
         this.setupMiddleware();
         this.setupRoutes();
         console.log('✅ Servidor de whitelist inicializado');
     }
+    
+    // Verificar variáveis de ambiente
+    checkEnvironmentVariables() {
+        const requiredVariables = [
+            { name: 'WHITELIST_WEBHOOK_URL', value: env.WHITELIST_WEBHOOK_URL },
+            { name: 'JWT_SECRET', value: env.JWT_SECRET }
+        ];
+        
+        console.log('📋 Verificando variáveis de ambiente:');
+        
+        let allValid = true;
+        
+        requiredVariables.forEach(variable => {
+            if (!variable.value) {
+                console.error(`❌ Variável de ambiente ${variable.name} não está configurada`);
+                allValid = false;
+            } else {
+                console.log(`✅ Variável ${variable.name} configurada`);
+            }
+        });
+        
+        if (!allValid) {
+            throw new Error('Variáveis de ambiente obrigatórias ausentes. Verifique o arquivo .env');
+        }
+        
+        console.log('📋 Configurações do servidor:');
+        console.log(`- Porta: ${config.port}`);
+        console.log(`- Host: ${config.host}`);
+        console.log(`- Webhook: ${env.WHITELIST_WEBHOOK_URL ? '✅ Configurado' : '❌ Não configurado'}`);
+    }
 
     async setupWebhook() {
         try {
+            console.log('Iniciando configuração do webhook...');
+            this.checkEnvironmentVariables();
+
+            // Verificar URL do webhook
             const webhookUrl = env.WHITELIST_WEBHOOK_URL;
-            console.log('🔍 Verificando URL do webhook:');
-            console.log('URL presente:', webhookUrl ? 'Sim' : 'Não');
+            console.log(`URL do webhook: ${webhookUrl ? 'Configurada' : 'Não configurada'}`);
             
-            if (webhookUrl) {
-                // Mostrar apenas o início da URL para debug
-                const urlParts = webhookUrl.split('/');
-                console.log('Formato da URL:', urlParts[0] + '//' + urlParts[2] + '/' + urlParts[3]);
-                console.log('ID do Webhook:', urlParts[4]);
-                console.log('Token:', urlParts[5].substring(0, 5) + '...');
-            }
-            
-            if (!webhookUrl) {
-                console.log('⚠️ Webhook não configurado');
-                return;
+            // Validação do formato da URL do webhook
+            const webhookRegex = /^https:\/\/(discord|discordapp)\.com\/api\/webhooks\/\d+\/[\w-]+$/;
+            if (!webhookRegex.test(webhookUrl)) {
+                const errorMsg = `URL do webhook inválida. 
+                Formato esperado: https://discord.com/api/webhooks/ID/TOKEN ou https://discordapp.com/api/webhooks/ID/TOKEN. 
+                Recebido: ${webhookUrl}`;
+                console.error(`❌ ${errorMsg}`);
+                await this.logger.logError(errorMsg, 'whitelist-webhook-setup');
+                return false;
             }
 
-            // Validar formato da URL
-            const webhookPattern = /^https:\/\/discord\.com\/api\/webhooks\/\d+\/[\w-]+$/;
-            if (!webhookPattern.test(webhookUrl)) {
-                console.error('❌ URL do webhook inválida. Formato esperado:');
-                console.error('https://discord.com/api/webhooks/ID/TOKEN');
-                console.error('URL atual:', webhookUrl);
-                return;
-            }
-
-            console.log('🔗 Configurando webhook...');
-            try {
-                this.webhookClient = new WebhookClient({ 
-                    url: webhookUrl
-                });
-                console.log('✅ Webhook configurado com sucesso');
-                
-                // Testar o webhook
-                const testEmbed = new EmbedBuilder()
-                    .setTitle('🔄 Teste de Webhook')
-                    .setDescription('Webhook configurado com sucesso!')
-                    .setColor('#00ff00')
-                    .setTimestamp();
-                
-                await this.webhookClient.send({ embeds: [testEmbed] });
-                console.log('✅ Teste de webhook enviado com sucesso');
-            } catch (webhookError) {
-                console.error('❌ Erro ao criar webhook:', webhookError);
-                await this.logger.logError(webhookError, 'whitelist-webhook-creation');
-            }
+            console.log('✅ URL do webhook válida');
+            
+            const discordWebhook = new WebhookClient({ url: webhookUrl });
+            
+            // Teste de conexão com o webhook
+            await discordWebhook.sendTest();
+            console.log('✅ Webhook configurado com sucesso');
+            this.webhookClient = discordWebhook;
+            return true;
         } catch (error) {
             console.error('❌ Erro ao configurar webhook:', error);
             await this.logger.logError(error, 'whitelist-webhook-setup');
+            return false;
         }
     }
 
@@ -142,7 +123,6 @@ class WhitelistServer {
         this.app.use((req, res, next) => {
             const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
             req.clientIp = ip;
-            console.log(`🌐 Requisição de ${ip}: ${req.method} ${req.url}`);
             next();
         });
 
@@ -160,7 +140,6 @@ class WhitelistServer {
         
         // Rota principal
         this.app.get('/', (req, res) => {
-            console.log('📄 Servindo página principal');
             res.sendFile(path.join(__dirname, '..', 'whitelist-frontend', 'index.html'));
         });
 
@@ -192,82 +171,82 @@ class WhitelistServer {
 
         // Rota do painel admin
         this.app.get('/admin.html', (req, res) => {
-            console.log('🔒 Servindo página de admin');
             res.sendFile(path.join(__dirname, '..', 'whitelist-frontend', 'admin.html'));
         });
 
         // API Routes
         this.app.post('/api/whitelist/submit', this.validateUserToken.bind(this), this.handleWhitelistSubmit.bind(this));
-        this.app.post('/api/whitelist/approve', this.handleWhitelistApprove.bind(this));
-        this.app.post('/api/whitelist/reject', this.handleWhitelistReject.bind(this));
-        this.app.get('/api/whitelist/forms', this.handleGetForms.bind(this));
-        this.app.get('/api/whitelist/user/:userId', this.handleGetUserForm.bind(this));
+        this.app.post('/api/whitelist/approve', this.authenticateToken.bind(this), this.handleWhitelistApprove.bind(this));
+        this.app.post('/api/whitelist/reject', this.authenticateToken.bind(this), this.handleWhitelistReject.bind(this));
+        this.app.get('/api/whitelist/forms', this.authenticateToken.bind(this), this.handleGetForms.bind(this));
+        this.app.get('/api/whitelist/user/:userId', this.authenticateToken.bind(this), this.handleGetUserForm.bind(this));
         
         // Rotas de autenticação
-        this.app.post('/api/admin/login', (req, res) => {
-            console.log('\n🔐 Nova tentativa de login');
-            
-            // Validar se o corpo da requisição está correto
-            if (!req.body || typeof req.body !== 'object') {
-                console.log('❌ Corpo da requisição inválido');
-                return res.status(400).json({ error: 'Corpo da requisição inválido' });
-            }
-            
-            const { username, password } = req.body;
-            
-            // Validar se os campos foram enviados
-            if (!username || !password) {
-                console.log('❌ Campos obrigatórios não fornecidos');
-                return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
-            }
-            
-            console.log('📝 Dados recebidos:');
-            console.log('- Usuário:', username);
-            console.log('- Senha:', password ? 'Fornecida' : 'Não fornecida');
-            
-            // Validar se as variáveis de ambiente estão configuradas
-            if (!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD) {
-                console.log('❌ Variáveis de ambiente não configuradas');
-                return res.status(500).json({ error: 'Configuração do servidor incompleta' });
-            }
-            
-            // Comparar credenciais
-            const usernameMatch = username === env.ADMIN_USERNAME;
-            const passwordMatch = password === env.ADMIN_PASSWORD;
-            
-            console.log('🔍 Validação:');
-            console.log('- Usuário correto:', usernameMatch);
-            console.log('- Senha correta:', passwordMatch);
-            
-            if (usernameMatch && passwordMatch) {
-                console.log('✅ Login bem sucedido!');
-                const token = jwt.sign({ 
-                    username,
-                    role: 'admin',
-                    permissions: ['manage_admins', 'view_logs', 'manage_whitelist', 'audit']
-                }, env.ADMIN_JWT_SECRET, { expiresIn: '24h' });
-                
-                res.json({ 
-                    token,
-                    username,
-                    role: 'admin',
-                    permissions: ['manage_admins', 'view_logs', 'manage_whitelist', 'audit']
-                });
-            } else {
-                console.log('❌ Login falhou: credenciais inválidas');
-                res.status(401).json({ error: 'Credenciais inválidas' });
-            }
-        });
-
+        this.app.post('/api/admin/login', this.handleAdminLogin.bind(this));
         this.app.post('/api/admin/logout', (req, res) => {
             res.json({ success: true });
         });
-
         this.app.get('/api/admin/check-auth', this.authenticateToken.bind(this), (req, res) => {
             res.json({ authenticated: true });
         });
         
         console.log('✅ Rotas configuradas');
+    }
+    
+    // Handler de Login do Admin
+    handleAdminLogin(req, res) {
+        console.log('\n🔐 Nova tentativa de login');
+        
+        // Validar se o corpo da requisição está correto
+        if (!req.body || typeof req.body !== 'object') {
+            console.log('❌ Corpo da requisição inválido');
+            return res.status(400).json({ error: 'Corpo da requisição inválido' });
+        }
+        
+        const { username, password } = req.body;
+        
+        // Validar se os campos foram enviados
+        if (!username || !password) {
+            console.log('❌ Campos obrigatórios não fornecidos');
+            return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
+        }
+        
+        console.log('📝 Dados recebidos:');
+        console.log('- Usuário:', username);
+        console.log('- Senha:', password ? 'Fornecida' : 'Não fornecida');
+        
+        // Validar se as variáveis de ambiente estão configuradas
+        if (!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD) {
+            console.log('❌ Variáveis de ambiente não configuradas');
+            return res.status(500).json({ error: 'Configuração do servidor incompleta' });
+        }
+        
+        // Comparar credenciais
+        const usernameMatch = username === env.ADMIN_USERNAME;
+        const passwordMatch = password === env.ADMIN_PASSWORD;
+        
+        console.log('🔍 Validação:');
+        console.log('- Usuário correto:', usernameMatch);
+        console.log('- Senha correta:', passwordMatch);
+        
+        if (usernameMatch && passwordMatch) {
+            console.log('✅ Login bem sucedido!');
+            const token = jwt.sign({ 
+                username,
+                role: 'admin',
+                permissions: ['manage_admins', 'view_logs', 'manage_whitelist', 'audit']
+            }, env.ADMIN_JWT_SECRET, { expiresIn: '24h' });
+            
+            res.json({ 
+                token,
+                username,
+                role: 'admin',
+                permissions: ['manage_admins', 'view_logs', 'manage_whitelist', 'audit']
+            });
+        } else {
+            console.log('❌ Login falhou: credenciais inválidas');
+            res.status(401).json({ error: 'Credenciais inválidas' });
+        }
     }
 
     validateUserToken(req, res, next) {
@@ -278,7 +257,7 @@ class WhitelistServer {
         }
 
         try {
-            const decoded = jwt.verify(token, env.ADMIN_JWT_SECRET);
+            const decoded = jwt.verify(token, env.JWT_SECRET);
             console.log(`✅ Token válido para usuário ${decoded.userId}`);
             req.user = decoded;
             next();
@@ -287,40 +266,62 @@ class WhitelistServer {
             return res.status(403).json({ error: 'Token inválido' });
         }
     }
+    
+    authenticateToken(req, res, next) {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        
+        if (!token) {
+            return res.status(401).json({ error: 'Token não fornecido' });
+        }
+        
+        jwt.verify(token, env.ADMIN_JWT_SECRET, (err, user) => {
+            if (err) {
+                return res.status(403).json({ error: 'Token inválido' });
+            }
+            req.user = user;
+            next();
+        });
+    }
 
     async handleWhitelistSubmit(req, res) {
         try {
-            console.log('\n📝 Nova submissão de whitelist');
+            const { nome, idade, estado, comoConheceu, religiao, discordUsername } = req.body;
+            
+            // Log para debug
             console.log('Dados recebidos:', req.body);
             console.log('Headers:', req.headers);
-            console.log('User:', req.user);
+            console.log('Informações do usuário:', req.user || 'Usuário não autenticado');
             
-            const { nome, idade, estado, comoConheceu, religiao } = req.body;
-            const userId = req.user.userId;
-            
-            // Validar campos obrigatórios
+            // Validação de campos obrigatórios
             const requiredFields = ['nome', 'idade', 'estado', 'comoConheceu', 'religiao'];
             const missingFields = requiredFields.filter(field => !req.body[field]);
             
             if (missingFields.length > 0) {
-                console.log('❌ Campos obrigatórios faltando:', missingFields);
-                return res.status(400).json({ error: 'Campos obrigatórios não preenchidos' });
+                console.error(`❌ Campos obrigatórios ausentes: ${missingFields.join(', ')}`);
+                return res.status(400).json({ error: `Campos obrigatórios ausentes: ${missingFields.join(', ')}` });
             }
             
-            // Verificar se já existe um formulário pendente
-            const existingForm = Object.values(this.db.forms).find(f => f.userId === userId && f.status === 'pendente');
-            if (existingForm) {
-                console.log(`⚠️ Usuário ${userId} já possui um formulário pendente`);
-                return res.status(400).json({ error: 'Você já possui um formulário pendente' });
+            // Verificar se o usuário já possui formulário pendente
+            const username = req.user?.username || discordUsername || 'Usuário Anônimo';
+            const userForms = Object.values(this.db.forms).filter(f => f.discord.username === username && f.status === 'pendente');
+            
+            if (userForms.length > 0) {
+                const pendingForms = userForms.filter(form => form.status === 'pendente');
+                if (pendingForms.length > 0) {
+                    console.log(`Usuário ${username} já possui formulário pendente`);
+                    return res.status(400).json({ error: 'Você já possui um formulário pendente de análise.' });
+                }
             }
             
             // Criar novo formulário
             const formId = uuid.v4();
             const form = {
                 id: formId,
-                userId,
+                userId: req.user?.id || 'ID não disponível',
+                discordUsername: username,
                 nome,
-                idade,
+                idade: parseInt(idade),
                 estado,
                 comoConheceu,
                 religiao,
@@ -329,51 +330,58 @@ class WhitelistServer {
                 ip: req.clientIp
             };
             
-            console.log('📝 Criando novo formulário:', form);
+            console.log('Criando novo formulário:', form);
             
             // Salvar no banco de dados
             this.db.forms[formId] = form;
             console.log('✅ Formulário salvo no banco de dados');
             
-            // Enviar notificação via webhook
+            // Enviar notificação para o Discord
             if (this.webhookClient) {
                 try {
-                    console.log('🔔 Enviando notificação via webhook...');
-                    const embed = new EmbedBuilder()
-                        .setTitle('📝 Nova Solicitação de Whitelist')
-                        .setColor('#FFA500')
-                        .addFields(
-                            { name: 'Nome', value: nome },
-                            { name: 'Idade', value: idade.toString() },
-                            { name: 'Estado', value: estado },
-                            { name: 'Como Conheceu', value: comoConheceu },
-                            { name: 'Religião', value: religiao },
-                            { name: 'ID do Usuário', value: userId },
-                            { name: 'IP', value: req.clientIp }
-                        )
-                        .setTimestamp();
-                    
-                    await this.webhookClient.send({ embeds: [embed] });
-                    console.log('✅ Notificação enviada via webhook');
+                    await this.webhookClient.send({
+                        content: `<@&${env.WHITELIST_ROLE_ID}> Nova solicitação de whitelist!`,
+                        embeds: [
+                            new EmbedBuilder()
+                                .setTitle('📝 Nova Solicitação de Whitelist')
+                                .setColor('#FFA500')
+                                .setDescription(`Nova solicitação de whitelist recebida de ${username}`)
+                                .addFields(
+                                    { name: 'Discord', value: `<@${req.user?.id}>`, inline: true },
+                                    { name: 'Nome', value: nome, inline: true },
+                                    { name: 'Idade', value: idade.toString(), inline: true },
+                                    { name: 'Estado', value: estado, inline: true },
+                                    { name: 'Como Conheceu', value: comoConheceu },
+                                    { name: 'Religião', value: religiao },
+                                    { name: 'IP', value: req.clientIp }
+                                )
+                                .setTimestamp()
+                                .setFooter({ text: `ID: ${formId}` })
+                        ]
+                    });
+                    console.log('✅ Notificação enviada para o Discord');
                 } catch (error) {
-                    console.error('❌ Erro ao enviar notificação:', error);
+                    console.error('❌ Erro ao enviar notificação para o Discord:', error);
+                    console.error('Detalhes do erro:', error.message);
                 }
             } else {
-                console.log('⚠️ Webhook não configurado, pulando notificação');
+                console.warn('⚠️ Webhook não configurado, notificação não enviada');
             }
             
-            console.log('✅ Formulário processado com sucesso');
-            res.json({ success: true, message: 'Formulário enviado com sucesso' });
-            
+            return res.status(200).json({ 
+                message: 'Formulário enviado com sucesso! Sua solicitação será analisada em breve.',
+                formId: formId
+            });
         } catch (error) {
             console.error('❌ Erro ao processar formulário:', error);
-            res.status(500).json({ error: 'Erro ao processar formulário' });
+            res.status(500).json({ error: 'Erro interno ao processar o formulário. Tente novamente mais tarde.' });
         }
     }
 
     async handleWhitelistApprove(req, res) {
         try {
-            const { formId, adminId } = req.body;
+            const { formId } = req.body;
+            const adminId = req.user.username;
             const form = this.db.forms[formId];
 
             if (!form) {
@@ -386,26 +394,36 @@ class WhitelistServer {
             form.aprovadoPor = adminId;
 
             // Adicionar cargo de whitelist ao usuário
-            const member = await this.client.guilds.cache.first()?.members.fetch(form.userId);
-            if (member) {
-                await member.roles.add(env.WHITELIST_ROLE_ID);
-                console.log(`✅ Cargo de whitelist adicionado para ${member.user.tag}`);
+            try {
+                const member = await this.client.guilds.cache.first()?.members.fetch(form.userId);
+                if (member) {
+                    await member.roles.add(env.WHITELIST_ROLE_ID);
+                    console.log(`✅ Cargo de whitelist adicionado para ${member.user.tag}`);
+                }
+            } catch (error) {
+                console.error(`❌ Erro ao adicionar cargo: ${error.message}`);
             }
 
-            // Enviar notificação para o Discord
-            const webhookUrl = env.DISCORD_WEBHOOK_URL;
-            if (webhookUrl) {
-                const embed = new EmbedBuilder()
-                    .setTitle('Solicitação de Whitelist Aprovada')
-                    .setColor('#00ff00')
-                    .addFields(
-                        { name: 'Usuário', value: form.nome, inline: true },
-                        { name: 'Discord', value: `<@${form.userId}>`, inline: true },
-                        { name: 'Aprovado por', value: adminId, inline: true }
-                    )
-                    .setTimestamp();
+            // Enviar notificação via webhook
+            if (this.webhookClient) {
+                try {
+                    const embed = new EmbedBuilder()
+                        .setTitle('✅ Solicitação de Whitelist Aprovada')
+                        .setColor('#00ff00')
+                        .setDescription(`A solicitação de whitelist de ${form.discordUsername || form.nome} foi aprovada!`)
+                        .addFields(
+                            { name: 'Nome', value: form.nome, inline: true },
+                            { name: 'Discord', value: `<@${form.userId}>`, inline: true },
+                            { name: 'Aprovado por', value: adminId, inline: true }
+                        )
+                        .setTimestamp()
+                        .setFooter({ text: `ID: ${formId}` });
                     
-                await this.sendDiscordNotification(webhookUrl, embed);
+                    await this.webhookClient.send({ embeds: [embed] });
+                    console.log('✅ Notificação de aprovação enviada via webhook');
+                } catch (error) {
+                    console.error('❌ Erro ao enviar notificação de aprovação:', error);
+                }
             }
 
             res.json({ success: true, message: 'Solicitação aprovada com sucesso' });
@@ -417,7 +435,8 @@ class WhitelistServer {
 
     async handleWhitelistReject(req, res) {
         try {
-            const { formId, adminId, reason } = req.body;
+            const { formId, reason } = req.body;
+            const adminId = req.user.username;
             const form = this.db.forms[formId];
 
             if (!form) {
@@ -430,28 +449,27 @@ class WhitelistServer {
             form.rejeitadoPor = adminId;
             form.motivoRejeicao = reason;
 
-            // Remover cargo de whitelist do usuário se existir
-            const member = await this.client.guilds.cache.first()?.members.fetch(form.userId);
-            if (member) {
-                await member.roles.remove(env.WHITELIST_ROLE_ID);
-                console.log(`✅ Cargo de whitelist removido de ${member.user.tag}`);
-            }
-
-            // Enviar notificação para o Discord
-            const webhookUrl = env.DISCORD_WEBHOOK_URL;
-            if (webhookUrl) {
-                const embed = new EmbedBuilder()
-                    .setTitle('Solicitação de Whitelist Rejeitada')
-                    .setColor('#ff0000')
-                    .addFields(
-                        { name: 'Usuário', value: form.nome, inline: true },
-                        { name: 'Discord', value: `<@${form.userId}>`, inline: true },
-                        { name: 'Rejeitado por', value: adminId, inline: true },
-                        { name: 'Motivo', value: reason }
-                    )
-                    .setTimestamp();
+            // Enviar notificação via webhook
+            if (this.webhookClient) {
+                try {
+                    const embed = new EmbedBuilder()
+                        .setTitle('❌ Solicitação de Whitelist Rejeitada')
+                        .setColor('#ff0000')
+                        .setDescription(`A solicitação de whitelist de ${form.discordUsername || form.nome} foi rejeitada.`)
+                        .addFields(
+                            { name: 'Nome', value: form.nome, inline: true },
+                            { name: 'Discord', value: `<@${form.userId}>`, inline: true },
+                            { name: 'Rejeitado por', value: adminId, inline: true },
+                            { name: 'Motivo', value: reason || 'Nenhum motivo fornecido' }
+                        )
+                        .setTimestamp()
+                        .setFooter({ text: `ID: ${formId}` });
                     
-                await this.sendDiscordNotification(webhookUrl, embed);
+                    await this.webhookClient.send({ embeds: [embed] });
+                    console.log('✅ Notificação de rejeição enviada via webhook');
+                } catch (error) {
+                    console.error('❌ Erro ao enviar notificação de rejeição:', error);
+                }
             }
 
             res.json({ success: true, message: 'Solicitação rejeitada com sucesso' });
@@ -475,6 +493,11 @@ class WhitelistServer {
         try {
             const { userId } = req.params;
             const form = Object.values(this.db.forms).find(f => f.userId === userId);
+            
+            if (!form) {
+                return res.status(404).json({ error: 'Formulário não encontrado' });
+            }
+            
             res.json(form);
         } catch (error) {
             console.error('❌ Erro ao buscar formulário do usuário:', error);
@@ -524,39 +547,6 @@ class WhitelistServer {
             }
         }
         return 'localhost';
-    }
-
-    authenticateToken(req, res, next) {
-        const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
-        
-        if (!token) {
-            return res.status(401).json({ error: 'Token não fornecido' });
-        }
-        
-        jwt.verify(token, env.ADMIN_JWT_SECRET, (err, user) => {
-            if (err) {
-                return res.status(403).json({ error: 'Token inválido' });
-            }
-            req.user = user;
-            next();
-        });
-    }
-
-    async sendDiscordNotification(webhookUrl, embed) {
-        try {
-            await fetch(webhookUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    embeds: [embed]
-                })
-            });
-        } catch (error) {
-            console.error('Erro ao enviar notificação para o Discord:', error);
-        }
     }
 }
 

@@ -9,14 +9,26 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --bg-dark: #1a1a1a;
+            --bg-darker: #2d2d2d;
+            --success: #2ecc71;
+            --error: #ef4444;
+            --text: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.4);
+        }
+        
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darker) 100%);
             min-height: 100vh;
-            color: #ffffff;
+            color: var(--text);
             position: relative;
             overflow-x: hidden;
         }
+        
         body::before {
             content: '';
             position: fixed;
@@ -29,6 +41,7 @@
             opacity: 0.05;
             z-index: -1;
         }
+        
         .container {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
@@ -38,6 +51,7 @@
             position: relative;
             overflow: hidden;
         }
+        
         .container::before {
             content: '';
             position: absolute;
@@ -49,46 +63,16 @@
             transform: translateX(-100%);
             transition: transform 0.6s ease;
         }
+        
         .container:hover::before {
             transform: translateX(100%);
         }
+        
         .container:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
         }
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            border: none;
-        }
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-        }
-        .btn-primary::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.6s ease, height 0.6s ease;
-        }
-        .btn-primary:hover::after {
-            width: 300px;
-            height: 300px;
-        }
-        .logo {
-            max-width: 150px;
-            height: auto;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
-            animation: float 3s ease-in-out infinite;
-        }
+        
         .server-logo {
             max-width: 60px;
             height: auto;
@@ -96,101 +80,60 @@
             margin-right: 1rem;
             border-radius: 50%;
         }
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
+        
         .input-field {
-            background: rgba(255, 255, 255, 0.05);
+            background-color: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text);
             border-radius: 0.5rem;
-            color: #ffffff;
             transition: all 0.3s ease;
+            padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+            width: 100%;
         }
+        
         .input-field:focus {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: #3b82f6;
+            border-color: var(--primary);
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+            outline: none;
         }
-        select.input-field option {
-            background: #1a1a1a;
-            color: #ffffff;
+        
+        .input-field::placeholder {
+            color: var(--text-muted);
         }
-        select.input-field option:checked {
-            background: #2ecc71;
-            color: #ffffff;
+        
+        .input-field.error {
+            border-color: var(--error);
         }
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .btn-admin {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            transition: all 0.3s ease;
-            position: relative;
+        
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
             overflow: hidden;
-            border: none;
+            margin-bottom: 2rem;
         }
-        .btn-admin:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-        }
-        .btn-admin::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.6s ease, height 0.6s ease;
-        }
-        .btn-admin:hover::after {
-            width: 300px;
-            height: 300px;
-        }
-        .status-message {
-            animation: slideIn 0.5s ease;
-        }
-        @keyframes slideIn {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        @media (max-width: 640px) {
-            .container {
-                margin: 1rem;
-            }
-            .server-logo {
-                max-width: 50px;
-            }
-            .logo {
-                max-width: 120px;
-            }
-        }
+        
         .progress-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #3b82f6, #2ecc71);
-            transition: width 0.3s ease;
-            z-index: 1000;
+            height: 100%;
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+            width: 0%;
+            transition: width 0.5s ease;
         }
+        
         .tooltip {
             position: relative;
             display: inline-block;
         }
-        .tooltip .tooltip-text {
+        
+        .tooltip-text {
             visibility: hidden;
-            background: rgba(0, 0, 0, 0.8);
-            color: #fff;
+            width: 200px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: var(--text);
             text-align: center;
-            padding: 5px 10px;
             border-radius: 6px;
+            padding: 8px;
             position: absolute;
             z-index: 1;
             bottom: 125%;
@@ -199,27 +142,33 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
+        
         .tooltip:hover .tooltip-text {
             visibility: visible;
             opacity: 1;
         }
+        
         .form-step {
             display: none;
         }
+        
         .form-step.active {
             display: block;
             animation: fadeIn 0.5s ease;
         }
+        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
         .step-indicator {
             display: flex;
             justify-content: space-between;
             margin-bottom: 2rem;
             position: relative;
         }
+        
         .step-indicator::before {
             content: '';
             position: absolute;
@@ -230,6 +179,7 @@
             background: rgba(255, 255, 255, 0.1);
             z-index: 1;
         }
+        
         .step {
             width: 30px;
             height: 30px;
@@ -242,137 +192,110 @@
             z-index: 2;
             transition: all 0.3s ease;
         }
+        
         .step.active {
-            background: #3b82f6;
+            background: var(--primary);
         }
+        
         .step.completed {
-            background: #2ecc71;
+            background: var(--success);
         }
+        
         .error-message {
-            color: #ef4444;
+            color: var(--error);
             font-size: 0.875rem;
             margin-top: 0.25rem;
             display: none;
         }
-        .input-field.error {
-            border-color: #ef4444;
-        }
-        .success-message {
-            color: #2ecc71;
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
-            display: none;
-        }
+        
         .loading-spinner {
             display: none;
             width: 20px;
             height: 20px;
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            border-top-color: #ffffff;
+            border-top-color: var(--text);
             animation: spin 1s linear infinite;
             margin-left: 0.5rem;
         }
+        
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        .btn-next {
-            position: relative;
-            width: 120px;
-            height: 40px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            border: none;
+        
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            font-size: 1rem;
             font-weight: 600;
-            cursor: pointer;
-            margin: 1rem 0;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            text-align: center;
-            padding: 0 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            will-change: transform;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
         }
-        .btn-next::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            border-radius: 10px;
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .btn-next:hover {
+        
+        .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.5);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         }
-        .btn-next:hover::before {
-            opacity: 1;
-        }
-        .btn-next:active {
+        
+        .btn:active {
             transform: translateY(0);
         }
-        .btn-next:disabled {
-            background: #cccccc;
+        
+        .btn:disabled {
+            opacity: 0.7;
             cursor: not-allowed;
+            transform: none;
             box-shadow: none;
         }
-        .btn-next span {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
+        
+        .hidden {
+            display: none !important;
         }
-        .credits {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 0.8rem 1.5rem;
-            border-radius: 1rem;
-            font-size: 0.9rem;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        
+        .field-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.4);
         }
-        .credits img {
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+        
+        .success-icon {
+            color: var(--success);
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .error-icon {
+            color: var(--error);
+            font-size: 4rem;
+            margin-bottom: 1rem;
         }
     </style>
 </head>
-<body class="py-12 px-4">
-    <div class="progress-bar" id="progressBar"></div>
+<body class="py-8 px-4">
     <div class="max-w-2xl mx-auto">
         <div class="text-center mb-8 animate__animated animate__fadeIn">
             <div class="flex items-center justify-center mb-4">
                 <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cc7c11&is=67cb2a91&hm=f369bad9613b8a02787f6ad9f3e8261c60338c910c1820f942628b0271970681&=&format=webp&width=914&height=930" alt="Metânia Logo" class="server-logo">
                 <h1 class="text-3xl font-bold">Formulário de Whitelist</h1>
             </div>
-            <p class="text-gray-300">Preencha todas as informações necessárias</p>
+            <p id="welcomeMessage" class="text-gray-300">Carregando...</p>
         </div>
 
         <div class="container p-6 mb-8 animate__animated animate__fadeInUp">
+            <div class="progress-bar-container">
+                <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+            </div>
+
             <div class="step-indicator mb-8">
                 <div class="step active" data-step="1">1</div>
                 <div class="step" data-step="2">2</div>
-                <div class="step" data-step="3">3</div>
             </div>
 
             <form id="whitelistForm" class="space-y-6">
@@ -386,16 +309,16 @@
                             </span>
                         </label>
                         <div class="relative">
-                            <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <i class="fas fa-user field-icon"></i>
                             <input type="text" id="nome" name="nome" required
-                                class="input-field w-full px-4 py-2 pl-10"
+                                class="input-field"
                                 placeholder="Digite seu nome completo">
                             <div class="error-message">Por favor, insira seu nome completo</div>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-2">
+                        <label class="block text-sm font-medium mb-2 mt-4">
                             Idade
                             <span class="tooltip">
                                 <i class="fas fa-info-circle ml-1 text-gray-400"></i>
@@ -403,16 +326,16 @@
                             </span>
                         </label>
                         <div class="relative">
-                            <i class="fas fa-birthday-cake absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <i class="fas fa-birthday-cake field-icon"></i>
                             <input type="number" id="idade" name="idade" required min="10" max="100"
-                                class="input-field w-full px-4 py-2 pl-10"
+                                class="input-field"
                                 placeholder="Digite sua idade">
                             <div class="error-message">Idade deve estar entre 10 e 100 anos</div>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-2">
+                        <label class="block text-sm font-medium mb-2 mt-4">
                             Como Conheceu
                             <span class="tooltip">
                                 <i class="fas fa-info-circle ml-1 text-gray-400"></i>
@@ -420,28 +343,11 @@
                             </span>
                         </label>
                         <div class="relative">
-                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <i class="fas fa-search field-icon"></i>
                             <input type="text" id="comoConheceu" name="comoConheceu" required
-                                class="input-field w-full px-4 py-2 pl-10"
+                                class="input-field"
                                 placeholder="Como você conheceu o servidor?">
                             <div class="error-message">Por favor, digite como conheceu o servidor</div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium mb-2">
-                            Religião
-                            <span class="tooltip">
-                                <i class="fas fa-info-circle ml-1 text-gray-400"></i>
-                                <span class="tooltip-text">Sua religião atual</span>
-                            </span>
-                        </label>
-                        <div class="relative">
-                            <i class="fas fa-pray absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <input type="text" id="religiao" name="religiao" required
-                                class="input-field w-full px-4 py-2 pl-10"
-                                placeholder="Digite sua religião">
-                            <div class="error-message">Por favor, insira sua religião</div>
                         </div>
                     </div>
                 </div>
@@ -456,8 +362,8 @@
                             </span>
                         </label>
                         <div class="relative">
-                            <i class="fas fa-map-marker-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <select id="estado" name="estado" required class="input-field w-full px-4 py-2 pl-10">
+                            <i class="fas fa-map-marker-alt field-icon"></i>
+                            <select id="estado" name="estado" required class="input-field">
                                 <option value="">Selecione seu estado</option>
                                 <option value="AC">Acre</option>
                                 <option value="AL">Alagoas</option>
@@ -490,111 +396,104 @@
                             <div class="error-message">Por favor, selecione seu estado</div>
                         </div>
                     </div>
-                </div>
 
-                <div class="form-step" data-step="3">
                     <div>
-                        <label class="block text-sm font-medium mb-2">
-                            Por que você quer participar do servidor?
+                        <label class="block text-sm font-medium mb-2 mt-4">
+                            Religião
                             <span class="tooltip">
                                 <i class="fas fa-info-circle ml-1 text-gray-400"></i>
-                                <span class="tooltip-text">Explique seus motivos para querer participar</span>
+                                <span class="tooltip-text">Sua religião atual</span>
                             </span>
                         </label>
                         <div class="relative">
-                            <i class="fas fa-question-circle absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <textarea name="motivo" required
-                                class="input-field w-full px-4 py-2 pl-10 min-h-[100px]"
-                                placeholder="Explique seus motivos para querer participar"></textarea>
-                            <div class="error-message">Por favor, explique seus motivos</div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium mb-2">
-                            Com o que você pode contribuir?
-                            <span class="tooltip">
-                                <i class="fas fa-info-circle ml-1 text-gray-400"></i>
-                                <span class="tooltip-text">Descreva como você pode contribuir com o servidor</span>
-                            </span>
-                        </label>
-                        <div class="relative">
-                            <i class="fas fa-hand-holding-heart absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <textarea name="contribuicao" required
-                                class="input-field w-full px-4 py-2 pl-10 min-h-[100px]"
-                                placeholder="Descreva como você pode contribuir com o servidor"></textarea>
-                            <div class="error-message">Por favor, descreva sua contribuição</div>
+                            <i class="fas fa-pray field-icon"></i>
+                            <input type="text" id="religiao" name="religiao" required
+                                class="input-field"
+                                placeholder="Digite sua religião">
+                            <div class="error-message">Por favor, insira sua religião</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="flex justify-between mt-8">
-                    <button type="button" id="prevStep" class="btn-next hidden">
+                    <button type="button" id="prevStep" class="btn hidden">
                         <i class="fas fa-arrow-left mr-2"></i>
                         Voltar
                     </button>
-                    <button type="button" id="nextStep" class="btn-next">
-                        <span>Próximo</span>
-                    </button>
-                    <button type="submit" id="submitBtn" class="btn-next hidden">
+                    <button type="button" id="nextStep" class="btn">
                         <span>
-                            <i class="fas fa-paper-plane mr-2"></i>
-                            Enviar Solicitação
+                            Próximo
+                            <i class="fas fa-arrow-right ml-2"></i>
                         </span>
+                    </button>
+                    <button type="submit" id="submitBtn" class="btn hidden">
+                        <span>
+                            Enviar
+                            <i class="fas fa-paper-plane ml-2"></i>
+                        </span>
+                        <span id="loading" class="loading-spinner ml-2 hidden"></span>
                     </button>
                 </div>
             </form>
         </div>
 
-        <div id="status" class="hidden text-center p-4 rounded-lg status-message"></div>
-    </div>
-
-    <div class="credits animate__animated animate__fadeIn">
-        <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cc7c11&is=67cb2a91&hm=f369bad9613b8a02787f6ad9f3e8261c60338c910c1820f942628b0271970681&=&format=webp&width=914&height=930" alt="Mr.Dark">
-        <span>Desenvolvido por Mr.Dark para Metânia</span>
+        <div id="status" class="container p-6 hidden animate__animated animate__fadeIn"></div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('whitelistForm');
-            const status = document.getElementById('status');
-            const progressBar = document.getElementById('progressBar');
-            const steps = document.querySelectorAll('.form-step');
-            const stepIndicators = document.querySelectorAll('.step');
-            const prevBtn = document.getElementById('prevStep');
-            const nextBtn = document.getElementById('nextStep');
-            const submitBtn = document.getElementById('submitBtn');
-            let currentStep = 1;
+            const formElements = {
+                form: document.getElementById('whitelistForm'),
+                status: document.getElementById('status'),
+                progressBar: document.getElementById('progressBar'),
+                steps: document.querySelectorAll('.form-step'),
+                stepIndicators: document.querySelectorAll('.step'),
+                prevBtn: document.getElementById('prevStep'),
+                nextBtn: document.getElementById('nextStep'),
+                submitBtn: document.getElementById('submitBtn'),
+                welcomeMessage: document.getElementById('welcomeMessage'),
+                loading: document.getElementById('loading')
+            };
+            
+            let state = {
+                currentStep: 1,
+                discordUsername: '',
+                totalSteps: formElements.steps.length
+            };
 
             // Atualizar barra de progresso
             function updateProgress() {
-                const progress = ((currentStep - 1) / (steps.length - 1)) * 100;
-                progressBar.style.width = `${progress}%`;
+                const progress = ((state.currentStep - 1) / (state.totalSteps - 1)) * 100;
+                formElements.progressBar.style.width = `${progress}%`;
             }
 
             // Mostrar/ocultar botões
             function updateButtons() {
-                prevBtn.classList.toggle('hidden', currentStep === 1);
-                nextBtn.classList.toggle('hidden', currentStep === steps.length);
-                submitBtn.classList.toggle('hidden', currentStep !== steps.length);
+                formElements.prevBtn.classList.toggle('hidden', state.currentStep === 1);
+                formElements.nextBtn.classList.toggle('hidden', state.currentStep === state.totalSteps);
+                formElements.submitBtn.classList.toggle('hidden', state.currentStep !== state.totalSteps);
             }
 
             // Validar campos do passo atual
             function validateCurrentStep() {
-                const currentStepElement = document.querySelector(`.form-step[data-step="${currentStep}"]`);
-                const inputs = currentStepElement.querySelectorAll('input[required], select[required], textarea[required]');
+                const currentStepElement = document.querySelector(`.form-step[data-step="${state.currentStep}"]`);
+                const inputs = currentStepElement.querySelectorAll('input[required], select[required]');
                 let isValid = true;
 
                 inputs.forEach(input => {
                     const errorMessage = input.parentElement.querySelector('.error-message');
-                    if (!input.value || (input.type === 'number' && (input.value < 10 || input.value > 100))) {
-                        input.classList.add('error');
-                        errorMessage.style.display = 'block';
-                        isValid = false;
-                    } else {
-                        input.classList.remove('error');
-                        errorMessage.style.display = 'none';
+                    let fieldValid = true;
+                    
+                    if (!input.value) {
+                        fieldValid = false;
+                    } else if (input.type === 'number') {
+                        const value = parseInt(input.value);
+                        fieldValid = (value >= 10 && value <= 100);
                     }
+                    
+                    input.classList.toggle('error', !fieldValid);
+                    errorMessage.style.display = fieldValid ? 'none' : 'block';
+                    isValid = isValid && fieldValid;
                 });
 
                 return isValid;
@@ -602,64 +501,105 @@
 
             // Navegar entre passos
             function goToStep(step) {
-                steps.forEach(s => s.classList.remove('active'));
-                stepIndicators.forEach(i => {
+                if (step < 1 || step > state.totalSteps) return;
+                
+                // Esconder todos os passos
+                formElements.steps.forEach(s => s.classList.remove('active'));
+                
+                // Atualizar indicadores
+                formElements.stepIndicators.forEach(i => {
                     i.classList.remove('active', 'completed');
-                    if (parseInt(i.dataset.step) < step) {
+                    const stepNum = parseInt(i.dataset.step);
+                    if (stepNum < step) {
                         i.classList.add('completed');
-                    } else if (parseInt(i.dataset.step) === step) {
+                    } else if (stepNum === step) {
                         i.classList.add('active');
                     }
                 });
 
+                // Mostrar o passo atual
                 document.querySelector(`.form-step[data-step="${step}"]`).classList.add('active');
-                currentStep = step;
+                state.currentStep = step;
                 updateProgress();
                 updateButtons();
             }
+            
+            // Mostrar mensagem de erro
+            function showError(message) {
+                formElements.status.innerHTML = `
+                    <div class="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-6 text-center">
+                        <div class="error-icon">✕</div>
+                        <h2 class="text-2xl font-bold text-red-500 mb-2">Erro</h2>
+                        <p class="text-gray-300">${message}</p>
+                        <button id="tryAgain" class="btn mt-4">
+                            <i class="fas fa-redo mr-2"></i>
+                            Tentar Novamente
+                        </button>
+                    </div>
+                `;
+                formElements.status.classList.remove('hidden');
+                formElements.form.parentElement.classList.add('hidden');
+                
+                document.getElementById('tryAgain')?.addEventListener('click', () => {
+                    formElements.status.classList.add('hidden');
+                    formElements.form.parentElement.classList.remove('hidden');
+                });
+            }
+            
+            // Mostrar mensagem de sucesso
+            function showSuccess(message) {
+                formElements.status.innerHTML = `
+                    <div class="bg-green-500 bg-opacity-10 border border-green-500 rounded-lg p-6 text-center">
+                        <div class="success-icon">✓</div>
+                        <h2 class="text-2xl font-bold text-green-500 mb-2">Solicitação Enviada!</h2>
+                        <p class="text-gray-300 mb-4">${message}</p>
+                        <p class="text-sm text-gray-400 mt-4">
+                            Você receberá uma notificação no Discord quando sua solicitação for analisada.
+                        </p>
+                    </div>
+                `;
+                formElements.status.classList.remove('hidden');
+                formElements.form.parentElement.classList.add('hidden');
+            }
 
             // Event listeners
-            nextBtn.addEventListener('click', () => {
+            formElements.nextBtn.addEventListener('click', () => {
                 if (validateCurrentStep()) {
-                    goToStep(currentStep + 1);
+                    goToStep(state.currentStep + 1);
                 }
             });
 
-            prevBtn.addEventListener('click', () => {
-                goToStep(currentStep - 1);
+            formElements.prevBtn.addEventListener('click', () => {
+                goToStep(state.currentStep - 1);
             });
 
             // Capturar token da URL
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token');
             
-            // Logs para debug
-            console.log('=== DEBUG FORM.HTML ===');
-            console.log('Token recebido:', token);
-            console.log('URL completa:', window.location.href);
-            console.log('Parâmetros da URL:', Object.fromEntries(urlParams.entries()));
-
             // Verificar token
             if (!token) {
-                console.log('❌ Token não fornecido');
-                status.textContent = 'Token não fornecido. Por favor, use o comando /whitelist no Discord.';
-                form.style.display = 'none';
+                console.error('❌ Token não fornecido');
+                showError('Token não fornecido. Por favor, use o comando /whitelist no Discord.');
             } else {
                 try {
                     // Decodificar token
                     const decodedToken = JSON.parse(atob(token.split('.')[1]));
                     console.log('Token decodificado:', decodedToken);
                     
-                    // Armazenar token globalmente
+                    // Armazenar token e nome do usuário
                     window.formToken = token;
+                    state.discordUsername = decodedToken.username;
                     
-                    // Mostrar formulário
-                    form.style.display = 'block';
-                    status.style.display = 'none';
+                    // Atualizar mensagem de boas-vindas
+                    formElements.welcomeMessage.textContent = `Bem-vindo(a), ${state.discordUsername}! Por favor, preencha todas as informações abaixo.`;
+                    
+                    // Inicializar barra de progresso
+                    updateProgress();
+                    updateButtons();
                 } catch (error) {
                     console.error('❌ Erro ao decodificar token:', error);
-                    status.textContent = 'Token inválido. Por favor, use o comando /whitelist no Discord.';
-                    form.style.display = 'none';
+                    showError('Token inválido. Por favor, use o comando /whitelist no Discord.');
                 }
             }
 
@@ -668,17 +608,23 @@
                 e.preventDefault();
                 console.log('Iniciando envio do formulário...');
 
+                if (!validateCurrentStep()) {
+                    return;
+                }
+
+                // Mostrar loading
+                formElements.loading.classList.remove('hidden');
+                formElements.submitBtn.setAttribute('disabled', 'true');
+
                 try {
                     const formData = {
                         nome: document.getElementById('nome').value,
                         idade: document.getElementById('idade').value,
                         estado: document.getElementById('estado').value,
                         comoConheceu: document.getElementById('comoConheceu').value,
-                        religiao: document.getElementById('religiao').value
+                        religiao: document.getElementById('religiao').value,
+                        discordUsername: state.discordUsername
                     };
-
-                    console.log('Dados do formulário:', formData);
-                    console.log('Token:', window.formToken);
 
                     const response = await fetch('/api/whitelist/submit', {
                         method: 'POST',
@@ -689,45 +635,32 @@
                         body: JSON.stringify(formData)
                     });
 
-                    console.log('Resposta do servidor:', response);
                     const data = await response.json();
-                    console.log('Dados da resposta:', data);
+                    console.log('Resposta do servidor:', data);
+
+                    // Esconder loading
+                    formElements.loading.classList.add('hidden');
+                    formElements.submitBtn.removeAttribute('disabled');
 
                     if (response.ok) {
-                        // Esconder o formulário
-                        form.style.display = 'none';
-                        
-                        // Mostrar mensagem de sucesso
-                        status.innerHTML = `
-                            <div class="bg-green-500 bg-opacity-10 border border-green-500 rounded-lg p-6 text-center">
-                                <div class="text-green-500 text-4xl mb-4">✓</div>
-                                <h2 class="text-2xl font-bold text-green-500 mb-2">Solicitação Enviada!</h2>
-                                <p class="text-gray-300 mb-4">${data.message}</p>
-                                <p class="text-sm text-gray-400">
-                                    Você receberá uma notificação no Discord quando sua solicitação for analisada.
-                                </p>
-                            </div>
-                        `;
-                        status.classList.remove('hidden');
+                        showSuccess(data.message);
                     } else {
                         throw new Error(data.error || 'Erro ao enviar solicitação');
                     }
                 } catch (error) {
                     console.error('Erro ao enviar formulário:', error);
-                    status.innerHTML = `
-                        <div class="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-6 text-center">
-                            <div class="text-red-500 text-4xl mb-4">✕</div>
-                            <h2 class="text-2xl font-bold text-red-500 mb-2">Erro</h2>
-                            <p class="text-gray-300">${error.message}</p>
-                        </div>
-                    `;
-                    status.classList.remove('hidden');
+                    
+                    // Esconder loading
+                    formElements.loading.classList.add('hidden');
+                    formElements.submitBtn.removeAttribute('disabled');
+                    
+                    showError(error.message);
                 }
             }
 
             // Event listener para o formulário
-            form.addEventListener('submit', submitForm);
+            formElements.form.addEventListener('submit', submitForm);
         });
     </script>
 </body>
-</html> 
+</html>
