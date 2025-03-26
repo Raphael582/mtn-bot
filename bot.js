@@ -5,13 +5,11 @@ const path = require('path');
 // Carregar variáveis de ambiente
 require('./modules/env');
 
-const express = require('express');
-const jwt = require('jsonwebtoken');
-
 // Importar o servidor de whitelist
 const WhitelistServer = require('./modules/whitelist-server');
 let whitelistServer = null;
 
+// Configuração do cliente Discord com intents necessários
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -24,11 +22,14 @@ const client = new Client({
 const clientId = process.env.CLIENT_ID;
 const token = process.env.TOKEN;
 
+// Verificação de variáveis obrigatórias
+if (!clientId || !token) {
+    console.error('❌ Variáveis de ambiente CLIENT_ID e TOKEN são obrigatórias');
+    process.exit(1);
+}
+
 // Coleção para comandos
 client.commands = new Collection();
-
-// Módulo de filtro de chat
-let chatFilter;
 
 // Carregar logger
 const { Logger } = require('./modules/logger');
@@ -41,17 +42,7 @@ async function initWhitelistServer() {
             console.log('🌐 Iniciando servidor de whitelist...');
             whitelistServer = new WhitelistServer(client);
             await whitelistServer.start();
-            console.log(`✅ Servidor de whitelist iniciado na porta ${process.env.WHITELIST_PORT}`);
-            
-            // Criar diretório de frontend se não existir
-            const frontendPath = path.join(__dirname, 'whitelist-frontend');
-            if (!fs.existsSync(frontendPath)) {
-                fs.mkdirSync(frontendPath, { recursive: true });
-                console.log('📁 Diretório de frontend criado');
-                
-                // O servidor já cria os arquivos básicos ao iniciar
-                console.log('✅ Arquivos de frontend básicos criados pelo servidor');
-            }
+            console.log(`✅ Servidor de whitelist iniciado na porta ${process.env.WHITELIST_PORT || '3000'}`);
             
             // Disponibilizar globalmente
             global.whitelistServer = whitelistServer;
@@ -61,166 +52,160 @@ async function initWhitelistServer() {
         }
     } catch (error) {
         console.error('❌ Erro ao iniciar servidor de whitelist:', error);
+        await logger.logError(error, 'whitelist-server-init');
         return null;
     }
 }
 
+// Garantir diretórios necessários
+function ensureDirectories() {
+    const dirs = [
+        path.join(__dirname, 'database'),
+        path.join(__dirname, 'logs'),
+        path.join(__dirname, 'whitelist-frontend')
+    ];
+    
+    dirs.forEach(dir => {
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+            console.log(`📁 Diretório ${dir} criado`);
+        }
+    });
+}
+
 // Carregando comandos
-const commandsPath = path.join(__dirname, 'commands');
-if (fs.existsSync(commandsPath)) {
+async function loadCommands() {
+    const commandsPath = path.join(__dirname, 'commands');
+    if (!fs.existsSync(commandsPath)) {
+        console.warn('⚠️ Diretório de comandos não encontrado');
+        return;
+    }
+    
     const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+    console.log(`📦 Carregando ${commandFiles.length} comandos...`);
 
     for (const file of commandFiles) {
         const filePath = path.join(commandsPath, file);
         try {
-            // Tentar carregar o módulo de diferentes formas
-            let command;
-            try {
-                command = require(filePath);
-            } catch (importError) {
-                console.error(`❌ Erro ao importar ${file}:`, importError);
-                continue;
-            }
-
-            // Normalizar o comando
+            // Carregar comando
+            const command = require(filePath);
             const commandModule = command.default || command;
             
-            // Se for o módulo de filtro de chat, armazená-lo separadamente
-            if (file === 'chatfilter.js') {
-                chatFilter = commandModule;
-                if (commandModule.commands) {
-                    client.commands.set(commandModule.commands.data.name, commandModule.commands);
-                    console.log(`✅ Comando de filtro carregado: ${commandModule.commands.data.name}`);
-                }
-                continue;
-            }
-            
-            // Verificar diferentes formatos de comando
+            // Verificar estrutura do comando
             if (commandModule.data && commandModule.execute) {
-                // Slash command com data e execute
                 client.commands.set(commandModule.data.name, commandModule);
-                console.log(`✅ Comando slash carregado: ${commandModule.data.name}`);
-            } 
-            else if (commandModule.execute) {
-                // Comando legado
-                const commandName = file.replace('.js', '');
-                client.commands.set(commandName, commandModule);
-                console.log(`✅ Comando legado carregado: ${commandName}`);
-            } 
-            else {
-                console.warn(`⚠️ Comando em ${filePath} não tem propriedades necessárias.`);
+                console.log(`✅ Comando carregado: ${commandModule.data.name}`);
+            } else {
+                console.warn(`⚠️ Comando ${file} não tem a estrutura esperada (data + execute)`);
             }
         } catch (error) {
             console.error(`❌ Erro ao carregar comando ${file}:`, error);
+            await logger.logError(error, `command-load-${file}`);
         }
     }
 }
 
 // Registrando comandos slash
 async function registerCommands() {
-    const commands = [];
-    
-    // Coletar comandos para registro
-    for (const command of client.commands.values()) {
-        if (command.data) {
-            // Usar toJSON se disponível, senão usar diretamente
-            const commandData = typeof command.data.toJSON === 'function' 
-                ? command.data.toJSON() 
-                : command.data;
-            commands.push(commandData);
-        }
-    }
-
-    console.log('📤 Registrando comandos...');
-    console.log(`📋 Total de comandos: ${commands.length}`);
-    
-    if (commands.length > 0) {
-        const rest = new REST({ version: '10' }).setToken(token);
+    try {
+        const commands = [];
         
-        try {
-            await rest.put(Routes.applicationCommands(clientId), { body: commands });
-            console.log('✅ Comandos registrados!');
-        } catch (error) {
-            console.error(`❌ Erro ao registrar comandos: ${error}`);
+        // Coletar comandos para registro
+        client.commands.forEach(command => {
+            if (command.data) {
+                // Usar toJSON se disponível, senão usar diretamente
+                const commandData = typeof command.data.toJSON === 'function' 
+                    ? command.data.toJSON() 
+                    : command.data;
+                commands.push(commandData);
+            }
+        });
+
+        console.log(`📋 Registrando ${commands.length} comandos...`);
+        
+        if (commands.length > 0) {
+            const rest = new REST({ version: '10' }).setToken(token);
+            
+            try {
+                await rest.put(Routes.applicationCommands(clientId), { body: commands });
+                console.log('✅ Comandos registrados com sucesso!');
+            } catch (error) {
+                console.error(`❌ Erro ao registrar comandos:`, error);
+                await logger.logError(error, 'command-registration');
+            }
+        } else {
+            console.warn('⚠️ Nenhum comando para registrar!');
         }
-    } else {
-        console.warn('⚠️ Nenhum comando para registrar!');
+    } catch (error) {
+        console.error('❌ Erro no registro de comandos:', error);
+        await logger.logError(error, 'commands-registration');
     }
 }
 
 // Evento quando o bot estiver pronto
 client.once('ready', async () => {
-    console.log(`\n🤖 Bot está online como ${client.user.tag}`);
-    console.log('📋 Informações do bot:');
-    console.log(`- ID: ${client.user.id}`);
-    console.log(`- Servidores: ${client.guilds.cache.size}`);
-    console.log(`- Canais: ${client.channels.cache.size}`);
-    
-    // Registrar comandos
-    await registerCommands();
-    
-    // Verificar diretório de banco de dados
-    const dbPath = path.join(__dirname, 'database');
-    if (!fs.existsSync(dbPath)) {
-        fs.mkdirSync(dbPath, { recursive: true });
-        console.log('📁 Diretório de banco de dados criado');
+    try {
+        console.log(`\n🤖 Bot está online como ${client.user.tag}`);
+        console.log('📋 Informações do bot:');
+        console.log(`- ID: ${client.user.id}`);
+        console.log(`- Servidores: ${client.guilds.cache.size}`);
+        
+        // Garantir diretórios
+        ensureDirectories();
+        
+        // Carregar comandos
+        await loadCommands();
+        
+        // Registrar comandos
+        await registerCommands();
+        
+        // Iniciar servidor de whitelist
+        await initWhitelistServer();
+        
+        // Registrar que o bot está pronto
+        console.log('\n✅ Bot inicializado e pronto!');
+    } catch (error) {
+        console.error('❌ Erro durante inicialização:', error);
+        await logger.logError(error, 'bot-initialization');
     }
-    
-    // Aguardar um momento para garantir que o cache está atualizado
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Iniciar servidor de whitelist
-    await initWhitelistServer();
 });
 
 // Evento de mensagem (para o filtro de chat)
 client.on('messageCreate', async (message) => {
-    // Verificar se o módulo de filtro está disponível
-    if (chatFilter && chatFilter.handleMessage) {
-        try {
-            await chatFilter.handleMessage(message, client);
-        } catch (error) {
-            console.error('❌ Erro ao processar filtro de chat:', error);
-            // Registrar o erro no sistema de logs
-            try {
-                await logger.logError(message.guild, 'filtro-chat', error, {
-                    userId: message.author.id,
-                    messageId: message.id,
-                    channelId: message.channel.id,
-                    content: message.content
-                });
-            } catch (logError) {
-                console.error('❌ Erro ao registrar erro de filtro:', logError);
-            }
+    try {
+        // Ignorar mensagens do próprio bot e DMs
+        if (message.author.bot || !message.guild) return;
+        
+        // Módulo de filtro de chat importado dinamicamente para reduzir carga na inicialização
+        const ChatFilter = require('./modules/chat-filter');
+        if (ChatFilter.handleMessage) {
+            await ChatFilter.handleMessage(message, client);
         }
+    } catch (error) {
+        console.error('❌ Erro ao processar mensagem:', error);
+        await logger.logError(error, 'message-processing');
     }
 });
 
 // Evento de interação
 client.on('interactionCreate', async interaction => {
-    if (!interaction.isCommand()) return;
-
-    const command = client.commands.get(interaction.commandName);
-    if (!command) return;
-
     try {
+        // Ignorar interações que não são comandos
+        if (!interaction.isCommand()) return;
+
+        const command = client.commands.get(interaction.commandName);
+        if (!command) return;
+
+        // Executar comando
+        console.log(`🔄 Executando comando: ${interaction.commandName} por ${interaction.user.tag}`);
         await command.execute(interaction);
     } catch (error) {
         console.error(`❌ Erro executando o comando ${interaction.commandName}:`, error);
         
-        try {
-            await logger.log('ERROR', 'Erro de Comando', 
-                `Erro ao executar o comando ${interaction.commandName}`,
-                [
-                    { name: 'Comando', value: interaction.commandName },
-                    { name: 'Usuário', value: interaction.user.tag },
-                    { name: 'Erro', value: error.message }
-                ]
-            );
-        } catch (logError) {
-            console.error('❌ Erro ao registrar erro de comando:', logError);
-        }
+        // Registrar erro
+        await logger.logError(error, `command-execution-${interaction.commandName}`);
 
+        // Responder ao usuário
         try {
             const errorMessage = '❌ Ocorreu um erro ao executar este comando.';
             if (interaction.replied || interaction.deferred) {
@@ -235,21 +220,61 @@ client.on('interactionCreate', async interaction => {
 });
 
 // Tratamento de erros não capturados
-process.on('unhandledRejection', error => {
-    console.error('Unhandled promise rejection:', error);
+process.on('unhandledRejection', async error => {
+    console.error('❌ Unhandled promise rejection:', error);
+    await logger.logError(error, 'unhandled-rejection');
+});
+
+process.on('uncaughtException', async error => {
+    console.error('❌ Uncaught exception:', error);
+    await logger.logError(error, 'uncaught-exception');
+    
+    // Em caso de erros críticos, tentar um encerramento limpo
+    try {
+        await gracefulShutdown();
+    } finally {
+        process.exit(1);
+    }
 });
 
 // Adicionar tratamento para encerrar o servidor web ao desconectar
-process.on('SIGINT', async () => {
+async function gracefulShutdown() {
     console.log('🛑 Encerrando aplicação...');
     
-    if (whitelistServer) {
-        console.log('🌐 Parando servidor de whitelist...');
-        await whitelistServer.stop();
+    try {
+        if (whitelistServer) {
+            console.log('🌐 Parando servidor de whitelist...');
+            await whitelistServer.stop();
+            console.log('✅ Servidor de whitelist parado com sucesso');
+        }
+        
+        // Desconectar cliente Discord
+        if (client) {
+            console.log('🤖 Desconectando bot Discord...');
+            await client.destroy();
+            console.log('✅ Bot Discord desconectado com sucesso');
+        }
+        
+        console.log('👋 Aplicação encerrada com sucesso');
+    } catch (error) {
+        console.error('❌ Erro durante encerramento:', error);
     }
-    
-    console.log('👋 Bot desconectado.');
-    process.exit(0);
+}
+
+// Capturar sinais de encerramento
+['SIGINT', 'SIGTERM'].forEach(signal => {
+    process.on(signal, async () => {
+        console.log(`\n${signal} recebido. Iniciando encerramento limpo...`);
+        await gracefulShutdown();
+        process.exit(0);
+    });
 });
 
-client.login(token);
+// Iniciar a conexão com o Discord
+console.log('🔌 Conectando ao Discord...');
+client.login(token)
+    .catch(async error => {
+        console.error('❌ Erro ao conectar ao Discord:', error);
+        await logger.logError(error, 'discord-login');
+        process.exit(1);
+    });

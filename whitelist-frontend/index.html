@@ -3,22 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistema de whitelist para o servidor Metânia">
+    <meta name="theme-color" content="#1a1a1a">
     <title>Whitelist - MTN</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --primary-light: #60a5fa;
+            --bg-dark: #1a1a1a;
+            --bg-darker: #2d2d2d;
+            --success: #2ecc71;
+            --error: #ef4444;
+            --text: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.4);
+        }
+        
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darker) 100%);
             min-height: 100vh;
-            color: #ffffff;
+            color: var(--text);
             position: relative;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
+        
         body::before {
             content: '';
             position: fixed;
@@ -31,20 +46,19 @@
             opacity: 0.05;
             z-index: -1;
         }
+        
         .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 1rem;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            min-height: 600px;
+            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
-            will-change: transform;
         }
+        
         .container::before {
             content: '';
             position: absolute;
@@ -56,46 +70,48 @@
             transform: translateX(-100%);
             transition: transform 0.6s ease;
         }
+        
         .container:hover::before {
             transform: translateX(100%);
         }
+        
         .container:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
         }
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
             border: none;
+            cursor: pointer;
+            text-decoration: none;
+            -webkit-tap-highlight-color: transparent;
         }
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         }
-        .btn-primary::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.6s ease, height 0.6s ease;
+        
+        .btn:active {
+            transform: translateY(0);
         }
-        .btn-primary:hover::after {
-            width: 300px;
-            height: 300px;
-        }
+        
         .logo {
             max-width: 150px;
             height: auto;
             filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
             animation: float 3s ease-in-out infinite;
         }
+        
         .server-logo {
             max-width: 60px;
             height: auto;
@@ -103,6 +119,7 @@
             margin-right: 1rem;
             border-radius: 50%;
         }
+        
         .credits {
             position: fixed;
             bottom: 2rem;
@@ -111,41 +128,34 @@
             padding: 0.8rem 1.5rem;
             border-radius: 1rem;
             font-size: 0.9rem;
-            color: #ffffff;
+            color: var(--text);
             display: flex;
             align-items: center;
             gap: 0.8rem;
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 100;
         }
+        
         .credits img {
             width: 25px;
             height: 25px;
             border-radius: 50%;
             border: 2px solid rgba(255, 255, 255, 0.2);
         }
+        
         @keyframes float {
             0% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0px); }
         }
-        .input-field {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 0.5rem;
-            color: #ffffff;
-            transition: all 0.3s ease;
-        }
-        .input-field:focus {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-        }
+        
         .step-number {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            width: 2rem;
-            height: 2rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            width: 2.5rem;
+            height: 2.5rem;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -155,361 +165,215 @@
             transition: all 0.3s ease;
             position: relative;
             z-index: 1;
+            flex-shrink: 0;
         }
+        
         .step-item {
             position: relative;
             padding-left: 3rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: flex-start;
         }
+        
         .step-item::before {
             content: '';
             position: absolute;
-            left: 1rem;
-            top: 2rem;
-            bottom: -1rem;
+            left: 1.25rem;
+            top: 2.5rem;
+            bottom: -2rem;
             width: 2px;
-            background: linear-gradient(to bottom, #3b82f6, transparent);
+            background: linear-gradient(to bottom, var(--primary), rgba(59, 130, 246, 0.1));
         }
+        
         .step-item:last-child::before {
             display: none;
         }
+        
         .step-item:hover .step-number {
             transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
         }
-        .admin-section {
-            position: relative;
-            overflow: hidden;
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%);
+        
+        .step-content {
+            flex: 1;
         }
-        .admin-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.1), transparent);
-            transform: translateX(-100%);
-            transition: transform 0.6s ease;
-        }
-        .admin-section:hover::before {
-            transform: translateX(100%);
-        }
+        
         .status-message {
             animation: slideIn 0.5s ease;
         }
+        
         @keyframes slideIn {
             from { transform: translateY(-20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+        
         .glass-effect {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .btn-admin {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            border: none;
-        }
-        .btn-admin:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-        }
-        .btn-admin::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.6s ease, height 0.6s ease;
-        }
-        .btn-admin:hover::after {
-            width: 300px;
-            height: 300px;
-        }
+        
         @media (max-width: 640px) {
             .container {
                 margin: 1rem;
+                padding: 1.5rem !important;
             }
+            
             .step-item {
                 padding-left: 2.5rem;
+                margin-bottom: 1.5rem;
             }
+            
             .step-number {
-                width: 1.75rem;
-                height: 1.75rem;
+                width: 2rem;
+                height: 2rem;
+                font-size: 0.875rem;
             }
+            
             .server-logo {
-                max-width: 50px;
+                max-width: 45px;
             }
+            
             .logo {
                 max-width: 120px;
             }
+            
             .credits {
                 bottom: 1rem;
                 right: 1rem;
+                font-size: 0.75rem;
                 padding: 0.6rem 1rem;
-                font-size: 0.9rem;
             }
+            
             .credits img {
-                width: 25px;
-                height: 25px;
+                width: 20px;
+                height: 20px;
             }
-        }
-        .form-container {
-            position: relative;
-            min-height: 500px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            will-change: transform;
-        }
-        .form-step {
-            position: absolute;
-            width: 100%;
-            top: 0;
-            left: 0;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(20px);
-            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
-            will-change: transform, opacity;
-        }
-        .form-step.active {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-            position: relative;
-        }
-        .btn-next {
-            position: relative;
-            width: 120px;
-            height: 40px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            border: none;
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin: 1rem 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 0 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            will-change: transform;
-        }
-        .btn-next::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            border-radius: 10px;
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .btn-next:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.5);
-        }
-        .btn-next:hover::before {
-            opacity: 1;
-        }
-        .btn-next:active {
-            transform: translateY(0);
-        }
-        .btn-next:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-        .btn-next span {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
+            
+            .btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.875rem;
+            }
         }
     </style>
 </head>
-<body class="py-12 px-4">
-    <div class="max-w-2xl mx-auto">
-        <div class="text-center mb-8 animate__animated animate__fadeIn">
-            <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cc7c11&is=67cb2a91&hm=f369bad9613b8a02787f6ad9f3e8261c60338c910c1820f942628b0271970681&=&format=webp&width=914&height=930" alt="MTN Logo" class="logo mx-auto mb-4">
-            <div class="flex items-center justify-center mb-4">
-                <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cc7c11&is=67cb2a91&hm=f369bad9613b8a02787f6ad9f3e8261c60338c910c1820f942628b0271970681&=&format=webp&width=914&height=930" alt="Metânia Logo" class="server-logo">
-                <h1 class="text-3xl font-bold">Bem-vindo ao Sistema de Whitelist</h1>
-            </div>
-            <p class="text-gray-300">Para acessar o formulário, você precisa usar o comando /whitelist no Discord</p>
+<body class="py-4 md:py-8 px-3 md:px-4">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex items-center justify-center mb-6 md:mb-10 animate__animated animate__fadeIn">
+            <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cc7c11&is=67cb2a91&hm=f369bad9613b8a02787f6ad9f3e8261c60338c910c1820f942628b0271970681&=&format=webp&width=914&height=930" 
+                 alt="Metânia Logo" 
+                 class="logo"
+                 loading="lazy">
         </div>
 
-        <div class="container p-6 mb-8 animate__animated animate__fadeInUp">
-            <div class="text-center">
-                <div class="flex items-center justify-center mb-6">
-                    <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cc7c11&is=67cb2a91&hm=f369bad9613b8a02787f6ad9f3e8261c60338c910c1820f942628b0271970681&=&format=webp&width=914&height=930" alt="Metânia Logo" class="server-logo">
-                    <p class="text-gray-300 text-lg">Para solicitar sua whitelist, siga estes passos:</p>
+        <div class="container p-4 md:p-8 mb-6 md:mb-10 animate__animated animate__fadeInUp">
+            <h1 class="text-2xl md:text-3xl font-bold mb-2 md:mb-4 text-center">Sistema de Whitelist</h1>
+            <p class="text-gray-300 text-sm md:text-base text-center mb-8">Siga os passos abaixo para solicitar acesso ao servidor Metânia</p>
+            
+            <div class="space-y-2 md:space-y-4">
+                <div class="step-item">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3 class="text-lg md:text-xl font-semibold mb-1">Entre no Discord</h3>
+                        <p class="text-gray-300 text-sm md:text-base mb-2">Faça parte da nossa comunidade no Discord para iniciar o processo de whitelist.</p>
+                        <a href="https://discord.gg/metania" class="btn" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-discord mr-2" aria-hidden="true"></i>
+                            Entrar no Discord
+                        </a>
+                    </div>
                 </div>
-                <ol class="text-left space-y-4 mb-8">
-                    <li class="step-item flex items-start">
-                        <span class="step-number">1</span>
-                        <span>Entre no nosso servidor Discord</span>
-                    </li>
-                    <li class="step-item flex items-start">
-                        <span class="step-number">2</span>
-                        <span>Use o comando /whitelist no canal apropriado</span>
-                    </li>
-                    <li class="step-item flex items-start">
-                        <span class="step-number">3</span>
-                        <span>Clique no botão que aparecerá na mensagem</span>
-                    </li>
-                    <li class="step-item flex items-start">
-                        <span class="step-number">4</span>
-                        <span>Preencha o formulário com suas informações</span>
-                    </li>
-                </ol>
-            </div>
-        </div>
-
-        <!-- Seção de Login Admin -->
-        <div class="container p-6 mb-8 admin-section animate__animated animate__fadeInUp">
-            <div class="text-center">
-                <div class="flex items-center justify-center mb-4">
-                    <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cc7c11&is=67cb2a91&hm=f369bad9613b8a02787f6ad9f3e8261c60338c910c1820f942628b0271970681&=&format=webp&width=914&height=930" alt="Metânia Logo" class="server-logo">
-                    <h2 class="text-2xl font-bold">Área Administrativa</h2>
-                </div>
-                <form id="adminLoginForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Usuário</label>
-                        <div class="relative">
-                            <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <input type="text" name="username" required
-                                class="input-field w-full px-4 py-2 pl-10">
+                
+                <div class="step-item">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3 class="text-lg md:text-xl font-semibold mb-1">Use o Comando</h3>
+                        <p class="text-gray-300 text-sm md:text-base mb-2">No canal de comandos, utilize <kbd class="bg-gray-700 px-2 py-1 rounded">/whitelist</kbd> para gerar seu link de acesso.</p>
+                        <div class="glass-effect p-3 rounded-lg text-sm text-gray-300 w-full md:w-auto overflow-x-auto">
+                            <code>/whitelist</code>
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Senha</label>
-                        <div class="relative">
-                            <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <input type="password" name="password" required
-                                class="input-field w-full px-4 py-2 pl-10">
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3 class="text-lg md:text-xl font-semibold mb-1">Preencha o Formulário</h3>
+                        <p class="text-gray-300 text-sm md:text-base mb-2">Clique no link que o bot enviará para você e preencha o formulário com suas informações.</p>
+                        <div class="glass-effect p-3 rounded-lg text-sm text-gray-300 w-full">
+                            <p class="mb-1">As informações solicitadas incluem:</p>
+                            <ul class="list-disc pl-5 space-y-1">
+                                <li>Nome completo</li>
+                                <li>Idade</li>
+                                <li>Estado</li>
+                                <li>Religião</li>
+                                <li>Como conheceu o servidor</li>
+                            </ul>
                         </div>
                     </div>
-                    <button type="submit"
-                        class="btn-admin w-full py-3 px-4 rounded-lg font-medium text-white flex items-center justify-center">
-                        <i class="fas fa-sign-in-alt mr-2"></i>
-                        Entrar no Painel Admin
-                    </button>
-                </form>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3 class="text-lg md:text-xl font-semibold mb-1">Aguarde a Aprovação</h3>
+                        <p class="text-gray-300 text-sm md:text-base mb-2">Nossa equipe analisará seu formulário e você receberá uma notificação no Discord.</p>
+                        <div class="flex space-x-2">
+                            <div class="glass-effect px-3 py-1 rounded-full text-sm flex items-center">
+                                <span class="w-2 h-2 bg-yellow-400 rounded-full mr-2"></span>
+                                Pendente
+                            </div>
+                            <div class="glass-effect px-3 py-1 rounded-full text-sm flex items-center">
+                                <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                                Aprovado
+                            </div>
+                            <div class="glass-effect px-3 py-1 rounded-full text-sm flex items-center">
+                                <span class="w-2 h-2 bg-red-400 rounded-full mr-2"></span>
+                                Rejeitado
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-gray-700 text-center">
+                <p class="text-gray-400 text-sm mb-4">Se você já possui o link de whitelist, clique no botão abaixo:</p>
+                <a href="/whitelist-frontend/form.html" id="formLink" class="btn">
+                    <i class="fas fa-clipboard-list mr-2" aria-hidden="true"></i>
+                    Acessar Formulário
+                </a>
             </div>
         </div>
-
-        <div id="status" class="hidden text-center p-4 rounded-lg status-message"></div>
+        
+        <div class="text-center text-gray-400 text-sm">
+            <p>&copy; 2023-2024 Metânia RP | Todos os direitos reservados</p>
+        </div>
     </div>
-
-    <div class="credits animate__animated animate__fadeIn">
-        <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cc7c11&is=67cb2a91&hm=f369bad9613b8a02787f6ad9f3e8261c60338c910c1820f942628b0271970681&=&format=webp&width=914&height=930" alt="Mr.Dark">
-        <span>Desenvolvido por Mr.Dark para Metânia</span>
+    
+    <div class="credits">
+        <img src="https://cdn.discordapp.com/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg" alt="MTN" loading="lazy">
+        <span>Metânia RP</span>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const formLink = document.getElementById('formLink');
+            
             // Verificar se há um token na URL
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token');
-            const error = urlParams.get('error');
-            
-            console.log('=== DEBUG INDEX.HTML ===');
-            console.log('Token na página inicial:', token);
-            console.log('URL completa:', window.location.href);
-            console.log('Parâmetros da URL:', Object.fromEntries(urlParams.entries()));
-            
-            // Mostrar mensagens de erro se houver
-            if (error) {
-                console.log('Erro detectado:', error);
-                const status = document.getElementById('status');
-                let message = '';
-                
-                switch(error) {
-                    case 'invalid_token':
-                        message = 'Token inválido ou expirado. Use o comando /whitelist no Discord para obter um novo link.';
-                        break;
-                    case 'already_submitted':
-                        message = 'Você já possui uma solicitação pendente. Aguarde a resposta da equipe.';
-                        break;
-                    default:
-                        message = 'Ocorreu um erro. Tente novamente mais tarde.';
-                }
-                
-                status.textContent = message;
-                status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
-                status.classList.remove('hidden');
-            }
             
             if (token) {
-                console.log('Iniciando redirecionamento para o formulário...');
-                console.log('Token antes do redirecionamento:', token);
-                
-                // Obter o caminho base do site
-                const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-                const redirectUrl = `${basePath}/form.html?token=${encodeURIComponent(token)}`;
-                
-                console.log('URL de redirecionamento:', redirectUrl);
-                
-                // Redirecionar para o formulário com o token
-                window.location.replace(redirectUrl);
-            } else {
-                console.log('Nenhum token encontrado na URL da página inicial');
+                // Se houver um token, alterar o href para incluí-lo
+                formLink.href = `/whitelist-frontend/form.html?token=${encodeURIComponent(token)}`;
             }
-
-            // Login Admin
-            const adminForm = document.getElementById('adminLoginForm');
-            const status = document.getElementById('status');
-
-            adminForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const formData = new FormData(adminForm);
-                const data = Object.fromEntries(formData.entries());
-                
-                try {
-                    const response = await fetch('/api/admin/login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(data)
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (response.ok) {
-                        // Salvar o token
-                        localStorage.setItem('adminToken', result.token);
-                        // Redirecionar para a página de admin
-                        window.location.href = '/admin';
-                    } else {
-                        status.textContent = result.error || 'Erro ao fazer login';
-                        status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
-                        status.classList.remove('hidden');
-                    }
-                } catch (error) {
-                    status.textContent = 'Erro ao fazer login. Tente novamente.';
-                    status.className = 'text-red-500 bg-red-500 bg-opacity-10 p-4 rounded-lg text-center animate__animated animate__fadeIn';
-                    status.classList.remove('hidden');
+            
+            // Adicionar uma mensagem se o usuário tentar acessar o formulário sem token
+            formLink.addEventListener('click', function(e) {
+                if (!token) {
+                    e.preventDefault();
+                    alert('Você precisa gerar um token usando o comando /whitelist no Discord antes de acessar o formulário.');
                 }
             });
         });

@@ -61,79 +61,111 @@ class Logger {
     }
 
     async getLogChannel(level) {
-        const logLevel = this.logLevels[level];
-        if (!logLevel) {
-            console.error(`❌ Nível de log ${level} não encontrado`);
-            return null;
-        }
-
-        const guild = this.client.guilds.cache.get(env.GUILD_ID);
-        if (!guild) {
-            console.error('❌ Servidor não encontrado');
-            return null;
-        }
-
-        // Tentar encontrar o canal pelo ID primeiro
-        const channelId = env[`LOG_${level}`];
-        if (channelId) {
-            const channel = guild.channels.cache.get(channelId);
-            if (channel) {
-                return channel;
+        try {
+            const logLevel = this.logLevels[level];
+            if (!logLevel) {
+                console.error(`❌ Nível de log ${level} não encontrado`);
+                return null;
             }
-        }
 
-        // Se não encontrar pelo ID, buscar por nome
-        const channel = guild.channels.cache.find(c => c.name === logLevel.channelName);
-        if (!channel) {
-            console.error(`❌ Canal ${logLevel.channelName} não encontrado`);
+            // Verificar se o cliente está disponível e pronto
+            if (!this.client || !this.client.isReady()) {
+                console.error('❌ Cliente Discord não está pronto para enviar logs');
+                return null;
+            }
+
+            const guild = this.client.guilds.cache.get(env.GUILD_ID);
+            if (!guild) {
+                console.error('❌ Servidor não encontrado');
+                return null;
+            }
+
+            // Tentar encontrar o canal pelo ID primeiro
+            const channelId = env[`LOG_${level}`];
+            if (channelId) {
+                const channel = guild.channels.cache.get(channelId);
+                if (channel && channel.isTextBased()) {
+                    return channel;
+                }
+            }
+
+            // Se não encontrar pelo ID, buscar por nome
+            const channel = guild.channels.cache.find(c => c.name === logLevel.channelName && c.isTextBased());
+            if (!channel) {
+                console.error(`❌ Canal ${logLevel.channelName} não encontrado`);
+                return null;
+            }
+
+            return channel;
+        } catch (error) {
+            console.error('❌ Erro ao obter canal de log:', error);
             return null;
         }
-
-        return channel;
     }
 
     async log(level, title, description, fields = [], options = {}) {
         try {
             const logLevel = this.logLevels[level] || this.logLevels.INFO;
-            const channel = await this.getLogChannel(level);
             
-            if (!channel) {
-                console.error(`❌ Não foi possível enviar log ${level}: Canal não encontrado`);
-                return;
-            }
-    
-    const embed = new EmbedBuilder()
-        .setColor(logLevel.color)
-        .setTitle(`${logLevel.emoji} ${title}`)
-        .setDescription(description)
-        .setTimestamp();
-    
-    if (fields && fields.length > 0) {
-                embed.addFields(fields);
-            }
-
-    if (options.footer) {
-        embed.setFooter({ text: options.footer });
-    }
-    
-    if (options.author) {
-        embed.setAuthor(options.author);
-    }
-    
-    if (options.thumbnail) {
-        embed.setThumbnail(options.thumbnail);
-    }
-    
-            await channel.send({ embeds: [embed] });
-            await this.saveToFile(level, {
-            title,
-            description,
-            fields,
-            options,
+            // Informações básicas para arquivo de log
+            const logData = {
+                level,
+                title,
+                description,
+                fields,
+                options,
                 timestamp: new Date().toISOString()
-            });
+            };
+            
+            // Tentar enviar para o Discord
+            const channel = await this.getLogChannel(level);
+            if (channel) {
+                const embed = new EmbedBuilder()
+                    .setColor(logLevel.color)
+                    .setTitle(`${logLevel.emoji} ${title}`)
+                    .setDescription(description)
+                    .setTimestamp();
+            
+                if (fields && fields.length > 0) {
+                    embed.addFields(fields);
+                }
+
+                if (options.footer) {
+                    embed.setFooter({ text: options.footer });
+                }
+            
+                if (options.author) {
+                    embed.setAuthor(options.author);
+                }
+            
+                if (options.thumbnail) {
+                    embed.setThumbnail(options.thumbnail);
+                }
+            
+                await channel.send({ embeds: [embed] });
+            } else {
+                // Se não conseguir enviar para o Discord, registrar no console
+                console.log(`📝 [${level}] ${title}: ${description}`);
+            }
+            
+            // Sempre salvar em arquivo como fallback
+            await this.saveToFile(level, logData);
         } catch (error) {
             console.error(`❌ Erro ao enviar log ${level}:`, error);
+            
+            // Tentar salvar no arquivo mesmo se falhar envio ao Discord
+            try {
+                await this.saveToFile(level, {
+                    title,
+                    description,
+                    fields,
+                    options,
+                    timestamp: new Date().toISOString(),
+                    error: error.message
+                });
+            } catch (fileError) {
+                console.error('❌ Erro crítico ao salvar log em arquivo:', fileError);
+            }
         }
     }
 
@@ -151,14 +183,24 @@ class Logger {
             let logs = [];
             if (fs.existsSync(filePath)) {
                 try {
-                    logs = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-                } catch (error) {
-                    console.error('Erro ao ler arquivo de logs:', error);
+                    const fileContent = await fs.promises.readFile(filePath, 'utf8');
+                    logs = JSON.parse(fileContent);
+                } catch (readError) {
+                    console.error('Erro ao ler arquivo de logs:', readError);
+                    // Criar arquivo novo se houver corrupção
                 }
             }
 
+            // Adicionar o novo log
             logs.push(data);
-            fs.writeFileSync(filePath, JSON.stringify(logs, null, 2));
+            
+            // Limitar o tamanho do arquivo (manter últimos 1000 logs)
+            if (logs.length > 1000) {
+                logs = logs.slice(-1000);
+            }
+            
+            // Escrever de forma assíncrona
+            await fs.promises.writeFile(filePath, JSON.stringify(logs, null, 2));
         } catch (error) {
             console.error('Erro ao salvar log em arquivo:', error);
         }
@@ -207,16 +249,46 @@ class Logger {
     }
 
     async logError(error, context) {
-        const errorMessage = error ? error.message : 'Erro desconhecido';
-        const errorStack = error ? error.stack : 'Stack trace não disponível';
-        
-        await this.log('ERROR', 'Erro no Sistema',
-            `Um erro ocorreu no sistema: ${context}`,
-            [
-                { name: 'Mensagem', value: errorMessage },
-                { name: 'Stack', value: `\`\`\`\n${errorStack}\n\`\`\`` }
-            ]
-        );
+        try {
+            // Garantir que temos uma mensagem de erro e stack trace mesmo se error for null
+            const errorMessage = error ? error.message : 'Erro desconhecido';
+            const errorStack = error ? error.stack : 'Stack trace não disponível';
+            
+            // Informações adicionais do erro
+            const details = {
+                context,
+                timestamp: new Date().toISOString(),
+                errorType: error ? error.constructor.name : 'Unknown',
+                errorMessage,
+                errorStack
+            };
+            
+            // Registrar no console para debug imediato
+            console.error(`❌ [ERRO] [${context}]: ${errorMessage}`);
+            
+            // Tentar enviar para o canal de logs Discord
+            try {
+                await this.log('ERROR', 'Erro no Sistema',
+                    `Um erro ocorreu no contexto: ${context}`,
+                    [
+                        { name: 'Contexto', value: context, inline: true },
+                        { name: 'Tipo', value: details.errorType, inline: true },
+                        { name: 'Timestamp', value: details.timestamp, inline: true },
+                        { name: 'Mensagem', value: errorMessage },
+                        { name: 'Stack', value: `\`\`\`\n${errorStack.substring(0, 1000)}\n\`\`\`` }
+                    ]
+                );
+            } catch (discordError) {
+                console.error('Erro ao enviar log para o Discord:', discordError);
+            }
+            
+            // Salvar em arquivo local sempre, como fallback
+            await this.saveToFile('ERROR', details);
+            
+        } catch (loggerError) {
+            // Caso ocorra algum erro no próprio logger
+            console.error('❌ Erro crítico no sistema de logging:', loggerError);
+        }
     }
 }
 

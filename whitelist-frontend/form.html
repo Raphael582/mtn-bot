@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Formulário de whitelist para o servidor Metânia">
+    <meta name="theme-color" content="#1a1a1a">
     <title>Formulário de Whitelist - MTN</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,6 +14,7 @@
         :root {
             --primary: #3b82f6;
             --primary-dark: #2563eb;
+            --primary-light: #60a5fa;
             --bg-dark: #1a1a1a;
             --bg-darker: #2d2d2d;
             --success: #2ecc71;
@@ -20,6 +23,7 @@
             --text-muted: rgba(255, 255, 255, 0.4);
         }
         
+        /* Estilos básicos */
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darker) 100%);
@@ -27,6 +31,8 @@
             color: var(--text);
             position: relative;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         
         body::before {
@@ -42,14 +48,17 @@
             z-index: -1;
         }
         
+        /* Container do formulário */
         .container {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); /* Para Safari */
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 1rem;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
         
         .container::before {
@@ -73,6 +82,7 @@
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
         }
         
+        /* Logo do servidor */
         .server-logo {
             max-width: 60px;
             height: auto;
@@ -81,6 +91,7 @@
             border-radius: 50%;
         }
         
+        /* Campos de entrada */
         .input-field {
             background-color: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -89,6 +100,7 @@
             transition: all 0.3s ease;
             padding: 0.5rem 0.75rem 0.5rem 2.5rem;
             width: 100%;
+            -webkit-appearance: none; /* Remove estilo padrão em iOS */
         }
         
         .input-field:focus {
@@ -105,6 +117,19 @@
             border-color: var(--error);
         }
         
+        /* Seletor de estados */
+        select.input-field {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23a0aec0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        /* Barra de progresso */
         .progress-bar-container {
             width: 100%;
             height: 6px;
@@ -121,6 +146,7 @@
             transition: width 0.5s ease;
         }
         
+        /* Tooltips de ajuda */
         .tooltip {
             position: relative;
             display: inline-block;
@@ -135,19 +161,33 @@
             border-radius: 6px;
             padding: 8px;
             position: absolute;
-            z-index: 1;
+            z-index: 10;
             bottom: 125%;
             left: 50%;
             transform: translateX(-50%);
             opacity: 0;
             transition: opacity 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         
-        .tooltip:hover .tooltip-text {
+        /* Seta do tooltip */
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+        }
+        
+        .tooltip:hover .tooltip-text, .tooltip:focus .tooltip-text {
             visibility: visible;
             opacity: 1;
         }
         
+        /* Passos do formulário */
         .form-step {
             display: none;
         }
@@ -162,6 +202,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
+        /* Indicador de passos */
         .step-indicator {
             display: flex;
             justify-content: space-between;
@@ -201,6 +242,7 @@
             background: var(--success);
         }
         
+        /* Mensagens de erro */
         .error-message {
             color: var(--error);
             font-size: 0.875rem;
@@ -208,6 +250,7 @@
             display: none;
         }
         
+        /* Spinner de carregamento */
         .loading-spinner {
             display: none;
             width: 20px;
@@ -223,6 +266,7 @@
             to { transform: rotate(360deg); }
         }
         
+        /* Botões */
         .btn {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
@@ -235,6 +279,7 @@
             transition: all 0.3s ease;
             border: none;
             cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
         
         .btn:hover {
@@ -257,6 +302,7 @@
             display: none !important;
         }
         
+        /* Ícones */
         .field-icon {
             position: absolute;
             left: 0.75rem;
@@ -276,94 +322,142 @@
             font-size: 4rem;
             margin-bottom: 1rem;
         }
+        
+        /* Media queries para responsividade */
+        @media (max-width: 640px) {
+            .container {
+                border-radius: 0.75rem;
+                padding: 1rem !important;
+            }
+            
+            .tooltip-text {
+                width: 160px;
+                font-size: 0.75rem;
+            }
+            
+            .server-logo {
+                max-width: 40px;
+            }
+            
+            h1 {
+                font-size: 1.25rem !important;
+            }
+            
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+            
+            .step {
+                width: 25px;
+                height: 25px;
+                font-size: 0.875rem;
+            }
+        }
+        
+        /* Correção para dispositivos iOS */
+        @supports (-webkit-touch-callout: none) {
+            .input-field {
+                font-size: 16px; /* Evita zoom automático em inputs no iOS */
+            }
+        }
     </style>
 </head>
-<body class="py-8 px-4">
+<body class="py-4 md:py-8 px-3 md:px-4">
     <div class="max-w-2xl mx-auto">
-        <div class="text-center mb-8 animate__animated animate__fadeIn">
-            <div class="flex items-center justify-center mb-4">
-                <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cc7c11&is=67cb2a91&hm=f369bad9613b8a02787f6ad9f3e8261c60338c910c1820f942628b0271970681&=&format=webp&width=914&height=930" alt="Metânia Logo" class="server-logo">
-                <h1 class="text-3xl font-bold">Formulário de Whitelist</h1>
+        <div class="text-center mb-4 md:mb-8 animate__animated animate__fadeIn">
+            <div class="flex items-center justify-center mb-2 md:mb-4">
+                <img src="https://media.discordapp.net/attachments/1336750555359350874/1342183794379325523/Screenshot_2025-02-20-11-50-24-142-edit_com.whatsapp.jpg?ex=67cc7c11&is=67cb2a91&hm=f369bad9613b8a02787f6ad9f3e8261c60338c910c1820f942628b0271970681&=&format=webp&width=914&height=930" 
+                     alt="Metânia Logo" 
+                     class="server-logo"
+                     loading="lazy">
+                <h1 class="text-2xl md:text-3xl font-bold">Formulário de Whitelist</h1>
             </div>
-            <p id="welcomeMessage" class="text-gray-300">Carregando...</p>
+            <p id="welcomeMessage" class="text-gray-300 text-sm md:text-base">Carregando...</p>
         </div>
 
-        <div class="container p-6 mb-8 animate__animated animate__fadeInUp">
+        <div class="container p-4 md:p-6 mb-6 md:mb-8 animate__animated animate__fadeInUp">
             <div class="progress-bar-container">
-                <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+                <div id="progressBar" class="progress-bar" style="width: 0%" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
             </div>
 
-            <div class="step-indicator mb-8">
-                <div class="step active" data-step="1">1</div>
-                <div class="step" data-step="2">2</div>
+            <div class="step-indicator mb-6 md:mb-8">
+                <div class="step active" data-step="1" aria-label="Passo 1" role="button" tabindex="0">1</div>
+                <div class="step" data-step="2" aria-label="Passo 2" role="button" tabindex="0">2</div>
             </div>
 
-            <form id="whitelistForm" class="space-y-6">
-                <div class="form-step active" data-step="1">
+            <form id="whitelistForm" class="space-y-5 md:space-y-6" novalidate>
+                <div class="form-step active" data-step="1" role="tabpanel" aria-labelledby="step1">
                     <div>
-                        <label class="block text-sm font-medium mb-2">
+                        <label for="nome" class="block text-sm font-medium mb-2">
                             Nome Completo
-                            <span class="tooltip">
+                            <button type="button" class="tooltip focus:outline-none" aria-label="Informação sobre Nome Completo" tabindex="0">
                                 <i class="fas fa-info-circle ml-1 text-gray-400"></i>
-                                <span class="tooltip-text">Digite seu nome completo como aparece em seus documentos</span>
-                            </span>
+                                <span class="tooltip-text" role="tooltip">Digite seu nome completo como aparece em seus documentos</span>
+                            </button>
                         </label>
                         <div class="relative">
-                            <i class="fas fa-user field-icon"></i>
+                            <i class="fas fa-user field-icon" aria-hidden="true"></i>
                             <input type="text" id="nome" name="nome" required
                                 class="input-field"
-                                placeholder="Digite seu nome completo">
-                            <div class="error-message">Por favor, insira seu nome completo</div>
+                                placeholder="Digite seu nome completo"
+                                autocomplete="name"
+                                maxlength="100"
+                                aria-required="true">
+                            <div class="error-message" aria-live="polite">Por favor, insira seu nome completo</div>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-2 mt-4">
+                        <label for="idade" class="block text-sm font-medium mb-2 mt-4">
                             Idade
-                            <span class="tooltip">
+                            <button type="button" class="tooltip focus:outline-none" aria-label="Informação sobre Idade" tabindex="0">
                                 <i class="fas fa-info-circle ml-1 text-gray-400"></i>
-                                <span class="tooltip-text">Você precisa ter pelo menos 10 anos</span>
-                            </span>
+                                <span class="tooltip-text" role="tooltip">Você precisa ter pelo menos 10 anos</span>
+                            </button>
                         </label>
                         <div class="relative">
-                            <i class="fas fa-birthday-cake field-icon"></i>
+                            <i class="fas fa-birthday-cake field-icon" aria-hidden="true"></i>
                             <input type="number" id="idade" name="idade" required min="10" max="100"
                                 class="input-field"
-                                placeholder="Digite sua idade">
-                            <div class="error-message">Idade deve estar entre 10 e 100 anos</div>
+                                placeholder="Digite sua idade"
+                                aria-required="true">
+                            <div class="error-message" aria-live="polite">Idade deve estar entre 10 e 100 anos</div>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-2 mt-4">
+                        <label for="comoConheceu" class="block text-sm font-medium mb-2 mt-4">
                             Como Conheceu
-                            <span class="tooltip">
+                            <button type="button" class="tooltip focus:outline-none" aria-label="Informação sobre Como Conheceu" tabindex="0">
                                 <i class="fas fa-info-circle ml-1 text-gray-400"></i>
-                                <span class="tooltip-text">Como você conheceu o servidor?</span>
-                            </span>
+                                <span class="tooltip-text" role="tooltip">Como você conheceu o servidor?</span>
+                            </button>
                         </label>
                         <div class="relative">
-                            <i class="fas fa-search field-icon"></i>
+                            <i class="fas fa-search field-icon" aria-hidden="true"></i>
                             <input type="text" id="comoConheceu" name="comoConheceu" required
                                 class="input-field"
-                                placeholder="Como você conheceu o servidor?">
-                            <div class="error-message">Por favor, digite como conheceu o servidor</div>
+                                placeholder="Como você conheceu o servidor?"
+                                maxlength="200"
+                                aria-required="true">
+                            <div class="error-message" aria-live="polite">Por favor, digite como conheceu o servidor</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="form-step" data-step="2">
+                <div class="form-step" data-step="2" role="tabpanel" aria-labelledby="step2">
                     <div>
-                        <label class="block text-sm font-medium mb-2">
+                        <label for="estado" class="block text-sm font-medium mb-2">
                             Estado
-                            <span class="tooltip">
+                            <button type="button" class="tooltip focus:outline-none" aria-label="Informação sobre Estado" tabindex="0">
                                 <i class="fas fa-info-circle ml-1 text-gray-400"></i>
-                                <span class="tooltip-text">Selecione o estado onde você reside</span>
-                            </span>
+                                <span class="tooltip-text" role="tooltip">Selecione o estado onde você reside</span>
+                            </button>
                         </label>
                         <div class="relative">
-                            <i class="fas fa-map-marker-alt field-icon"></i>
-                            <select id="estado" name="estado" required class="input-field">
+                            <i class="fas fa-map-marker-alt field-icon" aria-hidden="true"></i>
+                            <select id="estado" name="estado" required class="input-field" aria-required="true">
                                 <option value="">Selecione seu estado</option>
                                 <option value="AC">Acre</option>
                                 <option value="AL">Alagoas</option>
@@ -393,51 +487,54 @@
                                 <option value="SE">Sergipe</option>
                                 <option value="TO">Tocantins</option>
                             </select>
-                            <div class="error-message">Por favor, selecione seu estado</div>
+                            <div class="error-message" aria-live="polite">Por favor, selecione seu estado</div>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-2 mt-4">
+                        <label for="religiao" class="block text-sm font-medium mb-2 mt-4">
                             Religião
-                            <span class="tooltip">
+                            <button type="button" class="tooltip focus:outline-none" aria-label="Informação sobre Religião" tabindex="0">
                                 <i class="fas fa-info-circle ml-1 text-gray-400"></i>
-                                <span class="tooltip-text">Sua religião atual</span>
-                            </span>
+                                <span class="tooltip-text" role="tooltip">Sua religião atual</span>
+                            </button>
                         </label>
                         <div class="relative">
-                            <i class="fas fa-pray field-icon"></i>
+                            <i class="fas fa-pray field-icon" aria-hidden="true"></i>
                             <input type="text" id="religiao" name="religiao" required
                                 class="input-field"
-                                placeholder="Digite sua religião">
-                            <div class="error-message">Por favor, insira sua religião</div>
+                                placeholder="Digite sua religião"
+                                maxlength="100"
+                                aria-required="true">
+                            <div class="error-message" aria-live="polite">Por favor, insira sua religião</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex justify-between mt-8">
-                    <button type="button" id="prevStep" class="btn hidden">
-                        <i class="fas fa-arrow-left mr-2"></i>
+                <div class="flex justify-between mt-6 md:mt-8">
+                    <button type="button" id="prevStep" class="btn hidden" aria-label="Voltar para o passo anterior">
+                        <i class="fas fa-arrow-left mr-2" aria-hidden="true"></i>
                         Voltar
                     </button>
-                    <button type="button" id="nextStep" class="btn">
+                    <div class="flex-grow"></div>
+                    <button type="button" id="nextStep" class="btn" aria-label="Ir para o próximo passo">
                         <span>
                             Próximo
-                            <i class="fas fa-arrow-right ml-2"></i>
+                            <i class="fas fa-arrow-right ml-2" aria-hidden="true"></i>
                         </span>
                     </button>
-                    <button type="submit" id="submitBtn" class="btn hidden">
+                    <button type="submit" id="submitBtn" class="btn hidden" aria-label="Enviar formulário">
                         <span>
                             Enviar
-                            <i class="fas fa-paper-plane ml-2"></i>
+                            <i class="fas fa-paper-plane ml-2" aria-hidden="true"></i>
                         </span>
-                        <span id="loading" class="loading-spinner ml-2 hidden"></span>
+                        <span id="loading" class="loading-spinner ml-2 hidden" aria-hidden="true" role="status" aria-label="Carregando"></span>
                     </button>
                 </div>
             </form>
         </div>
 
-        <div id="status" class="container p-6 hidden animate__animated animate__fadeIn"></div>
+        <div id="status" class="container p-4 md:p-6 hidden animate__animated animate__fadeIn" aria-live="assertive"></div>
     </div>
 
     <script>
@@ -465,6 +562,7 @@
             function updateProgress() {
                 const progress = ((state.currentStep - 1) / (state.totalSteps - 1)) * 100;
                 formElements.progressBar.style.width = `${progress}%`;
+                formElements.progressBar.setAttribute('aria-valuenow', progress);
             }
 
             // Mostrar/ocultar botões
@@ -484,7 +582,7 @@
                     const errorMessage = input.parentElement.querySelector('.error-message');
                     let fieldValid = true;
                     
-                    if (!input.value) {
+                    if (!input.value.trim()) {
                         fieldValid = false;
                     } else if (input.type === 'number') {
                         const value = parseInt(input.value);
@@ -494,6 +592,9 @@
                     input.classList.toggle('error', !fieldValid);
                     errorMessage.style.display = fieldValid ? 'none' : 'block';
                     isValid = isValid && fieldValid;
+                    
+                    // Atualizar estado ARIA
+                    input.setAttribute('aria-invalid', !fieldValid);
                 });
 
                 return isValid;
@@ -504,7 +605,10 @@
                 if (step < 1 || step > state.totalSteps) return;
                 
                 // Esconder todos os passos
-                formElements.steps.forEach(s => s.classList.remove('active'));
+                formElements.steps.forEach(s => {
+                    s.classList.remove('active');
+                    s.setAttribute('aria-hidden', 'true');
+                });
                 
                 // Atualizar indicadores
                 formElements.stepIndicators.forEach(i => {
@@ -512,13 +616,26 @@
                     const stepNum = parseInt(i.dataset.step);
                     if (stepNum < step) {
                         i.classList.add('completed');
+                        i.setAttribute('aria-label', `Passo ${stepNum} completado`);
                     } else if (stepNum === step) {
                         i.classList.add('active');
+                        i.setAttribute('aria-label', `Passo ${stepNum} atual`);
+                    } else {
+                        i.setAttribute('aria-label', `Passo ${stepNum}`);
                     }
                 });
 
                 // Mostrar o passo atual
-                document.querySelector(`.form-step[data-step="${step}"]`).classList.add('active');
+                const currentStep = document.querySelector(`.form-step[data-step="${step}"]`);
+                currentStep.classList.add('active');
+                currentStep.setAttribute('aria-hidden', 'false');
+                
+                // Foco no primeiro campo do passo atual
+                setTimeout(() => {
+                    const firstInput = currentStep.querySelector('input, select');
+                    if (firstInput) firstInput.focus();
+                }, 100);
+                
                 state.currentStep = step;
                 updateProgress();
                 updateButtons();
@@ -527,12 +644,12 @@
             // Mostrar mensagem de erro
             function showError(message) {
                 formElements.status.innerHTML = `
-                    <div class="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-6 text-center">
-                        <div class="error-icon">✕</div>
-                        <h2 class="text-2xl font-bold text-red-500 mb-2">Erro</h2>
+                    <div class="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-6 text-center" role="alert">
+                        <div class="error-icon" aria-hidden="true">✕</div>
+                        <h2 class="text-xl md:text-2xl font-bold text-red-500 mb-2">Erro</h2>
                         <p class="text-gray-300">${message}</p>
-                        <button id="tryAgain" class="btn mt-4">
-                            <i class="fas fa-redo mr-2"></i>
+                        <button id="tryAgain" class="btn mt-4" aria-label="Tentar novamente">
+                            <i class="fas fa-redo mr-2" aria-hidden="true"></i>
                             Tentar Novamente
                         </button>
                     </div>
@@ -540,18 +657,28 @@
                 formElements.status.classList.remove('hidden');
                 formElements.form.parentElement.classList.add('hidden');
                 
-                document.getElementById('tryAgain')?.addEventListener('click', () => {
-                    formElements.status.classList.add('hidden');
-                    formElements.form.parentElement.classList.remove('hidden');
-                });
+                // Focus on Try Again button
+                setTimeout(() => {
+                    const tryAgainBtn = document.getElementById('tryAgain');
+                    if (tryAgainBtn) {
+                        tryAgainBtn.focus();
+                        tryAgainBtn.addEventListener('click', () => {
+                            formElements.status.classList.add('hidden');
+                            formElements.form.parentElement.classList.remove('hidden');
+                            // Focus back on the form
+                            const firstInput = formElements.form.querySelector('input');
+                            if (firstInput) firstInput.focus();
+                        });
+                    }
+                }, 100);
             }
             
             // Mostrar mensagem de sucesso
             function showSuccess(message) {
                 formElements.status.innerHTML = `
-                    <div class="bg-green-500 bg-opacity-10 border border-green-500 rounded-lg p-6 text-center">
-                        <div class="success-icon">✓</div>
-                        <h2 class="text-2xl font-bold text-green-500 mb-2">Solicitação Enviada!</h2>
+                    <div class="bg-green-500 bg-opacity-10 border border-green-500 rounded-lg p-6 text-center" role="alert">
+                        <div class="success-icon" aria-hidden="true">✓</div>
+                        <h2 class="text-xl md:text-2xl font-bold text-green-500 mb-2">Solicitação Enviada!</h2>
                         <p class="text-gray-300 mb-4">${message}</p>
                         <p class="text-sm text-gray-400 mt-4">
                             Você receberá uma notificação no Discord quando sua solicitação for analisada.
@@ -562,7 +689,26 @@
                 formElements.form.parentElement.classList.add('hidden');
             }
 
-            // Event listeners
+            // Adicionar ouvintes de validação real-time para campos
+            document.querySelectorAll('input[required], select[required]').forEach(input => {
+                input.addEventListener('input', function() {
+                    const errorMessage = this.parentElement.querySelector('.error-message');
+                    let fieldValid = true;
+                    
+                    if (!this.value.trim()) {
+                        fieldValid = false;
+                    } else if (this.type === 'number') {
+                        const value = parseInt(this.value);
+                        fieldValid = (value >= 10 && value <= 100);
+                    }
+                    
+                    this.classList.toggle('error', !fieldValid);
+                    errorMessage.style.display = fieldValid ? 'none' : 'block';
+                    this.setAttribute('aria-invalid', !fieldValid);
+                });
+            });
+
+            // Event listeners para navegação
             formElements.nextBtn.addEventListener('click', () => {
                 if (validateCurrentStep()) {
                     goToStep(state.currentStep + 1);
@@ -571,6 +717,19 @@
 
             formElements.prevBtn.addEventListener('click', () => {
                 goToStep(state.currentStep - 1);
+            });
+
+            // Permitir navegação com teclado nos indicadores de passo
+            formElements.stepIndicators.forEach(step => {
+                step.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        const stepNum = parseInt(step.dataset.step);
+                        if (stepNum < state.currentStep) {
+                            goToStep(stepNum);
+                        }
+                        e.preventDefault();
+                    }
+                });
             });
 
             // Capturar token da URL
@@ -606,8 +765,7 @@
             // Função para enviar formulário
             async function submitForm(e) {
                 e.preventDefault();
-                console.log('Iniciando envio do formulário...');
-
+                
                 if (!validateCurrentStep()) {
                     return;
                 }
@@ -615,14 +773,15 @@
                 // Mostrar loading
                 formElements.loading.classList.remove('hidden');
                 formElements.submitBtn.setAttribute('disabled', 'true');
+                formElements.submitBtn.setAttribute('aria-busy', 'true');
 
                 try {
                     const formData = {
-                        nome: document.getElementById('nome').value,
+                        nome: document.getElementById('nome').value.trim(),
                         idade: document.getElementById('idade').value,
                         estado: document.getElementById('estado').value,
-                        comoConheceu: document.getElementById('comoConheceu').value,
-                        religiao: document.getElementById('religiao').value,
+                        comoConheceu: document.getElementById('comoConheceu').value.trim(),
+                        religiao: document.getElementById('religiao').value.trim(),
                         discordUsername: state.discordUsername
                     };
 
@@ -636,11 +795,11 @@
                     });
 
                     const data = await response.json();
-                    console.log('Resposta do servidor:', data);
 
                     // Esconder loading
                     formElements.loading.classList.add('hidden');
                     formElements.submitBtn.removeAttribute('disabled');
+                    formElements.submitBtn.setAttribute('aria-busy', 'false');
 
                     if (response.ok) {
                         showSuccess(data.message);
@@ -653,13 +812,33 @@
                     // Esconder loading
                     formElements.loading.classList.add('hidden');
                     formElements.submitBtn.removeAttribute('disabled');
+                    formElements.submitBtn.setAttribute('aria-busy', 'false');
                     
-                    showError(error.message);
+                    showError(error.message || 'Ocorreu um erro ao enviar o formulário. Por favor, tente novamente.');
                 }
             }
 
             // Event listener para o formulário
             formElements.form.addEventListener('submit', submitForm);
+            
+            // Detecção de conexão offline
+            window.addEventListener('offline', () => {
+                showError('Você está offline. Por favor, verifique sua conexão com a internet e tente novamente.');
+            });
+            
+            // Evitar submissão dupla
+            let submitting = false;
+            formElements.form.addEventListener('submit', function(e) {
+                if (submitting) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                submitting = true;
+                setTimeout(() => {
+                    submitting = false;
+                }, 3000);
+            });
         });
     </script>
 </body>

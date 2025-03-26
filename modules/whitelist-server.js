@@ -38,36 +38,34 @@ class WhitelistServer {
     checkEnvironmentVariables() {
         const requiredVariables = [
             { name: 'WHITELIST_WEBHOOK_URL', value: env.WHITELIST_WEBHOOK_URL },
-            { name: 'JWT_SECRET', value: env.JWT_SECRET }
+            { name: 'JWT_SECRET', value: env.JWT_SECRET },
+            { name: 'ADMIN_USERNAME', value: env.ADMIN_USERNAME },
+            { name: 'ADMIN_PASSWORD', value: env.ADMIN_PASSWORD },
+            { name: 'ADMIN_JWT_SECRET', value: env.ADMIN_JWT_SECRET }
         ];
         
         console.log('📋 Verificando variáveis de ambiente:');
         
-        let allValid = true;
+        const missingVars = requiredVariables.filter(v => !v.value);
+        
+        if (missingVars.length > 0) {
+            const errorMsg = `Variáveis de ambiente obrigatórias ausentes: ${missingVars.map(v => v.name).join(', ')}`;
+            console.error(`❌ ${errorMsg}`);
+            throw new Error(errorMsg);
+        }
         
         requiredVariables.forEach(variable => {
-            if (!variable.value) {
-                console.error(`❌ Variável de ambiente ${variable.name} não está configurada`);
-                allValid = false;
-            } else {
-                console.log(`✅ Variável ${variable.name} configurada`);
-            }
+            console.log(`✅ Variável ${variable.name} configurada`);
         });
-        
-        if (!allValid) {
-            throw new Error('Variáveis de ambiente obrigatórias ausentes. Verifique o arquivo .env');
-        }
         
         console.log('📋 Configurações do servidor:');
         console.log(`- Porta: ${config.port}`);
         console.log(`- Host: ${config.host}`);
-        console.log(`- Webhook: ${env.WHITELIST_WEBHOOK_URL ? '✅ Configurado' : '❌ Não configurado'}`);
     }
 
     async setupWebhook() {
         try {
             console.log('Iniciando configuração do webhook...');
-            this.checkEnvironmentVariables();
 
             // Verificar URL do webhook
             const webhookUrl = env.WHITELIST_WEBHOOK_URL;
@@ -76,9 +74,7 @@ class WhitelistServer {
             // Validação do formato da URL do webhook
             const webhookRegex = /^https:\/\/(discord|discordapp)\.com\/api\/webhooks\/\d+\/[\w-]+$/;
             if (!webhookRegex.test(webhookUrl)) {
-                const errorMsg = `URL do webhook inválida. 
-                Formato esperado: https://discord.com/api/webhooks/ID/TOKEN ou https://discordapp.com/api/webhooks/ID/TOKEN. 
-                Recebido: ${webhookUrl}`;
+                const errorMsg = `URL do webhook inválida. Formato esperado: https://discord.com/api/webhooks/ID/TOKEN ou https://discordapp.com/api/webhooks/ID/TOKEN. Recebido: ${webhookUrl}`;
                 console.error(`❌ ${errorMsg}`);
                 await this.logger.logError(errorMsg, 'whitelist-webhook-setup');
                 return false;
@@ -86,17 +82,40 @@ class WhitelistServer {
 
             console.log('✅ URL do webhook válida');
             
-            const discordWebhook = new WebhookClient({ url: webhookUrl });
+            // Criar cliente de webhook
+            this.webhookClient = new WebhookClient({ url: webhookUrl });
             
-            // Teste de conexão com o webhook
-            await discordWebhook.sendTest();
+            // Verificar conexão com o webhook
+            await this.testWebhook();
             console.log('✅ Webhook configurado com sucesso');
-            this.webhookClient = discordWebhook;
             return true;
         } catch (error) {
             console.error('❌ Erro ao configurar webhook:', error);
             await this.logger.logError(error, 'whitelist-webhook-setup');
             return false;
+        }
+    }
+
+    async testWebhook() {
+        if (!this.webhookClient) {
+            throw new Error('Webhook não configurado');
+        }
+        
+        try {
+            // Enviar mensagem de teste
+            await this.webhookClient.send({
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle('🔄 Teste de Conexão')
+                        .setDescription('O servidor de whitelist foi iniciado com sucesso')
+                        .setColor('#3498db')
+                        .setTimestamp()
+                ]
+            });
+            return true;
+        } catch (error) {
+            console.error('❌ Erro ao testar webhook:', error);
+            throw error;
         }
     }
 
@@ -108,16 +127,14 @@ class WhitelistServer {
             res.header('Access-Control-Allow-Origin', '*');
             res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
             res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-User-Token');
+            if (req.method === 'OPTIONS') {
+                return res.sendStatus(200);
+            }
             next();
         });
         
-        this.app.use(express.json());
-        
-        // Verificar diretório de frontend
-        const frontendPath = path.join(__dirname, '..', 'whitelist-frontend');
-        console.log('📁 Diretório de frontend:', frontendPath);
-        
-        this.app.use(express.static(frontendPath));
+        // Parser JSON com limite de tamanho
+        this.app.use(express.json({ limit: '1mb' }));
         
         // Middleware para capturar IP
         this.app.use((req, res, next) => {
@@ -125,13 +142,14 @@ class WhitelistServer {
             req.clientIp = ip;
             next();
         });
-
+        
+        // Servir arquivos estáticos
+        const frontendPath = path.join(__dirname, '..', 'whitelist-frontend');
+        this.app.use(express.static(frontendPath));
+        
         // Middleware de erro
-        this.app.use((err, req, res, next) => {
-            console.error('❌ Erro no servidor:', err);
-            res.status(500).json({ error: 'Erro interno do servidor' });
-        });
-
+        this.app.use(this.errorHandler.bind(this));
+        
         console.log('✅ Middleware configurado');
     }
 
@@ -263,25 +281,26 @@ class WhitelistServer {
             next();
         } catch (error) {
             console.error('❌ Token inválido:', error);
-            return res.status(403).json({ error: 'Token inválido' });
+            return res.status(403).json({ error: 'Token inválido ou expirado' });
         }
     }
     
     authenticateToken(req, res, next) {
         const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
-        
-        if (!token) {
-            return res.status(401).json({ error: 'Token não fornecido' });
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Token não fornecido ou formato inválido' });
         }
         
-        jwt.verify(token, env.ADMIN_JWT_SECRET, (err, user) => {
-            if (err) {
-                return res.status(403).json({ error: 'Token inválido' });
-            }
-            req.user = user;
+        const token = authHeader.split(' ')[1];
+        
+        try {
+            const decoded = jwt.verify(token, env.ADMIN_JWT_SECRET);
+            req.user = decoded;
             next();
-        });
+        } catch (error) {
+            console.error('❌ Erro ao verificar token de administrador:', error);
+            return res.status(403).json({ error: 'Token inválido ou expirado' });
+        }
     }
 
     async handleWhitelistSubmit(req, res) {
@@ -290,35 +309,40 @@ class WhitelistServer {
             
             // Log para debug
             console.log('Dados recebidos:', req.body);
-            console.log('Headers:', req.headers);
-            console.log('Informações do usuário:', req.user || 'Usuário não autenticado');
             
             // Validação de campos obrigatórios
             const requiredFields = ['nome', 'idade', 'estado', 'comoConheceu', 'religiao'];
             const missingFields = requiredFields.filter(field => !req.body[field]);
             
             if (missingFields.length > 0) {
-                console.error(`❌ Campos obrigatórios ausentes: ${missingFields.join(', ')}`);
-                return res.status(400).json({ error: `Campos obrigatórios ausentes: ${missingFields.join(', ')}` });
+                const errorMsg = `Campos obrigatórios ausentes: ${missingFields.join(', ')}`;
+                console.error(`❌ ${errorMsg}`);
+                return res.status(400).json({ error: errorMsg });
+            }
+            
+            // Validações adicionais
+            if (parseInt(idade) < 10 || parseInt(idade) > 100) {
+                return res.status(400).json({ error: 'A idade deve estar entre 10 e 100 anos' });
             }
             
             // Verificar se o usuário já possui formulário pendente
+            const userId = req.user?.id || 'ID não disponível';
             const username = req.user?.username || discordUsername || 'Usuário Anônimo';
-            const userForms = Object.values(this.db.forms).filter(f => f.discord.username === username && f.status === 'pendente');
             
-            if (userForms.length > 0) {
-                const pendingForms = userForms.filter(form => form.status === 'pendente');
-                if (pendingForms.length > 0) {
-                    console.log(`Usuário ${username} já possui formulário pendente`);
-                    return res.status(400).json({ error: 'Você já possui um formulário pendente de análise.' });
-                }
+            const pendingForms = Object.values(this.db.forms).filter(
+                f => (f.userId === userId || f.discordUsername === username) && f.status === 'pendente'
+            );
+            
+            if (pendingForms.length > 0) {
+                console.log(`Usuário ${username} já possui formulário pendente`);
+                return res.status(400).json({ error: 'Você já possui um formulário pendente de análise.' });
             }
             
             // Criar novo formulário
             const formId = uuid.v4();
             const form = {
                 id: formId,
-                userId: req.user?.id || 'ID não disponível',
+                userId,
                 discordUsername: username,
                 nome,
                 idade: parseInt(idade),
@@ -337,36 +361,23 @@ class WhitelistServer {
             console.log('✅ Formulário salvo no banco de dados');
             
             // Enviar notificação para o Discord
-            if (this.webhookClient) {
-                try {
-                    await this.webhookClient.send({
-                        content: `<@&${env.WHITELIST_ROLE_ID}> Nova solicitação de whitelist!`,
-                        embeds: [
-                            new EmbedBuilder()
-                                .setTitle('📝 Nova Solicitação de Whitelist')
-                                .setColor('#FFA500')
-                                .setDescription(`Nova solicitação de whitelist recebida de ${username}`)
-                                .addFields(
-                                    { name: 'Discord', value: `<@${req.user?.id}>`, inline: true },
-                                    { name: 'Nome', value: nome, inline: true },
-                                    { name: 'Idade', value: idade.toString(), inline: true },
-                                    { name: 'Estado', value: estado, inline: true },
-                                    { name: 'Como Conheceu', value: comoConheceu },
-                                    { name: 'Religião', value: religiao },
-                                    { name: 'IP', value: req.clientIp }
-                                )
-                                .setTimestamp()
-                                .setFooter({ text: `ID: ${formId}` })
-                        ]
-                    });
-                    console.log('✅ Notificação enviada para o Discord');
-                } catch (error) {
-                    console.error('❌ Erro ao enviar notificação para o Discord:', error);
-                    console.error('Detalhes do erro:', error.message);
-                }
-            } else {
-                console.warn('⚠️ Webhook não configurado, notificação não enviada');
-            }
+            const embed = new EmbedBuilder()
+                .setTitle('📝 Nova Solicitação de Whitelist')
+                .setColor('#FFA500')
+                .setDescription(`Nova solicitação de whitelist recebida de ${username}`)
+                .addFields(
+                    { name: 'Discord', value: `<@${userId}>`, inline: true },
+                    { name: 'Nome', value: nome, inline: true },
+                    { name: 'Idade', value: idade.toString(), inline: true },
+                    { name: 'Estado', value: estado, inline: true },
+                    { name: 'Como Conheceu', value: comoConheceu },
+                    { name: 'Religião', value: religiao },
+                    { name: 'IP', value: req.clientIp }
+                )
+                .setTimestamp()
+                .setFooter({ text: `ID: ${formId}` });
+            
+            await this.sendWebhookNotification(embed);
             
             return res.status(200).json({ 
                 message: 'Formulário enviado com sucesso! Sua solicitação será analisada em breve.',
@@ -374,6 +385,7 @@ class WhitelistServer {
             });
         } catch (error) {
             console.error('❌ Erro ao processar formulário:', error);
+            await this.logger.logError(error, 'whitelist-submit');
             res.status(500).json({ error: 'Erro interno ao processar o formulário. Tente novamente mais tarde.' });
         }
     }
@@ -507,20 +519,26 @@ class WhitelistServer {
 
     async start() {
         try {
+            // Verificar variáveis de ambiente
+            this.checkEnvironmentVariables();
+            
             const port = config.port || env.PORT || 3000;
             console.log('🚀 Iniciando servidor na porta:', port);
-            console.log('📋 Variáveis de ambiente:');
-            console.log('- ADMIN_USERNAME:', env.ADMIN_USERNAME);
-            console.log('- ADMIN_PASSWORD:', env.ADMIN_PASSWORD ? 'Configurada' : 'Não configurada');
-            console.log('- JWT_SECRET:', env.JWT_SECRET ? 'Configurado' : 'Não configurado');
             
             this.server = this.app.listen(port, () => {
+                const localIP = this.getLocalIP();
                 console.log('\n🌐 Servidor de whitelist rodando em:');
                 console.log(`- Local: http://localhost:${port}`);
-                console.log(`- IP: http://${this.getLocalIP()}:${port}`);
+                console.log(`- IP: http://${localIP}:${port}`);
             });
+            
+            // Inicializar webhook após o servidor estar rodando
+            await this.setupWebhook();
+            
+            return true;
         } catch (error) {
             console.error('❌ Erro ao iniciar servidor de whitelist:', error);
+            await this.logger.logError(error, 'whitelist-server-start');
             throw error;
         }
     }
@@ -547,6 +565,30 @@ class WhitelistServer {
             }
         }
         return 'localhost';
+    }
+
+    // Middleware para tratamento de erros
+    errorHandler(err, req, res, next) {
+        console.error('❌ Erro no servidor:', err);
+        this.logger.logError(err, 'whitelist-server');
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+
+    async sendWebhookNotification(embed) {
+        if (!this.webhookClient) {
+            console.warn('⚠️ Webhook não configurado, notificação não enviada');
+            return false;
+        }
+        
+        try {
+            await this.webhookClient.send({ embeds: [embed] });
+            console.log('✅ Notificação enviada para o Discord');
+            return true;
+        } catch (error) {
+            console.error('❌ Erro ao enviar notificação para o Discord:', error);
+            await this.logger.logError(error, 'webhook-notification');
+            return false;
+        }
     }
 }
 

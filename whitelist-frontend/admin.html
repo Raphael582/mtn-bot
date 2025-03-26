@@ -3,416 +3,1525 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Admin - Whitelist</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="Painel Administrativo de Whitelist">
+    <meta name="theme-color" content="#1f2937">
+    <title>Admin - Sistema de Whitelist</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
+        :root {
+            --color-bg: #111827;
+            --color-bg-lighter: #1f2937;
+            --color-text: #f3f4f6;
+            --color-text-muted: #9ca3af;
+            --color-border: #374151;
+            --color-primary: #3b82f6;
+            --color-primary-hover: #2563eb;
+            --color-success: #10b981;
+            --color-success-hover: #059669;
+            --color-danger: #ef4444;
+            --color-danger-hover: #dc2626;
+            --color-warning: #f59e0b;
+            --color-warning-hover: #d97706;
+        }
+
+        /* Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #1a1a1a;
-            color: #ffffff;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.5;
         }
+
+        /* Utilitários */
         .container {
-            max-width: 1200px;
+            width: 100%;
+            max-width: 1280px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 1rem;
         }
-        .card {
-            background-color: #2d2d2d;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+        .flex {
+            display: flex;
         }
-        .btn {
-            background-color: #3b82f6;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .flex-row {
+            flex-direction: row;
+        }
+
+        .flex-wrap {
+            flex-wrap: wrap;
+        }
+
+        .justify-center {
+            justify-content: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .space-x-1 > * + * {
+            margin-left: 0.25rem;
+        }
+
+        .space-x-2 > * + * {
+            margin-left: 0.5rem;
+        }
+
+        .space-x-3 > * + * {
+            margin-left: 0.75rem;
+        }
+
+        .space-y-2 > * + * {
+            margin-top: 0.5rem;
+        }
+
+        .space-y-4 > * + * {
+            margin-top: 1rem;
+        }
+
+        .gap-2 {
+            gap: 0.5rem;
+        }
+
+        .gap-4 {
+            gap: 1rem;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-sm {
+            font-size: 0.875rem;
+        }
+
+        .text-base {
+            font-size: 1rem;
+        }
+
+        .text-lg {
+            font-size: 1.125rem;
+        }
+
+        .text-xl {
+            font-size: 1.25rem;
+        }
+
+        .text-4xl {
+            font-size: 2.25rem;
+        }
+
+        .font-medium {
             font-weight: 500;
-            transition: background-color 0.2s;
         }
-        .btn:hover {
-            background-color: #2563eb;
+
+        .font-semibold {
+            font-weight: 600;
         }
-        .btn-danger {
+
+        .text-gray-300 {
+            color: #d1d5db;
+        }
+
+        .text-gray-400 {
+            color: #9ca3af;
+        }
+
+        .text-yellow-500 {
+            color: #f59e0b;
+        }
+
+        .text-green-500 {
+            color: #10b981;
+        }
+
+        .text-red-500 {
+            color: #ef4444;
+        }
+
+        .text-black {
+            color: #000;
+        }
+
+        .bg-gray-700 {
+            background-color: #374151;
+        }
+
+        .bg-gray-800 {
+            background-color: #1f2937;
+        }
+
+        .bg-yellow-500 {
+            background-color: #f59e0b;
+        }
+
+        .bg-green-500 {
+            background-color: #10b981;
+        }
+
+        .bg-green-600 {
+            background-color: #059669;
+        }
+
+        .bg-green-700 {
+            background-color: #047857;
+        }
+
+        .bg-red-500 {
             background-color: #ef4444;
         }
-        .btn-danger:hover {
+
+        .bg-red-600 {
             background-color: #dc2626;
         }
-        .form-input {
-            background-color: #3d3d3d;
-            border: 1px solid #4d4d4d;
-            color: white;
-            padding: 0.5rem;
-            border-radius: 0.375rem;
-            width: 100%;
-            margin-bottom: 1rem;
+
+        .bg-red-700 {
+            background-color: #b91c1c;
         }
-        .form-input:focus {
-            outline: none;
+
+        .bg-blue-600 {
+            background-color: #2563eb;
+        }
+
+        .hover\:bg-green-700:hover {
+            background-color: #047857;
+        }
+
+        .hover\:bg-red-700:hover {
+            background-color: #b91c1c;
+        }
+
+        .hover\:text-white:hover {
+            color: #fff;
+        }
+
+        .hover\:text-gray-300:hover {
+            color: #d1d5db;
+        }
+
+        .hover\:border-gray-300:hover {
+            border-color: #d1d5db;
+        }
+
+        .border-transparent {
+            border-color: transparent;
+        }
+
+        .border-blue-500 {
             border-color: #3b82f6;
         }
+
+        .border-gray-700 {
+            border-color: #374151;
+        }
+
+        .border-b {
+            border-bottom-width: 1px;
+            border-bottom-style: solid;
+        }
+
+        .border-b-2 {
+            border-bottom-width: 2px;
+            border-bottom-style: solid;
+        }
+
+        .border-t {
+            border-top-width: 1px;
+            border-top-style: solid;
+        }
+
+        .rounded-full {
+            border-radius: 9999px;
+        }
+
+        .rounded-lg {
+            border-radius: 0.5rem;
+        }
+
+        .rounded-t-lg {
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+
+        .p-1 {
+            padding: 0.25rem;
+        }
+
+        .p-4 {
+            padding: 1rem;
+        }
+
+        .p-6 {
+            padding: 1.5rem;
+        }
+
+        .px-2 {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+
+        .px-3 {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+
+        .px-4 {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .py-0\.5 {
+            padding-top: 0.125rem;
+            padding-bottom: 0.125rem;
+        }
+
+        .py-1 {
+            padding-top: 0.25rem;
+            padding-bottom: 0.25rem;
+        }
+
+        .py-2 {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .py-4 {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .py-8 {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+
+        .pl-8 {
+            padding-left: 2rem;
+        }
+
+        .pr-2 {
+            padding-right: 0.5rem;
+        }
+
+        .pt-4 {
+            padding-top: 1rem;
+        }
+
+        .mb-1 {
+            margin-bottom: 0.25rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 0.5rem;
+        }
+
+        .mb-3 {
+            margin-bottom: 0.75rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-6 {
+            margin-bottom: 1.5rem;
+        }
+
+        .mb-8 {
+            margin-bottom: 2rem;
+        }
+
+        .ml-2 {
+            margin-left: 0.5rem;
+        }
+
+        .ml-3 {
+            margin-left: 0.75rem;
+        }
+
+        .mr-2 {
+            margin-right: 0.5rem;
+        }
+
+        .mt-4 {
+            margin-top: 1rem;
+        }
+
+        .mt-6 {
+            margin-top: 1.5rem;
+        }
+
+        .-mb-px {
+            margin-bottom: -1px;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        .w-64 {
+            width: 16rem;
+        }
+
+        .w-24 {
+            width: 6rem;
+        }
+
+        .w-28 {
+            width: 7rem;
+        }
+
+        .max-w-md {
+            max-width: 28rem;
+        }
+
+        .max-w-2xl {
+            max-width: 42rem;
+        }
+
+        .max-w-xs {
+            max-width: 20rem;
+        }
+
+        .max-w-\[80px\] {
+            max-width: 80px;
+        }
+
+        .max-w-\[200px\] {
+            max-width: 200px;
+        }
+
+        .truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .overflow-x-auto {
+            overflow-x: auto;
+        }
+
+        .overflow-hidden {
+            overflow: hidden;
+        }
+
+        .relative {
+            position: relative;
+        }
+
+        .absolute {
+            position: absolute;
+        }
+
+        .fixed {
+            position: fixed;
+        }
+
+        .inset-0 {
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        .left-3 {
+            left: 0.75rem;
+        }
+
+        .top-1\/2 {
+            top: 50%;
+        }
+
+        .transform {
+            transform: translateX(0) translateY(0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
+        }
+
+        .-translate-y-1\/2 {
+            transform: translateY(-50%);
+        }
+
+        .z-50 {
+            z-index: 50;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .block {
+            display: block;
+        }
+
+        .inline-block {
+            display: inline-block;
+        }
+
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        .cursor-not-allowed {
+            cursor: not-allowed;
+        }
+
+        .disabled\:opacity-50:disabled {
+            opacity: 0.5;
+        }
+
+        .opacity-50 {
+            opacity: 0.5;
+        }
+
+        .grid {
+            display: grid;
+        }
+
+        .grid-cols-1 {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+
+        /* Componentes */
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid #ffffff;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fade-in {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes fade-out {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-in-out;
+        }
+
+        .animate-fade-out {
+            animation: fade-out 0.3s ease-in-out;
+        }
+
+        /* Tabela */
         .table {
             width: 100%;
             border-collapse: collapse;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-        .table th, .table td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #4d4d4d;
-        }
+
         .table th {
-            background-color: #3d3d3d;
+            background-color: var(--color-bg-lighter);
+            padding: 0.75rem 1rem;
+            text-align: left;
             font-weight: 600;
+            border-bottom: 2px solid var(--color-border);
         }
+
+        .table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
         .table tr:hover {
-            background-color: #3d3d3d;
+            background-color: rgba(31, 41, 55, 0.7);
         }
-        .badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
+
+        /* Formulários */
+        .form-input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            background-color: var(--color-bg-lighter);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+            border-radius: 0.375rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+        }
+
+        /* Botões */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            background-color: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
             font-weight: 500;
+            transition: background-color 0.2s, transform 0.1s;
         }
-        .badge-pending {
-            background-color: #f59e0b;
-            color: #1a1a1a;
+
+        .btn:hover {
+            background-color: var(--color-primary-hover);
         }
-        .badge-approved {
-            background-color: #10b981;
-            color: #1a1a1a;
+
+        .btn:active {
+            transform: translateY(1px);
         }
-        .badge-rejected {
-            background-color: #ef4444;
-            color: #1a1a1a;
+
+        .btn-danger {
+            background-color: var(--color-danger);
         }
-        .badge-admin {
-            background-color: #3b82f6;
-            color: #1a1a1a;
+
+        .btn-danger:hover {
+            background-color: var(--color-danger-hover);
         }
-        .badge-superadmin {
-            background-color: #8b5cf6;
-            color: #1a1a1a;
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            animation: modal-in 0.3s ease-out;
+        }
+
+        @keyframes modal-in {
+            0% {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Media Queries */
+        @media (min-width: 768px) {
+            .md\:flex-row {
+                flex-direction: row;
+            }
+
+            .md\:mb-0 {
+                margin-bottom: 0;
+            }
+
+            .md\:grid-cols-2 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--color-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--color-border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: var(--color-text-muted);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            <h1 class="text-2xl font-bold mb-4">Painel Administrativo</h1>
+    <div class="container py-8">
+        <div class="max-w-2xl mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="text-center mb-8">
+                <h1 class="text-xl font-semibold mb-2">Painel Administrativo</h1>
+                <p class="text-gray-400">Sistema de Whitelist</p>
+            </div>
             
             <!-- Login Form -->
-            <div id="loginForm" class="mb-8">
-                <h2 class="text-xl font-semibold mb-4">Login</h2>
-                <form id="loginFormElement" class="space-y-4">
+            <div id="loginPanel" class="space-y-4">
+                <form id="loginForm" class="space-y-4">
                     <div>
-                        <label class="block mb-2">Usuário</label>
+                        <label for="username" class="block mb-2">Usuário</label>
                         <input type="text" id="username" class="form-input" required>
                     </div>
                     <div>
-                        <label class="block mb-2">Senha</label>
+                        <label for="password" class="block mb-2">Senha</label>
                         <input type="password" id="password" class="form-input" required>
                     </div>
-                    <button type="submit" class="btn">Entrar</button>
+                    <div class="flex justify-center mt-6">
+                        <button type="submit" class="btn">Entrar</button>
+                    </div>
                 </form>
             </div>
-
-            <!-- Admin Panel -->
-            <div id="adminPanel" class="hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-semibold">Gerenciamento de Whitelist</h2>
-                    <div class="space-x-2">
-                        <button id="addAdminBtn" class="btn">Adicionar Admin</button>
-                        <button id="logoutBtn" class="btn btn-danger">Sair</button>
-                    </div>
-                </div>
-
-                <!-- Forms List -->
-                <div class="mb-8">
-                    <h3 class="text-lg font-semibold mb-4">Solicitações Pendentes</h3>
-                    <div class="overflow-x-auto">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Nome</th>
-                                    <th>Idade</th>
-                                    <th>Estado</th>
-                                    <th>Status</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="formsList"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Admins List -->
-                <div class="mb-8">
-                    <h3 class="text-lg font-semibold mb-4">Administradores</h3>
-                    <div class="overflow-x-auto">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Usuário</th>
-                                    <th>Cargo</th>
-                                    <th>Data de Criação</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminsList"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Audit Logs -->
-                <div>
-                    <h3 class="text-lg font-semibold mb-4">Logs de Auditoria</h3>
-                    <div class="overflow-x-auto">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Admin</th>
-                                    <th>Ação</th>
-                                    <th>Data</th>
-                                    <th>Detalhes</th>
-                                </tr>
-                            </thead>
-                            <tbody id="auditLogs"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para Adicionar/Editar Admin -->
-    <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
-        <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
-            <h3 class="text-xl font-semibold mb-4">Adicionar Administrador</h3>
-            <form id="adminForm" class="space-y-4">
-                <div>
-                    <label class="block mb-2">Usuário</label>
-                    <input type="text" id="adminUsername" class="form-input" required>
-                </div>
-                <div>
-                    <label class="block mb-2">Senha</label>
-                    <input type="password" id="adminPassword" class="form-input" required>
-                </div>
-                <div>
-                    <label class="block mb-2">Cargo</label>
-                    <select id="adminRole" class="form-input" required>
-                        <option value="admin">Admin</option>
-                        <option value="superadmin">Super Admin</option>
-                    </select>
-                </div>
-                <div class="flex justify-end space-x-2">
-                    <button type="button" id="cancelAdminBtn" class="btn btn-danger">Cancelar</button>
-                    <button type="submit" class="btn">Salvar</button>
-                </div>
-            </form>
         </div>
     </div>
 
     <script>
-        let token = localStorage.getItem('adminToken');
-        let currentUser = null;
-
-        // Funções de API
-        async function login(username, password) {
-            try {
-                const response = await fetch('/api/admin/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                
-                if (!response.ok) throw new Error('Login falhou');
-                
-                const data = await response.json();
-                token = data.token;
-                currentUser = data;
-                localStorage.setItem('adminToken', token);
-                
-                showAdminPanel();
-                loadData();
-            } catch (error) {
-                alert('Erro ao fazer login: ' + error.message);
+        // Utilitários
+        const $ = (selector) => document.querySelector(selector);
+        const $$ = (selector) => document.querySelectorAll(selector);
+        
+        // Estado da aplicação
+        const state = {
+            currentUser: null,
+            forms: [],
+            admins: [],
+            logs: [],
+            pagination: {
+                page: 1,
+                limit: 10,
+                total: 0
+            },
+            currentTab: 'pending',
+            selectedFormId: null,
+            filters: {
+                search: '',
+                status: 'all'
             }
+        };
+
+        // API URLs
+        const API = {
+            baseUrl: '/api',
+            login: '/admin/login',
+            forms: '/admin/forms',
+            admins: '/admin/users',
+            logs: '/admin/logs',
+            approve: (id) => `/admin/forms/${id}/approve`,
+            reject: (id) => `/admin/forms/${id}/reject`,
+            deleteAdmin: (id) => `/admin/users/${id}`
+        };
+
+        // Tokens e autenticação
+        const TOKEN_KEY = 'admin_token';
+        let authToken = localStorage.getItem(TOKEN_KEY);
+
+        // Elementos da UI
+        const elements = {
+            loginForm: $('#loginForm'),
+            adminPanel: $('#adminPanel'),
+            loginPanel: $('#loginPanel'),
+            loadingStatus: $('#loadingStatus'),
+            emptyStatus: $('#emptyStatus'),
+            
+            // Tabs
+            pendingTab: $('#pendingTab'),
+            allFormsTab: $('#allFormsTab'),
+            adminsTab: $('#adminsTab'),
+            logsTab: $('#logsTab'),
+            
+            // Conteúdo das tabs
+            pendingContent: $('#pendingContent'),
+            allFormsContent: $('#allFormsContent'),
+            adminsContent: $('#adminsContent'),
+            logsContent: $('#logsContent'),
+            
+            // Listas
+            pendingFormsList: $('#pendingFormsList'),
+            allFormsList: $('#allFormsList'),
+            adminsList: $('#adminsList'),
+            auditLogs: $('#auditLogs'),
+            
+            // Filtros e paginação
+            formSearch: $('#formSearch'),
+            statusFilter: $('#statusFilter'),
+            totalForms: $('#totalForms'),
+            prevPage: $('#prevPage'),
+            nextPage: $('#nextPage'),
+            pendingCount: $('#pendingCount'),
+            
+            // Modais
+            adminModal: $('#adminModal'),
+            formDetailsModal: $('#formDetailsModal'),
+            confirmModal: $('#confirmModal'),
+            
+            // Formulários e botões
+            adminForm: $('#adminForm'),
+            addAdminBtn: $('#addAdminBtn'),
+            refreshBtn: $('#refreshBtn'),
+            logoutBtn: $('.logout-btn'),
+            modalClose: $$('.modal-close'),
+            
+            // Detalhes do formulário
+            formDetails: $('#formDetails'),
+            approveForm: $('#approveForm'),
+            rejectForm: $('#rejectForm'),
+            
+            // Confirmação
+            confirmMessage: $('#confirmMessage'),
+            confirmIcon: $('#confirmIcon'),
+            confirmOk: $('#confirmOk'),
+            confirmCancel: $('#confirmCancel')
+        };
+
+        // Handlers para mostrar/esconder modais
+        function showModal(modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
         }
 
-        async function loadData() {
-            if (!token) return;
+        function hideModal(modal) {
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        // Formatadores
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatStatus(status) {
+            const statusMap = {
+                'pending': {
+                    text: 'Pendente',
+                    class: 'bg-yellow-500 text-black'
+                },
+                'approved': {
+                    text: 'Aprovado',
+                    class: 'bg-green-500 text-black'
+                },
+                'rejected': {
+                    text: 'Rejeitado',
+                    class: 'bg-red-500 text-black'
+                }
+            };
             
+            const statusInfo = statusMap[status] || {
+                text: status,
+                class: 'bg-gray-500'
+            };
+            
+            return `<span class="px-2 py-1 rounded-full text-xs font-semibold ${statusInfo.class}">${statusInfo.text}</span>`;
+        }
+
+        // Requisições API
+        async function apiRequest(url, method = 'GET', data = null) {
             try {
-                await Promise.all([
-                    loadForms(),
-                    loadAdmins(),
-                    loadAuditLogs()
-                ]);
-            } catch (error) {
-                console.error('Erro ao carregar dados:', error);
-            }
-        }
-
-        async function loadForms() {
-            const response = await fetch('/api/whitelist/forms', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (!response.ok) throw new Error('Erro ao carregar formulários');
-            
-            const forms = await response.json();
-            const tbody = document.getElementById('formsList');
-            tbody.innerHTML = '';
-            
-            forms.forEach(form => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${form.id}</td>
-                    <td>${form.nome}</td>
-                    <td>${form.idade}</td>
-                    <td>${form.estado}</td>
-                    <td><span class="badge badge-${form.status}">${form.status}</span></td>
-                    <td>
-                        <button onclick="viewForm('${form.id}')" class="btn">Ver</button>
-                        ${form.status === 'pendente' ? `
-                            <button onclick="approveForm('${form.id}')" class="btn">Aprovar</button>
-                            <button onclick="rejectForm('${form.id}')" class="btn btn-danger">Rejeitar</button>
-                        ` : ''}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        async function loadAdmins() {
-            const response = await fetch('/api/admin/list', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (!response.ok) throw new Error('Erro ao carregar admins');
-            
-            const admins = await response.json();
-            const tbody = document.getElementById('adminsList');
-            tbody.innerHTML = '';
-            
-            admins.forEach(admin => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${admin.id}</td>
-                    <td>${admin.username}</td>
-                    <td><span class="badge badge-${admin.role}">${admin.role}</span></td>
-                    <td>${new Date(admin.createdAt).toLocaleString()}</td>
-                    <td>
-                        <button onclick="editAdmin('${admin.id}')" class="btn">Editar</button>
-                        ${admin.id !== currentUser.id ? `
-                            <button onclick="deleteAdmin('${admin.id}')" class="btn btn-danger">Excluir</button>
-                        ` : ''}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        async function loadAuditLogs() {
-            const response = await fetch('/api/admin/audit', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (!response.ok) throw new Error('Erro ao carregar logs');
-            
-            const logs = await response.json();
-            const tbody = document.getElementById('auditLogs');
-            tbody.innerHTML = '';
-            
-            logs.forEach(log => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${log.id}</td>
-                    <td>${log.adminUsername}</td>
-                    <td>${log.action}</td>
-                    <td>${new Date(log.timestamp).toLocaleString()}</td>
-                    <td>${log.details}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // Event Listeners
-        document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            await login(username, password);
-        });
-
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            localStorage.removeItem('adminToken');
-            token = null;
-            currentUser = null;
-            showLoginForm();
-        });
-
-        document.getElementById('addAdminBtn').addEventListener('click', () => {
-            document.getElementById('adminModal').classList.remove('hidden');
-            document.getElementById('adminModal').classList.add('flex');
-            document.getElementById('adminForm').reset();
-        });
-
-        document.getElementById('cancelAdminBtn').addEventListener('click', () => {
-            document.getElementById('adminModal').classList.add('hidden');
-            document.getElementById('adminModal').classList.remove('flex');
-        });
-
-        document.getElementById('adminForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('adminUsername').value;
-            const password = document.getElementById('adminPassword').value;
-            const role = document.getElementById('adminRole').value;
-            
-            try {
-                const response = await fetch('/api/admin/create', {
-                    method: 'POST',
+                const options = {
+                    method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ username, password, role })
-                });
+                    }
+                };
                 
-                if (!response.ok) throw new Error('Erro ao criar admin');
+                if (authToken) {
+                    options.headers['Authorization'] = `Bearer ${authToken}`;
+                }
                 
-                document.getElementById('adminModal').classList.add('hidden');
-                document.getElementById('adminModal').classList.remove('flex');
-                loadAdmins();
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(API.baseUrl + url, options);
+                
+                // Se a resposta for 401, tentar fazer logout
+                if (response.status === 401) {
+                    handleLogout();
+                    return null;
+                }
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Erro na requisição');
+                }
+                
+                return result;
             } catch (error) {
-                alert('Erro ao criar admin: ' + error.message);
+                console.error('Erro na API:', error);
+                showToast(error.message || 'Erro ao comunicar com o servidor', 'error');
+                return null;
             }
-        });
+        }
 
-        // Funções de UI
-        function showLoginForm() {
-            document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('adminPanel').classList.add('hidden');
+        // Toast de notificações
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white max-w-xs z-50 animate-fade-in ${type === 'error' ? 'bg-red-600' : type === 'success' ? 'bg-green-600' : 'bg-blue-600'}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('animate-fade-out');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        // Manipulação de Login/Logout
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = $('#username').value.trim();
+            const password = $('#password').value;
+            
+            if (!username || !password) {
+                showToast('Preencha todos os campos', 'error');
+                return;
+            }
+            
+            const data = await apiRequest(API.login, 'POST', { username, password });
+            
+            if (data && data.token) {
+                authToken = data.token;
+                localStorage.setItem(TOKEN_KEY, authToken);
+                state.currentUser = data.user;
+                
+                showAdminPanel();
+                loadDashboard();
+                showToast(`Bem-vindo, ${data.user.username}!`, 'success');
+            }
+        }
+
+        function handleLogout() {
+            authToken = null;
+            localStorage.removeItem(TOKEN_KEY);
+            state.currentUser = null;
+            
+            showLoginPanel();
+            showToast('Sessão encerrada', 'info');
+        }
+
+        function showLoginPanel() {
+            elements.adminPanel.classList.add('hidden');
+            elements.loginPanel.classList.remove('hidden');
         }
 
         function showAdminPanel() {
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('adminPanel').classList.remove('hidden');
+            elements.loginPanel.classList.add('hidden');
+            elements.adminPanel.classList.remove('hidden');
+        }
+
+        // Carregamento inicial do dashboard
+        async function loadDashboard() {
+            await Promise.all([
+                loadPendingForms(),
+                loadAdmins(),
+                loadLogs()
+            ]);
+        }
+
+        // Carregamento de formulários pendentes
+        async function loadPendingForms() {
+            showLoading(true);
+            
+            const data = await apiRequest(API.forms + '?status=pending');
+            
+            if (data && data.forms) {
+                state.forms = data.forms;
+                elements.pendingCount.textContent = data.forms.length;
+                renderPendingForms();
+            }
+            
+            showLoading(false);
+        }
+
+        // Carregamento de todos os formulários com paginação e filtros
+        async function loadAllForms() {
+            showLoading(true);
+            
+            const { page, limit } = state.pagination;
+            const { search, status } = state.filters;
+            
+            let url = `${API.forms}?page=${page}&limit=${limit}`;
+            
+            if (status !== 'all') {
+                url += `&status=${status}`;
+            }
+            
+            if (search) {
+                url += `&search=${encodeURIComponent(search)}`;
+            }
+            
+            const data = await apiRequest(url);
+            
+            if (data) {
+                state.forms = data.forms;
+                state.pagination.total = data.total;
+                
+                renderAllForms();
+                updatePagination();
+            }
+            
+            showLoading(false);
+        }
+
+        // Carregamento de administradores
+        async function loadAdmins() {
+            showLoading(true);
+            
+            const data = await apiRequest(API.admins);
+            
+            if (data && data.users) {
+                state.admins = data.users;
+                renderAdmins();
+            }
+            
+            showLoading(false);
+        }
+
+        // Carregamento de logs
+        async function loadLogs() {
+            showLoading(true);
+            
+            const data = await apiRequest(API.logs);
+            
+            if (data && data.logs) {
+                state.logs = data.logs;
+                renderLogs();
+            }
+            
+            showLoading(false);
+        }
+
+        // Renderizadores
+        function renderPendingForms() {
+            if (!state.forms.length) {
+                elements.pendingFormsList.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-gray-400">
+                            Nenhuma solicitação pendente encontrada
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            elements.pendingFormsList.innerHTML = state.forms
+                .filter(form => form.status === 'pending')
+                .map(form => `
+                    <tr data-id="${form.id}">
+                        <td class="max-w-[80px] truncate">${form.id}</td>
+                        <td>${form.discordUsername || 'N/A'}</td>
+                        <td>${form.nome}</td>
+                        <td>${form.idade}</td>
+                        <td>${form.estado}</td>
+                        <td>${formatStatus(form.status)}</td>
+                        <td>
+                            <div class="flex space-x-1">
+                                <button class="view-form-btn btn-sm p-1" title="Ver detalhes">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="approve-form-btn btn-sm p-1 bg-green-600 hover:bg-green-700" title="Aprovar">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="reject-form-btn btn-sm p-1 bg-red-600 hover:bg-red-700" title="Rejeitar">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+                
+            attachFormActionHandlers();
+        }
+
+        function renderAllForms() {
+            if (!state.forms.length) {
+                elements.allFormsList.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-gray-400">
+                            Nenhum formulário encontrado
+                        </td>
+                    </tr>
+                `;
+                elements.totalForms.textContent = 'Total: 0 formulários';
+                return;
+            }
+            
+            elements.allFormsList.innerHTML = state.forms.map(form => `
+                <tr data-id="${form.id}">
+                    <td class="max-w-[80px] truncate">${form.id}</td>
+                    <td>${form.discordUsername || 'N/A'}</td>
+                    <td>${form.nome}</td>
+                    <td>${form.idade}</td>
+                    <td>${form.estado}</td>
+                    <td>${formatStatus(form.status)}</td>
+                    <td>${formatDate(form.createdAt)}</td>
+                    <td>
+                        <div class="flex space-x-1">
+                            <button class="view-form-btn btn-sm p-1" title="Ver detalhes">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${form.status === 'pending' ? `
+                                <button class="approve-form-btn btn-sm p-1 bg-green-600 hover:bg-green-700" title="Aprovar">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="reject-form-btn btn-sm p-1 bg-red-600 hover:bg-red-700" title="Rejeitar">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            
+            elements.totalForms.textContent = `Total: ${state.pagination.total} formulário${state.pagination.total !== 1 ? 's' : ''}`;
+            attachFormActionHandlers();
+        }
+
+        function renderAdmins() {
+            if (!state.admins.length) {
+                elements.adminsList.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-gray-400">
+                            Nenhum administrador encontrado
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            elements.adminsList.innerHTML = state.admins.map(admin => `
+                <tr data-id="${admin.id}">
+                    <td>${admin.id}</td>
+                    <td>${admin.username}</td>
+                    <td>${admin.role}</td>
+                    <td>${formatDate(admin.createdAt)}</td>
+                    <td>
+                        <div class="flex space-x-1">
+                            ${state.currentUser && state.currentUser.id !== admin.id ? `
+                                <button class="delete-admin-btn btn-sm p-1 bg-red-600 hover:bg-red-700" title="Excluir">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Adicionar handlers para excluir administradores
+            $$('.delete-admin-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.closest('tr').dataset.id;
+                    openConfirmModal(
+                        'Tem certeza que deseja excluir este administrador?',
+                        'fa-user-slash',
+                        'red',
+                        () => deleteAdmin(id)
+                    );
+                });
+            });
+        }
+
+        function renderLogs() {
+            if (!state.logs.length) {
+                elements.auditLogs.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-gray-400">
+                            Nenhum log encontrado
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            elements.auditLogs.innerHTML = state.logs.map(log => `
+                <tr>
+                    <td>${log.id}</td>
+                    <td>${log.admin}</td>
+                    <td>${log.action}</td>
+                    <td>${formatDate(log.createdAt)}</td>
+                    <td class="max-w-[200px] truncate">${log.details || 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Gestão de administradores
+        async function addAdmin(data) {
+            const result = await apiRequest(API.admins, 'POST', data);
+            
+            if (result && result.success) {
+                showToast('Administrador adicionado com sucesso', 'success');
+                hideModal(elements.adminModal);
+                loadAdmins();
+                elements.adminForm.reset();
+            }
+        }
+
+        async function deleteAdmin(id) {
+            const result = await apiRequest(API.deleteAdmin(id), 'DELETE');
+            
+            if (result && result.success) {
+                showToast('Administrador excluído com sucesso', 'success');
+                loadAdmins();
+            }
+        }
+
+        // Gestão de formulários
+        async function approveForm(id) {
+            const result = await apiRequest(API.approve(id), 'PUT');
+            
+            if (result && result.success) {
+                showToast('Formulário aprovado com sucesso', 'success');
+                hideModal(elements.formDetailsModal);
+                await Promise.all([loadPendingForms(), loadAllForms()]);
+            }
+        }
+
+        async function rejectForm(id) {
+            const result = await apiRequest(API.reject(id), 'PUT');
+            
+            if (result && result.success) {
+                showToast('Formulário rejeitado com sucesso', 'success');
+                hideModal(elements.formDetailsModal);
+                await Promise.all([loadPendingForms(), loadAllForms()]);
+            }
+        }
+
+        // Handlers para ações em formulários
+        function attachFormActionHandlers() {
+            // Ver detalhes do formulário
+            $$('.view-form-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.closest('tr').dataset.id;
+                    openFormDetails(id);
+                });
+            });
+            
+            // Aprovar formulário
+            $$('.approve-form-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.closest('tr').dataset.id;
+                    openConfirmModal(
+                        'Tem certeza que deseja aprovar este formulário?',
+                        'fa-check-circle',
+                        'green',
+                        () => approveForm(id)
+                    );
+                });
+            });
+            
+            // Rejeitar formulário
+            $$('.reject-form-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.closest('tr').dataset.id;
+                    openConfirmModal(
+                        'Tem certeza que deseja rejeitar este formulário?',
+                        'fa-times-circle',
+                        'red',
+                        () => rejectForm(id)
+                    );
+                });
+            });
+        }
+
+        // Abrir modal de detalhes do formulário
+        function openFormDetails(id) {
+            const form = state.forms.find(f => f.id === id);
+            
+            if (!form) {
+                showToast('Formulário não encontrado', 'error');
+                return;
+            }
+            
+            state.selectedFormId = id;
+            
+            // Preencher campos
+            $('#formId').textContent = form.id;
+            $('#formStatus').textContent = form.status === 'pending' ? 'Pendente' : form.status === 'approved' ? 'Aprovado' : 'Rejeitado';
+            $('#formStatus').className = `text-base ${form.status === 'pending' ? 'text-yellow-500' : form.status === 'approved' ? 'text-green-500' : 'text-red-500'}`;
+            $('#formDiscord').textContent = form.discordUsername || 'Não informado';
+            $('#formNome').textContent = form.nome;
+            $('#formIdade').textContent = form.idade;
+            $('#formEstado').textContent = form.estado;
+            $('#formReligiao').textContent = form.religiao || 'Não informado';
+            $('#formComoConheceu').textContent = form.comoConheceu || 'Não informado';
+            $('#formDate').textContent = formatDate(form.createdAt);
+            
+            // Mostrar/ocultar seção de revisor
+            if (form.status !== 'pending' && form.reviewer) {
+                $('#formReviewContainer').classList.remove('hidden');
+                $('#formReviewer').textContent = form.reviewer;
+            } else {
+                $('#formReviewContainer').classList.add('hidden');
+            }
+            
+            // Mostrar/ocultar botões de ação
+            if (form.status === 'pending') {
+                $('#formActions').classList.remove('hidden');
+            } else {
+                $('#formActions').classList.add('hidden');
+            }
+            
+            showModal(elements.formDetailsModal);
+        }
+
+        // Modal de confirmação
+        function openConfirmModal(message, icon, color, confirmCallback) {
+            elements.confirmMessage.textContent = message;
+            elements.confirmIcon.className = `fas ${icon} text-4xl text-${color}-500 mb-3`;
+            
+            // Desanexar listeners antigos
+            elements.confirmOk.replaceWith(elements.confirmOk.cloneNode(true));
+            elements.confirmOk = $('#confirmOk');
+            
+            // Adicionar novo listener
+            elements.confirmOk.addEventListener('click', () => {
+                hideModal(elements.confirmModal);
+                confirmCallback();
+            });
+            
+            showModal(elements.confirmModal);
+        }
+
+        // Utilitário para exibir/ocultar estado de carregamento
+        function showLoading(show) {
+            if (show) {
+                elements.loadingStatus.classList.remove('hidden');
+            } else {
+                elements.loadingStatus.classList.add('hidden');
+            }
+        }
+
+        // Gestão de tabs
+        function switchTab(tabId) {
+            // Remover seleção atual
+            $$('[role="tab"]').forEach(tab => {
+                tab.classList.remove('border-blue-500');
+                tab.classList.add('border-transparent');
+                tab.setAttribute('aria-selected', 'false');
+            });
+            
+            // Esconder todo conteúdo
+            $$('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Selecionar nova tab
+            $(`#${tabId}Tab`).classList.add('border-blue-500');
+            $(`#${tabId}Tab`).classList.remove('border-transparent');
+            $(`#${tabId}Tab`).setAttribute('aria-selected', 'true');
+            
+            // Mostrar conteúdo
+            $(`#${tabId}Content`).classList.remove('hidden');
+            
+            state.currentTab = tabId;
+            
+            // Carregar dados específicos da tab
+            if (tabId === 'allForms') {
+                loadAllForms();
+            }
+        }
+
+        // Atualizar controles de paginação
+        function updatePagination() {
+            const { page, limit, total } = state.pagination;
+            const totalPages = Math.ceil(total / limit);
+            
+            elements.prevPage.disabled = page <= 1;
+            elements.nextPage.disabled = page >= totalPages;
+            
+            if (elements.prevPage.disabled) {
+                elements.prevPage.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                elements.prevPage.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
+            if (elements.nextPage.disabled) {
+                elements.nextPage.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                elements.nextPage.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // Event Listeners
+
+        // Login
+        elements.loginForm.addEventListener('submit', handleLogin);
+
+        // Logout
+        elements.logoutBtn.forEach(btn => {
+            btn.addEventListener('click', handleLogout);
+        });
+
+        // Tabs
+        elements.pendingTab.addEventListener('click', () => switchTab('pending'));
+        elements.allFormsTab.addEventListener('click', () => switchTab('allForms'));
+        elements.adminsTab.addEventListener('click', () => switchTab('admins'));
+        elements.logsTab.addEventListener('click', () => switchTab('logs'));
+
+        // Adicionar admin
+        elements.addAdminBtn.addEventListener('click', () => {
+            elements.adminForm.reset();
+            showModal(elements.adminModal);
+        });
+
+        // Salvar admin
+        elements.adminForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = $('#adminUsername').value.trim();
+            const password = $('#adminPassword').value;
+            const role = $('#adminRole').value;
+            
+            if (!username || !password) {
+                showToast('Preencha todos os campos', 'error');
+                return;
+            }
+            
+            addAdmin({ username, password, role });
+        });
+
+        // Aprovar/Rejeitar formulário dos detalhes
+        elements.approveForm.addEventListener('click', () => {
+            if (state.selectedFormId) {
+                openConfirmModal(
+                    'Tem certeza que deseja aprovar este formulário?',
+                    'fa-check-circle',
+                    'green',
+                    () => approveForm(state.selectedFormId)
+                );
+            }
+        });
+
+        elements.rejectForm.addEventListener('click', () => {
+            if (state.selectedFormId) {
+                openConfirmModal(
+                    'Tem certeza que deseja rejeitar este formulário?',
+                    'fa-times-circle',
+                    'red',
+                    () => rejectForm(state.selectedFormId)
+                );
+            }
+        });
+
+        // Filtros e paginação
+        elements.formSearch.addEventListener('input', debounce(() => {
+            state.filters.search = elements.formSearch.value.trim();
+            state.pagination.page = 1;
+            loadAllForms();
+        }, 500));
+
+        elements.statusFilter.addEventListener('change', () => {
+            state.filters.status = elements.statusFilter.value;
+            state.pagination.page = 1;
+            loadAllForms();
+        });
+
+        elements.prevPage.addEventListener('click', () => {
+            if (state.pagination.page > 1) {
+                state.pagination.page--;
+                loadAllForms();
+            }
+        });
+
+        elements.nextPage.addEventListener('click', () => {
+            const totalPages = Math.ceil(state.pagination.total / state.pagination.limit);
+            if (state.pagination.page < totalPages) {
+                state.pagination.page++;
+                loadAllForms();
+            }
+        });
+
+        // Refresh button
+        elements.refreshBtn.addEventListener('click', () => {
+            if (state.currentTab === 'pending') {
+                loadPendingForms();
+            } else if (state.currentTab === 'allForms') {
+                loadAllForms();
+            } else if (state.currentTab === 'admins') {
+                loadAdmins();
+            } else if (state.currentTab === 'logs') {
+                loadLogs();
+            }
+        });
+
+        // Fechar modais
+        elements.modalClose.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const modal = e.target.closest('.modal-overlay');
+                hideModal(modal);
+            });
+        });
+
+        elements.confirmCancel.addEventListener('click', () => {
+            hideModal(elements.confirmModal);
+        });
+
+        // Fechar ao clicar fora
+        $$('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    hideModal(modal);
+                }
+            });
+        });
+
+        // Função utilitária debounce
+        function debounce(func, delay) {
+            let timeout;
+            return function() {
+                const context = this;
+                const args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
         }
 
         // Inicialização
-        if (token) {
-            showAdminPanel();
-            loadData();
-        } else {
-            showLoginForm();
+        function init() {
+            if (authToken) {
+                // Validar o token e carregar dados
+                apiRequest(API.forms + '?limit=1')
+                    .then(data => {
+                        if (data) {
+                            showAdminPanel();
+                            loadDashboard();
+                        } else {
+                            handleLogout();
+                        }
+                    });
+            } else {
+                showLoginPanel();
+            }
         }
+
+        // Iniciar aplicação
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
